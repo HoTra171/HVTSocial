@@ -54,3 +54,8 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
