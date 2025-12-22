@@ -1,0 +1,40 @@
+{
+  "name": "hvtsocial",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@clerk/clerk-react": "^5.53.4",
+    "@tailwindcss/vite": "^4.1.13",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "dayjs": "^1.11.19",
+    "lucide-react": "^0.545.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-draggable": "^4.5.0",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.9.4",
+    "socket.io-client": "^4.8.1",
+    "swiper": "^11.2.10",
+    "tailwindcss": "^4.1.13",
+    "wavesurfer.js": "^7.11.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.5.2",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "vite": "^7.0.2"
+  }
+}
