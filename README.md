@@ -2,38 +2,73 @@
 
 Dự án mạng xã hội HVTSocial với Backend (Node.js/Express) và Frontend (React + Vite).
 
-## 📋 Mục lục
+## 🚀 Quick Links
 
-- [Tính năng](#-tính-năng)
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-- [Cấu trúc dự án](#-cấu-trúc-dự-án)
-- [Cài đặt](#-cài-đặt)
-- [Cấu hình môi trường](#-cấu-hình-môi-trường)
-- [Chạy dự án](#-chạy-dự-án)
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Setup local trong 15 phút
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deploy free trong 30 phút
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Fix lỗi thường gặp
+
+## 📚 Documentation
+
+| File | Description |
+|------|-------------|
+| [GETTING_STARTED.md](GETTING_STARTED.md) | Setup local + troubleshooting |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Quick deploy guide (FREE) |
+| [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md) | Advanced topics & PostgreSQL |
+| [CONFIGURATION.md](CONFIGURATION.md) | Environment & config |
+| [SECURITY.md](SECURITY.md) | Security features |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common bugs & fixes |
+| [TESTING.md](TESTING.md) | Testing guide |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+
+## 📋 Table of Contents
+
+- [Features](#-tính-năng)
+- [Tech Stack](#-công-nghệ-sử-dụng)
+- [Quick Start](#-quick-start)
 
 ## ✨ Tính năng
 
-- Đăng ký/Đăng nhập người dùng
-- Đăng bài viết (text, hình ảnh, video)
-- Tương tác (like, comment, share)
-- Chat realtime
-- Video call / Voice call
-- Upload ảnh/video lên Cloudinary
-- Xác thực JWT
+- 👤 Đăng ký/Đăng nhập người dùng (JWT Authentication)
+- 📝 Đăng bài viết (text, hình ảnh, video)
+- 💬 Chat realtime (Socket.IO)
+- 📱 Stories (24h auto-delete)
+- 👍 Tương tác (like, comment, share)
+- 👥 Follow/Unfollow, friendships
+- 🔔 Notifications realtime
+- 📸 Upload ảnh/video lên Cloudinary
+- 🔐 Security: Helmet, Rate Limiting, RBAC
+- 📊 API Documentation (Swagger)
+- ✅ Unit Tests (Jest)
+- 🐳 Docker support
+- 🚀 Production-ready deployment configs
 
 ## 🛠 Công nghệ sử dụng
 
 ### Backend
-- Node.js + Express
-- SQL Server
-- Socket.io (realtime chat)
-- Cloudinary (lưu trữ media)
-- JWT Authentication
+- **Runtime:** Node.js 20+
+- **Framework:** Express.js 5
+- **Database:** SQL Server (MSSQL) hoặc PostgreSQL
+- **Realtime:** Socket.IO
+- **Caching:** Redis + Bull Queue
+- **Storage:** Cloudinary
+- **Auth:** JWT (không dùng Clerk nữa)
+- **Security:** Helmet, Rate Limiting, CORS
+- **Validation:** Joi
+- **Testing:** Jest
+- **API Docs:** Swagger UI
+- **Logging:** Winston
 
 ### Frontend
-- React + Vite
-- Clerk (Authentication)
-- Socket.io Client
+- **Framework:** React 19
+- **Build Tool:** Vite 7
+- **Styling:** TailwindCSS 4
+- **Routing:** React Router v7
+- **HTTP Client:** Axios
+- **Realtime:** Socket.IO Client
+- **Icons:** Lucide React
+- **Notifications:** React Hot Toast
+- **Testing:** Vitest (setup available)
 
 ## 📁 Cấu trúc dự án
 
@@ -122,55 +157,112 @@ CLIENT_URL=http://localhost:3000
 
 ### Frontend
 
-Tạo file `Frontend/.env` từ file mẫu:
-```bash
-cp Frontend/.env.example Frontend/.env
-```
-
-Cập nhật:
+Tạo file `Frontend/.env`:
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=your_clerk_key
+VITE_API_URL=http://localhost:5000
+VITE_WS_URL=http://localhost:5000
 ```
 
-> **Lưu ý**: Đăng ký tài khoản tại [Clerk.com](https://clerk.com) để lấy API key
+**Chi tiết đầy đủ:** [GETTING_STARTED.md](GETTING_STARTED.md)
 
-## 🏃 Chạy dự án
+---
 
-### Development Mode
+## 🚀 Quick Start
 
-**Terminal 1 - Backend:**
 ```bash
-cd Backend
-npm start
+# 1. Clone repo
+git clone https://github.com/your-username/HVTSocial.git
+cd HVTSocial
+
+# 2. Install dependencies
+cd Backend && npm install
+cd ../Frontend && npm install
+
+# 3. Setup .env files (xem trên)
+
+# 4. Start Backend
+cd Backend && npm start
+
+# 5. Start Frontend (terminal mới)
+cd Frontend && npm run dev
+
+# 6. Open browser: http://localhost:3000
 ```
-Server sẽ chạy tại: `http://localhost:5000`
 
-**Terminal 2 - Frontend:**
-```bash
-cd Frontend
-npm run dev
-```
-App sẽ chạy tại: `http://localhost:3000`
+**Full guide:** [GETTING_STARTED.md](GETTING_STARTED.md)
 
-### Production Build
+---
 
-**Frontend:**
-```bash
-cd Frontend
-npm run build
-```
+## 🌐 Deploy Free
 
-## 📝 Lưu ý
+Deploy lên cloud **miễn phí 100%** trong 30 phút:
 
-- File `.env` chứa thông tin nhạy cảm, **KHÔNG** được commit lên Git
-- Thư mục `uploads/` chứa file upload của user, đã được ignore trong Git
-- Đảm bảo SQL Server đang chạy trước khi start Backend
-- Cấu hình CORS trong Backend nếu deploy lên server
+- **Frontend:** Vercel
+- **Backend:** Render
+- **Database:** Railway PostgreSQL
+- **Total Cost:** $0/month
 
-## 🤝 Đóng góp
+**Quick guide:** [DEPLOYMENT.md](DEPLOYMENT.md)
 
-Mọi đóng góp đều được chào đón! Vui lòng tạo Pull Request.
+---
+
+## 📖 Documentation Index
+
+### Setup & Local Development
+- [GETTING_STARTED.md](GETTING_STARTED.md) - Complete setup guide
+
+### Deployment
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Quick deploy (30 min)
+- [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md) - PostgreSQL, Docker, scaling
+
+### Configuration
+- [CONFIGURATION.md](CONFIGURATION.md) - Environment variables, database, Redis, email
+
+### Troubleshooting
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Common errors & fixes
+
+### Security & Testing
+- [SECURITY.md](SECURITY.md) - Security features & best practices
+- [TESTING.md](TESTING.md) - Unit & integration tests
+
+### Project History
+- [CHANGELOG.md](CHANGELOG.md) - Version history & changes
+
+---
+
+## 📝 API Documentation
+
+When Backend is running:
+- **Swagger UI:** http://localhost:5000/api-docs
+- **Health Check:** http://localhost:5000/health
+
+---
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first.
+
+---
 
 ## 📄 License
 
 MIT License
+
+---
+
+## ✨ Notes
+
+- **No Clerk:** Chuyển sang JWT authentication
+- **No 2FA:** Simplified auth flow
+- **Free Deploy:** Vercel + Render + Railway = $0/month
+- **Production Ready:** Security, testing, monitoring included
+
+---
+
+**Made with ❤️ by HVTSocial Team**
+
+**Last Updated:** 2026-01-06
+
+---
+
+> 📚 **Tip:** Start with [GETTING_STARTED.md](GETTING_STARTED.md) for local setup or [DEPLOYMENT.md](DEPLOYMENT.md) to deploy immediately!

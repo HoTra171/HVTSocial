@@ -10,7 +10,6 @@ import Profile from "./page/Profile";
 import Messages from "./page/Messages";
 import Discover from "./page/Discover";
 import Layout from "./page/Layout";
-import { useUser } from "@clerk/clerk-react";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import VoiceCall from "./page/VoiceCall";
@@ -28,7 +27,6 @@ import { socket, connectSocket, disconnectSocket } from "./socket";
 import IncomingCallModal from "./components/IncomingCallModal";
 
 function App() {
-  const { user } = useUser();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
 

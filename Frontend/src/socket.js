@@ -1,10 +1,11 @@
 import { io } from "socket.io-client";
 
-const API_URL = "http://localhost:5000";
+// WebSocket URL từ environment variable
+const WS_URL = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 let registeredUserId = null;
 
-export const socket = io(API_URL, {
+export const socket = io(WS_URL, {
   autoConnect: false,
   withCredentials: true,
   transports: ["websocket", "polling"],

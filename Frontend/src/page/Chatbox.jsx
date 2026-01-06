@@ -29,17 +29,30 @@ const Chatbox = () => {
   const navigate = useNavigate();
   const [socketReady, setSocketReady] = useState(false);
 
+  // Force reload marker - v2.0
+  console.log("🔄 Chatbox component loaded - Version 2.0");
+
   const myIdRaw = localStorage.getItem("user");
 
   const myId = myIdRaw
     ? JSON.parse(myIdRaw).id
     : null;
 
+  const [hasRedirected, setHasRedirected] = useState(false);
+
   useEffect(() => {
-    if (!myId || !chatId || isNaN(Number(chatId)) || Number(chatId) <= 0) return;
-    fetchPartner();
-    fetchMessages();
-  }, [chatId, myId]);
+    if (!myId || !chatId || isNaN(Number(chatId)) || Number(chatId) <= 0 || hasRedirected) return;
+
+    const loadChatData = async () => {
+      const partnerLoaded = await fetchPartner();
+      // Chỉ fetch messages nếu partner load thành công
+      if (partnerLoaded) {
+        fetchMessages();
+      }
+    };
+
+    loadChatData();
+  }, [chatId, myId, hasRedirected]);
 
 
   // Debug: Kiểm tra chatId
@@ -261,13 +274,23 @@ const Chatbox = () => {
     if (!chatId || isNaN(Number(chatId)) || Number(chatId) <= 0) return;
     if (!myId) return;
 
-    const socket = io("http://localhost:5000");
+    const socket = io("http://localhost:5000", {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 3
+    });
     socketRef.current = socket;
 
     socket.on("connect", () => {
       setSocketReady(true);
       socket.emit("register_user", myId);
       socket.emit("join_chat", Number(chatId));
+    });
+
+    // Xử lý lỗi kết nối
+    socket.on("connect_error", (error) => {
+      console.warn("Socket connection error:", error.message);
     });
 
     socket.on("receive_message", (msg) => {
@@ -281,7 +304,10 @@ const Chatbox = () => {
     });
 
 
-    socket.on("disconnect", () => setSocketReady(false));
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+      setSocketReady(false);
+    });
 
     // nhận call
     socket.on("incoming_call", ({ from, offer, isVideo }) => {
@@ -326,7 +352,10 @@ const Chatbox = () => {
       socket.emit("leave_chat", Number(chatId));
       socket.off("receive_message");
 
-      socket.disconnect();
+      // Cleanup: chỉ disconnect nếu socket đã connected hoặc connecting
+      if (socket && (socket.connected || socket.connecting)) {
+        socket.disconnect();
+      }
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [chatId, myId]);
@@ -388,11 +417,13 @@ const Chatbox = () => {
         `http://localhost:5000/api/chat/user/${myId}/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("📡 Partner response:", res.data);
 
       if (!res.data || res.data.length === 0) {
-        console.warn("Không có dữ liệu chat nào!");
-        setPartner({});
-        return;
+        setHasRedirected(true);
+        toast.error("Bạn chưa có cuộc trò chuyện nào");
+        setTimeout(() => navigate('/messages'), 100);
+        return false;
       }
 
       const unique = Object.values(
@@ -409,9 +440,10 @@ const Chatbox = () => {
       // console.log("📡 Found chat:", row);
 
       if (!row) {
-        console.warn("Không tìm thấy chat với ID:", chatId);
-        setPartner({});
-        return;
+        setHasRedirected(true);
+        toast.error("Không tìm thấy cuộc trò chuyện");
+        setTimeout(() => navigate('/messages'), 100);
+        return false;
       }
 
       setPartner({
@@ -424,8 +456,10 @@ const Chatbox = () => {
       });
 
       console.log("Partner set successfully");
+      return true; // Trả về true khi thành công
     } catch (err) {
       console.error("fetchPartner error:", err);
+      return false; // Trả về false khi có lỗi
     }
   };
 
@@ -466,20 +500,18 @@ const Chatbox = () => {
     } catch (err) {
       console.error("fetchMessages error:", err);
       console.error("Error details:", err.response?.data);
+
+      // If 403 Forbidden, redirect back to messages list
+      if (err.response?.status === 403) {
+        setHasRedirected(true);
+        toast.error("Bạn không có quyền truy cập cuộc trò chuyện này");
+        setTimeout(() => navigate('/messages'), 100);
+      }
     }
   };
 
-  useEffect(() => {
-    if (!chatId || isNaN(Number(chatId))) {
-      console.error("Invalid chatId, skipping fetch:", chatId);
-      return;
-    }
-
-    console.log("Fetching data for chatId:", chatId);
-    fetchPartner();
-    fetchMessages();
-  }, [chatId]);
-
+  // useEffect bị xóa vì trùng lặp với useEffect ở trên (dòng 43-55)
+  // useEffect cũ này không kiểm tra hasRedirected nên gây ra lỗi 403
 
   // Load more
   const loadMore = () => {

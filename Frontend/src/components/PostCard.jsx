@@ -279,7 +279,7 @@ function CommentThreadItem({
 
     setLoadingReplies(true);
     try {
-      await api.get(`/comments/${comment.id}/replies`, { headers: getAuthHeaders() });
+      const res = await api.get(`/comments/${comment.id}/replies`, { headers: getAuthHeaders() });
       setReplies(res.data || []);
       setRepliesLoaded(true);
       setShowReplies(true);

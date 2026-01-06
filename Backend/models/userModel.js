@@ -97,8 +97,8 @@ export const UserModel = {
 
 
   
-  async getConnections(poolPromise, userId) {
-    const pool = await poolPromise;
+  async getConnections(pool, userId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
     req.input("userId", sql.Int, userId);
 
@@ -139,8 +139,8 @@ export const UserModel = {
     };
   },
 
-  async discoverUsers(poolPromise, userId, search) {
-    const pool = await poolPromise;
+  async discoverUsers(pool, userId, search) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);

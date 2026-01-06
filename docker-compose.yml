@@ -7,7 +7,7 @@ services:
     container_name: hvtsocial-db
     environment:
       - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Password123
+      - SA_PASSWORD=${SQL_PASSWORD:-YourStrong@Password123}
       - MSSQL_PID=Developer
     ports:
       - "1433:1433"
@@ -17,11 +17,29 @@ services:
       - hvtsocial-network
     restart: unless-stopped
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Password123 -Q "SELECT 1" || exit 1
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${SQL_PASSWORD:-YourStrong@Password123} -Q "SELECT 1" || exit 1
       interval: 10s
       timeout: 3s
       retries: 10
       start_period: 10s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: hvtsocial-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - hvtsocial-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: redis-server --appendonly yes
 
   # Backend API
   backend:
@@ -29,16 +47,24 @@ services:
     container_name: hvtsocial-backend
     ports:
       - "5000:5000"
+    environment:
+      - SQL_SERVER=database
+      - SQL_PORT=1433
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=production
     env_file:
       - ./Backend/.env
     depends_on:
       database:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - hvtsocial-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -58,6 +84,8 @@ services:
 
 volumes:
   sqldata:
+    driver: local
+  redisdata:
     driver: local
 
 networks:

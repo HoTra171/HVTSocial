@@ -24,11 +24,25 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
   useEffect(() => {
     if (!myId) return;
 
-    const socket = io("http://localhost:5000", { transports: ["websocket"] });
+    const socket = io("http://localhost:5000", {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 3
+    });
     socketRef.current = socket;
 
     socket.on("connect", () => {
       socket.emit("register_user", myId);
+    });
+
+    // Xử lý lỗi kết nối
+    socket.on("connect_error", (error) => {
+      console.warn("Socket connection error:", error.message);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
     });
 
     // Online/offline
@@ -73,7 +87,10 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
     });
 
     return () => {
-      socket.disconnect();
+      // Cleanup: chỉ disconnect nếu socket đã connected hoặc connecting
+      if (socket && (socket.connected || socket.connecting)) {
+        socket.disconnect();
+      }
       socketRef.current = null;
       joinedRoomsRef.current = new Set();
     };

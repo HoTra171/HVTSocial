@@ -2,10 +2,10 @@ import sql from "mssql";
 
 export const NotificationModel = {
   // Tạo thông báo tin nhắn mới
-  async createMessageNotification(poolPromise, data) {
+  async createMessageNotification(pool, data) {
     const { userId, senderId, chatId, content } = data;
 
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -25,8 +25,8 @@ export const NotificationModel = {
   },
 
   // Đánh dấu thông báo đã đọc
-  async markNotificationAsRead(poolPromise, notificationId) {
-    const pool = await poolPromise;
+  async markNotificationAsRead(pool, notificationId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("notificationId", sql.Int, notificationId);
@@ -41,8 +41,8 @@ export const NotificationModel = {
   },
 
   // Lấy tất cả thông báo của user
-  async getUserNotifications(poolPromise, userId) {
-    const pool = await poolPromise;
+  async getUserNotifications(pool, userId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -70,9 +70,9 @@ export const NotificationModel = {
   },
 
   // Thông báo tag bài viết
-  async createPostTagNotification(poolPromise, data) {
+  async createPostTagNotification(pool, data) {
     const { userId, senderId, postId } = data;
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -91,9 +91,9 @@ export const NotificationModel = {
   },
 
   // Thông báo tag comment
-  async createCommentTagNotification(poolPromise, data) {
+  async createCommentTagNotification(pool, data) {
     const { userId, senderId, postId, commentId } = data;
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -112,9 +112,9 @@ export const NotificationModel = {
   },
 
   // Thông báo follow
-  async createFollowNotification(poolPromise, data) {
+  async createFollowNotification(pool, data) {
     const { userId, senderId } = data;
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -132,9 +132,9 @@ export const NotificationModel = {
   },
 
   // Thông báo xem story
-  async createStoryViewNotification(poolPromise, data) {
+  async createStoryViewNotification(pool, data) {
     const { userId, senderId, storyId } = data;
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -152,9 +152,9 @@ export const NotificationModel = {
   },
 
   // Thông báo kiểm duyệt/báo cáo
-  async createReportNotification(poolPromise, data) {
+  async createReportNotification(pool, data) {
     const { userId, content } = data;
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -171,8 +171,8 @@ export const NotificationModel = {
   },
 
   // Kiểm tra user có bị chặn không
-  async isUserBlocked(poolPromise, userId, senderId) {
-    const pool = await poolPromise;
+  async isUserBlocked(pool, userId, senderId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);
@@ -189,8 +189,8 @@ export const NotificationModel = {
   },
 
   // Đếm số thông báo chưa đọc
-  async getUnreadNotificationCount(poolPromise, userId) {
-    const pool = await poolPromise;
+  async getUnreadNotificationCount(pool, userId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("userId", sql.Int, userId);

@@ -2,8 +2,11 @@ import sql from "mssql";
 
 export const ChatModel = {
   // Lấy danh sách tất cả chat (1-1 + group) của 1 user
-  async getUserChats(poolPromise, userId) {
-    const pool = await poolPromise;
+  async getUserChats(pool, userId) {
+    // Đảm bảo pool đã connected
+    if (!pool.connected) {
+      await pool.connect();
+    }
     const req = pool.request();
     req.input("userId", sql.Int, userId);
 
@@ -94,8 +97,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // Lấy tổng số tin nhắn chưa đọc của user
-  async getUnreadCount(poolPromise, userId) {
-    const pool = await poolPromise;
+  async getUnreadCount(pool, userId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
     req.input("userId", sql.Int, userId);
 
@@ -113,8 +116,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // Lấy toàn bộ tin nhắn theo chat_id
-  async getMessagesByChat(poolPromise, chatId) {
-    const pool = await poolPromise;
+  async getMessagesByChat(pool, chatId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
     req.input("chatId", sql.Int, chatId);
 
@@ -138,7 +141,7 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // Gửi tin nhắn (text / image / voice / reply)
-  async sendMessage(poolPromise, payload) {
+  async sendMessage(pool, payload) {
     const {
       chatId,
       senderId,
@@ -152,7 +155,7 @@ ORDER BY last_time DESC, chat_id DESC;
       reply_sender,
     } = payload;
 
-    const pool = await poolPromise;
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     // Nếu có reply, lưu JSON vào content
@@ -191,8 +194,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // Đánh dấu tin nhắn đã đọc
-  async markMessagesRead(poolPromise, chatId, userId) {
-    const pool = await poolPromise;
+  async markMessagesRead(pool, chatId, userId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
 
     req.input("chatId", sql.Int, chatId);
@@ -210,8 +213,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // Thu hồi tin nhắn
-  async recallMessage(poolPromise, messageId) {
-    const pool = await poolPromise;
+  async recallMessage(pool, messageId) {
+    if (!pool.connected) await pool.connect();
     const request = pool.request();
 
     request.input("messageId", sql.Int, messageId);
@@ -229,8 +232,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // Chỉnh sửa tin nhắn
-  async editMessage(poolPromise, messageId, newContent) {
-    const pool = await poolPromise;
+  async editMessage(pool, messageId, newContent) {
+    if (!pool.connected) await pool.connect();
     const request = pool.request();
 
     request.input("messageId", sql.Int, messageId);
@@ -246,8 +249,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // lấy chat_id và sender_id của tin nhắn để check quyền + emit đúng room
-  async getMessageMeta(poolPromise, messageId) {
-    const pool = await poolPromise;
+  async getMessageMeta(pool, messageId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
     req.input("messageId", sql.Int, messageId);
 
@@ -262,8 +265,8 @@ ORDER BY last_time DESC, chat_id DESC;
 
 
   // Lấy danh sách users trong 1 chat (dùng cho notification)
-  async getChatUsers(poolPromise, chatId) {
-    const pool = await poolPromise;
+  async getChatUsers(pool, chatId) {
+    if (!pool.connected) await pool.connect();
     const req = pool.request();
     req.input("chatId", sql.Int, chatId);
 
@@ -278,8 +281,8 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
   // gửi tin nhắn với người chưa từng nhắn tin
-  async getOrCreateDm(poolPromise, userA, userB) {
-    const pool = await poolPromise;
+  async getOrCreateDm(pool, userA, userB) {
+    if (!pool.connected) await pool.connect();
 
     const low = Math.min(userA, userB);
     const high = Math.max(userA, userB);

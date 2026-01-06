@@ -1,0 +1,202 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  # ==================== BACKEND TESTS ====================
+  backend-test:
+    name: Backend - Lint & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    defaults:
+      run:
+        working-directory: ./Backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test --if-present
+        env:
+          NODE_ENV: test
+          SQL_SERVER: localhost
+          SQL_DATABASE: HVTSocial_Test
+          SQL_USER: sa
+          SQL_PASSWORD: TestPassword123
+          JWT_SECRET: test_jwt_secret_key_for_ci
+
+      - name: Generate test coverage
+        run: npm run test:coverage --if-present
+        continue-on-error: true
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        if: matrix.node-version == '20.x'
+        with:
+          files: ./Backend/coverage/lcov.info
+          flags: backend
+          name: backend-coverage
+        continue-on-error: true
+
+  # ==================== FRONTEND BUILD ====================
+  frontend-build:
+    name: Frontend - Lint & Build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    defaults:
+      run:
+        working-directory: ./Frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test --if-present
+        continue-on-error: true
+
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:5000
+
+      - name: Check build artifacts
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ Build successful - dist folder created"
+            ls -lah dist/
+          else
+            echo "❌ Build failed - no dist folder"
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        if: matrix.node-version == '20.x'
+        with:
+          name: frontend-build
+          path: Frontend/dist/
+          retention-days: 7
+
+  # ==================== DOCKER BUILD TEST ====================
+  docker-build:
+    name: Docker - Build Images
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        run: |
+          cd Backend
+          docker build -t hvtsocial-backend:test .
+
+      - name: Build Frontend Docker Image
+        run: |
+          cd Frontend
+          docker build -t hvtsocial-frontend:test .
+
+      - name: Test Docker Compose
+        run: |
+          docker-compose config
+
+  # ==================== SECURITY SCAN ====================
+  security-scan:
+    name: Security - Dependency Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run npm audit (Backend)
+        run: |
+          cd Backend
+          npm audit --audit-level=high || true
+
+      - name: Run npm audit (Frontend)
+        run: |
+          cd Frontend
+          npm audit --audit-level=high || true
+
+  # ==================== CODE QUALITY ====================
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          git grep -n "TODO\|FIXME" || echo "No TODO/FIXME found"
+
+      - name: Check file sizes
+        run: |
+          echo "Checking for large files (>1MB)..."
+          find . -type f -size +1M -not -path "*/node_modules/*" -not -path "*/.git/*" || echo "No large files found"
+
+  # ==================== SUMMARY ====================
+  ci-success:
+    name: CI Pipeline Success
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-build, docker-build, security-scan, code-quality]
+    if: success()
+
+    steps:
+      - name: Success notification
+        run: |
+          echo "🎉 CI Pipeline completed successfully!"
+          echo "✅ Backend tests passed"
+          echo "✅ Frontend build completed"
+          echo "✅ Docker images built"
+          echo "✅ Security scan completed"
+          echo "✅ Code quality check passed"

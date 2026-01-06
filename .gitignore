@@ -26,6 +26,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+Backend/logs/
+Backend/logs/*.log
 
 # Editor directories and files
 .vscode/*
@@ -58,4 +60,14 @@ coverage/
 # Docker
 .dockerignore
 docker-compose.override.yml
+
+# Markdown files
+*.md
+*.resolved
+*.resolved.0
+
+# Temporary Windows files
+nul
+Frontend/nul
+Backend/nul
 
