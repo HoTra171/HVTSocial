@@ -12,10 +12,9 @@ dist
 dist-ssr
 *.local
 
-# Environment variables (keep .env.example)
+# Environment variables (keep .env.example and .env.production for deployment)
 .env
 .env.local
-.env.production
 .env.staging
 
 # Editor directories and files
