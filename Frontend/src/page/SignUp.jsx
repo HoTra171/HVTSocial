@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../constants/api';
 
-const API_BASE_URL = 'http://localhost:5000/api/auth';
+const API_BASE_URL = `${API_URL}/auth`;
 
 const SignUp = () => {
   const navigate = useNavigate();

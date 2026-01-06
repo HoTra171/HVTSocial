@@ -5,8 +5,7 @@ import toast from 'react-hot-toast';
 import { Star } from 'lucide-react';
 import { assets } from '../assets/assets';   // bgImage, logo, group_users
 import { connectSocket } from '../socket';    // hàm connect socket sau login
-
-const API_URL = 'http://localhost:5000/api';
+import { API_URL } from '../constants/api';
 
 export default function Login() {
   const navigate = useNavigate();
