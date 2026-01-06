@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { pool } from '../config/db.js';
-import sql from 'mssql';
+import { db } from '../config/db-wrapper.js';
 import { sendOtpEmail } from "../services/mailService.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -37,17 +36,15 @@ export const register = async (req, res) => {
       });
     }
 
-    const db = await pool;
-
     // 4. Kiểm tra email hoặc username đã tồn tại
     const checkQuery = `
-      SELECT * FROM users 
+      SELECT * FROM users
       WHERE email = @email OR username = @username
     `;
 
     const checkResult = await db.request()
-      .input('email', sql.VarChar, email)
-      .input('username', sql.NVarChar, username)
+      .input('email', email)
+      .input('username', username)
       .query(checkQuery);
 
     if (checkResult.recordset.length > 0) {
@@ -73,17 +70,17 @@ export const register = async (req, res) => {
     // 6. Tạo user mới
     const insertQuery = `
       INSERT INTO users (full_name, username, email, password, date_of_birth, gender)
-      OUTPUT INSERTED.*
       VALUES (@full_name, @username, @email, @password, @date_of_birth, @gender)
+      RETURNING *
     `;
 
     const result = await db.request()
-      .input('full_name', sql.NVarChar, full_name)
-      .input('username', sql.NVarChar, username)
-      .input('email', sql.VarChar, email)
-      .input('password', sql.VarChar, hashedPassword)
-      .input('date_of_birth', sql.Date, date_of_birth || null)
-      .input('gender', sql.VarChar, gender || null)
+      .input('full_name', full_name)
+      .input('username', username)
+      .input('email', email)
+      .input('password', hashedPassword)
+      .input('date_of_birth', date_of_birth || null)
+      .input('gender', gender || null)
       .query(insertQuery);
 
     const newUser = result.recordset[0];
@@ -133,13 +130,11 @@ export const login = async (req, res) => {
       });
     }
 
-    const db = await pool;
-
     // 2. Tìm user theo email
     const query = `SELECT * FROM users WHERE email = @email`;
 
     const result = await db.request()
-      .input('email', sql.VarChar, email)
+      .input('email', email)
       .query(query);
 
     if (result.recordset.length === 0) {
@@ -203,12 +198,10 @@ export const requestResetOtp = async (req, res) => {
       return res.status(400).json({ message: "Vui lòng nhập email" });
     }
 
-    const poolConn = await pool;
-
     // 1. Tìm user theo email
-    const userResult = await poolConn
+    const userResult = await db
       .request()
-      .input("email", sql.VarChar, email)
+      .input("email", email)
       .query("SELECT id, email FROM users WHERE email = @email");
 
     // Không tiết lộ email tồn tại hay không
@@ -226,15 +219,15 @@ export const requestResetOtp = async (req, res) => {
     const expires = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
 
     // 3. Lưu OTP vào bảng users
-    await poolConn
+    await db
       .request()
-      .input("id", sql.Int, user.id)
-      .input("reset_otp", sql.VarChar, otp)
-      .input("reset_otp_expires", sql.DateTime, expires)
-      .input("reset_otp_attempts", sql.Int, 0)
+      .input("id", user.id)
+      .input("reset_otp", otp)
+      .input("reset_otp_expires", expires)
+      .input("reset_otp_attempts", 0)
       .query(`
         UPDATE users
-        SET 
+        SET
           reset_otp = @reset_otp,
           reset_otp_expires = @reset_otp_expires,
           reset_otp_attempts = @reset_otp_attempts
@@ -272,14 +265,12 @@ export const resetPasswordWithOtp = async (req, res) => {
         .json({ message: "Vui lòng nhập đủ email, OTP và mật khẩu mới" });
     }
 
-    const poolConn = await pool;
-
     // 1. Lấy thông tin OTP của user
-    const userResult = await poolConn
+    const userResult = await db
       .request()
-      .input("email", sql.VarChar, email)
+      .input("email", email)
       .query(`
-        SELECT 
+        SELECT
           id,
           reset_otp,
           reset_otp_expires,
@@ -314,14 +305,10 @@ export const resetPasswordWithOtp = async (req, res) => {
       user.reset_otp !== otp
     ) {
       // Tăng số lần nhập sai
-      await poolConn
+      await db
         .request()
-        .input("id", sql.Int, user.id)
-        .input(
-          "reset_otp_attempts",
-          sql.Int,
-          (user.reset_otp_attempts || 0) + 1
-        )
+        .input("id", user.id)
+        .input("reset_otp_attempts", (user.reset_otp_attempts || 0) + 1)
         .query(`
           UPDATE users
           SET reset_otp_attempts = @reset_otp_attempts
@@ -337,18 +324,18 @@ export const resetPasswordWithOtp = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // 5. Cập nhật mật khẩu và xoá OTP
-    await poolConn
+    await db
       .request()
-      .input("id", sql.Int, user.id)
-      .input("password", sql.VarChar, hashedPassword)
+      .input("id", user.id)
+      .input("password", hashedPassword)
       .query(`
         UPDATE users
-        SET 
+        SET
           password = @password,
           reset_otp = NULL,
           reset_otp_expires = NULL,
           reset_otp_attempts = 0,
-          updated_at = GETDATE()
+          updated_at = CURRENT_TIMESTAMP
         WHERE id = @id
       `);
 
@@ -385,12 +372,10 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    const db = await pool;
-
     // 1. Lấy mật khẩu hiện tại trong DB
     const result = await db
       .request()
-      .input("id", sql.Int, userId)
+      .input("id", userId)
       .query("SELECT password FROM users WHERE id = @id");
 
     if (result.recordset.length === 0) {
@@ -417,11 +402,11 @@ export const changePassword = async (req, res) => {
     // 4. Cập nhật vào DB
     await db
       .request()
-      .input("id", sql.Int, userId)
-      .input("password", sql.VarChar, hashedNewPassword)
+      .input("id", userId)
+      .input("password", hashedNewPassword)
       .query(`
         UPDATE users
-        SET password = @password, updated_at = GETDATE()
+        SET password = @password, updated_at = CURRENT_TIMESTAMP
         WHERE id = @id
       `);
 

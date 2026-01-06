@@ -28,6 +28,10 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy - REQUIRED for Render/Railway deployment
+// This allows Express to trust the X-Forwarded-* headers from the reverse proxy
+app.set('trust proxy', 1);
+
 // Cấu hình Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
