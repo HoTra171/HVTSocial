@@ -9,14 +9,15 @@ dotenv.config();
 // Check if DATABASE_URL exists (PostgreSQL for production)
 const usePostgreSQL = !!process.env.DATABASE_URL;
 
+let pool;
+
 if (usePostgreSQL) {
   // Use PostgreSQL (Railway, Neon, Supabase, etc.)
   console.log('🐘 Using PostgreSQL database');
   
-  // Import and export PostgreSQL pool
+  // Import PostgreSQL pool
   const { getPool } = await import('./db-postgres.js');
-  export { getPool };
-  export const pool = getPool();
+  pool = getPool();
   
 } else {
   // Use SQL Server (local development)
@@ -47,7 +48,7 @@ if (usePostgreSQL) {
   // Tạo pool và kết nối
   const poolConnection = new sql.ConnectionPool(config);
 
-  poolConnection.connect()
+  await poolConnection.connect()
     .then(() => {
       console.log("✅ Connected to SQL Server");
       console.log(">>> Using Database:", poolConnection.config.database);
@@ -63,6 +64,9 @@ if (usePostgreSQL) {
       process.exit(1);
     });
 
-  // Export pool connection
-  export const pool = poolConnection;
+  pool = poolConnection;
 }
+
+// Export pool (works for both PostgreSQL and SQL Server)
+export { pool };
+export const getPool = () => pool;
