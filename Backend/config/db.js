@@ -15,9 +15,21 @@ if (usePostgreSQL) {
   // Use PostgreSQL (Railway, Neon, Supabase, etc.)
   console.log('🐘 Using PostgreSQL database');
   
-  // Import PostgreSQL pool
-  const { getPool } = await import('./db-postgres.js');
-  pool = getPool();
+  // Import PostgreSQL pool and test connection
+  const dbPostgres = await import('./db-postgres.js');
+  pool = dbPostgres.getPool();
+  
+  // Test connection immediately
+  try {
+    await dbPostgres.testConnection();
+  } catch (error) {
+    console.error('❌ Failed to connect to PostgreSQL');
+    console.error('Check:');
+    console.error('  - DATABASE_URL is correct');
+    console.error('  - Railway/Render database is online');
+    console.error('  - Network connectivity');
+    process.exit(1);
+  }
   
 } else {
   // Use SQL Server (local development)
