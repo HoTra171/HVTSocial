@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS users (
     avatar TEXT,
     cover_photo TEXT,
     bio TEXT,
+    date_of_birth DATE,
+    gender VARCHAR(20),
+    location VARCHAR(255),
+    website VARCHAR(255),
+    profile_picture TEXT,
     is_verified BOOLEAN DEFAULT FALSE,
     email_verified BOOLEAN DEFAULT FALSE,
     phone_number VARCHAR(20),
@@ -27,6 +32,9 @@ CREATE TABLE IF NOT EXISTS users (
     account_status VARCHAR(20) DEFAULT 'active' CHECK (account_status IN ('active', 'suspended', 'deleted', 'pending')),
     suspended_until TIMESTAMP,
     suspension_reason TEXT,
+    reset_otp VARCHAR(10),
+    reset_otp_expires TIMESTAMP,
+    reset_otp_attempts INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
