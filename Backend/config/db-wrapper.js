@@ -67,6 +67,14 @@ if (usePostgreSQL) {
             pgQuery = pgQuery.replace(regex, `$${index}`);
           });
 
+          // Debug logging
+          console.log('🔍 DB Query Debug:', {
+            originalQuery: sqlQuery.substring(0, 100) + '...',
+            pgQuery: pgQuery.substring(0, 100) + '...',
+            paramValues: paramValues,
+            inputs: inputs
+          });
+
           const result = await pool.query(pgQuery, paramValues);
           return {
             recordset: result.rows,
