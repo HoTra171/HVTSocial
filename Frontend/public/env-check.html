@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Environment Variables Check</title>
+</head>
+<body>
+    <h1>Environment Variables Check</h1>
+    <p>This page helps verify if environment variables are loaded correctly.</p>
+
+    <h2>Expected Values:</h2>
+    <ul>
+        <li>VITE_API_URL should be: https://hvtsocial-backend.onrender.com</li>
+        <li>VITE_WS_URL should be: https://hvtsocial-backend.onrender.com</li>
+    </ul>
+
+    <h2>Actual Values from Build:</h2>
+    <p>Check your browser console (F12) and Network tab to see what API URL the app is using.</p>
+
+    <script>
+        console.log('=== Environment Variables Check ===');
+        console.log('This is a static file check.');
+        console.log('Check the main app JavaScript bundle to see VITE_API_URL value.');
+        console.log('Look at Network tab -> Filter by "register" to see the API endpoint being called.');
+    </script>
+</body>
+</html>
