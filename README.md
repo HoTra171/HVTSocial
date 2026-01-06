@@ -2,8 +2,22 @@
 
 Dự án mạng xã hội HVTSocial với Backend (Node.js/Express) và Frontend (React + Vite).
 
+## ⚡ Quick Check - Sẵn sàng Deploy?
+
+```bash
+# Windows
+check-deployment.bat
+
+# Linux/Mac
+bash check-deployment.sh
+```
+
+Kiểm tra nhanh: dependencies, environment variables, cấu hình → Sẵn sàng deploy trong 30 phút!
+
 ## 🚀 Quick Links
 
+- **[PROJECT_READY_SUMMARY.md](PROJECT_READY_SUMMARY.md)** - ⭐ Tóm tắt dự án & deployment readiness
+- **[DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)** - ⭐ Hướng dẫn deploy chi tiết từng bước
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** - Setup local trong 15 phút
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deploy free trong 30 phút
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Fix lỗi thường gặp
@@ -12,6 +26,8 @@ Dự án mạng xã hội HVTSocial với Backend (Node.js/Express) và Frontend
 
 | File | Description |
 |------|-------------|
+| [PROJECT_READY_SUMMARY.md](PROJECT_READY_SUMMARY.md) | ⭐ Tóm tắt tình trạng & sẵn sàng deploy |
+| [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | ⭐ Step-by-step deployment guide |
 | [GETTING_STARTED.md](GETTING_STARTED.md) | Setup local + troubleshooting |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Quick deploy guide (FREE) |
 | [DEPLOYMENT_ADVANCED.md](DEPLOYMENT_ADVANCED.md) | Advanced topics & PostgreSQL |

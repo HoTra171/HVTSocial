@@ -30,13 +30,18 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "dev": "nodemon server.js",
     "server": "nodemon server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "lint": "echo 'Linting Backend code...' && node --check server.js",
     "db:migrate": "node database/migrate.js",
-    "db:seed": "node database/seed.js"
+    "db:seed": "node database/seed.js",
+    "db:migrate:postgres": "node database/run-postgres-migration.js",
+    "check-env": "node check-env.js",
+    "generate-secret": "node generate-jwt-secret.js",
+    "prestart": "node check-env.js"
   },
   "author": "",
   "license": "ISC",

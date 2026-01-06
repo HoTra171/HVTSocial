@@ -11,6 +11,9 @@ Frontend/.env
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+Backend/.env.production
+Frontend/.env.production
 
 # Build outputs
 Frontend/dist/

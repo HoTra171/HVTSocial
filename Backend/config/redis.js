@@ -4,10 +4,16 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Redis client cho caching
-export const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT) || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
+// Support both REDIS_URL (Upstash, Railway) and REDIS_HOST/PORT format
+const redisConfig = process.env.REDIS_URL 
+  ? process.env.REDIS_URL
+  : {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT) || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+    };
+
+export const redisClient = new Redis(redisConfig, {
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   retryStrategy(times) {

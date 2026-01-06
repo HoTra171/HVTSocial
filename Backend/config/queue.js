@@ -6,12 +6,15 @@ import logger from './logger.js';
  * Setup background job queues with Redis
  */
 
-const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD || undefined,
-  db: parseInt(process.env.REDIS_DB || '0')
-};
+// Support both REDIS_URL (Upstash, Railway) and REDIS_HOST/PORT format
+const redisConfig = process.env.REDIS_URL 
+  ? process.env.REDIS_URL
+  : {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD || undefined,
+      db: parseInt(process.env.REDIS_DB || '0')
+    };
 
 /**
  * Email Queue
