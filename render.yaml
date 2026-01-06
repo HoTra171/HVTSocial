@@ -11,22 +11,14 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: SQL_SERVER
+      - key: DATABASE_URL
         sync: false
-      - key: SQL_PORT
-        value: 1433
-      - key: SQL_DATABASE
+      - key: REDIS_URL
         sync: false
-      - key: SQL_USER
-        sync: false
-      - key: SQL_PASSWORD
-        sync: false
-      - key: SQL_ENCRYPT
-        value: true
-      - key: SQL_TRUST_CERT
-        value: false
       - key: JWT_SECRET
         sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
       - key: EMAIL_USER
         sync: false
       - key: EMAIL_PASS
@@ -41,3 +33,5 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      - key: PORT
+        value: 10000
