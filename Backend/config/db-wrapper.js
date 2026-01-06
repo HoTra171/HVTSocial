@@ -42,18 +42,30 @@ if (usePostgreSQL) {
         },
         async query(sqlQuery) {
           // Convert SQL Server style @param to PostgreSQL $1, $2...
+          // IMPORTANT: Must preserve order of parameters as they appear in query
           let pgQuery = sqlQuery;
-          const paramNames = Object.keys(inputs);
           const paramValues = [];
+          const paramMap = new Map();
 
-          paramNames.forEach((name, index) => {
-            const regex = new RegExp(`@${name}\\b`, 'g');
-            pgQuery = pgQuery.replace(regex, `$${index + 1}`);
-            paramValues.push(inputs[name]);
+          // Find all @param in query IN ORDER
+          const paramMatches = sqlQuery.match(/@\w+/g) || [];
+          const seenParams = new Set();
+
+          paramMatches.forEach(match => {
+            const paramName = match.substring(1); // Remove @
+            if (!seenParams.has(paramName)) {
+              seenParams.add(paramName);
+              const index = paramValues.length + 1;
+              paramMap.set(paramName, index);
+              paramValues.push(inputs[paramName]);
+            }
           });
 
-          // Convert GETDATE() to CURRENT_TIMESTAMP (already handled by user)
-          // Note: RETURNING is already PostgreSQL syntax, no conversion needed
+          // Replace all @param with $1, $2, etc.
+          paramMap.forEach((index, name) => {
+            const regex = new RegExp(`@${name}\\b`, 'g');
+            pgQuery = pgQuery.replace(regex, `$${index}`);
+          });
 
           const result = await pool.query(pgQuery, paramValues);
           return {
@@ -82,14 +94,29 @@ if (usePostgreSQL) {
             },
             async query(sqlQuery) {
               // Convert SQL Server style @param to PostgreSQL $1, $2...
+              // IMPORTANT: Must preserve order of parameters as they appear in query
               let pgQuery = sqlQuery;
-              const paramNames = Object.keys(inputs);
               const paramValues = [];
+              const paramMap = new Map();
 
-              paramNames.forEach((name, index) => {
+              // Find all @param in query IN ORDER
+              const paramMatches = sqlQuery.match(/@\w+/g) || [];
+              const seenParams = new Set();
+
+              paramMatches.forEach(match => {
+                const paramName = match.substring(1); // Remove @
+                if (!seenParams.has(paramName)) {
+                  seenParams.add(paramName);
+                  const index = paramValues.length + 1;
+                  paramMap.set(paramName, index);
+                  paramValues.push(inputs[paramName]);
+                }
+              });
+
+              // Replace all @param with $1, $2, etc.
+              paramMap.forEach((index, name) => {
                 const regex = new RegExp(`@${name}\\b`, 'g');
-                pgQuery = pgQuery.replace(regex, `$${index + 1}`);
-                paramValues.push(inputs[name]);
+                pgQuery = pgQuery.replace(regex, `$${index}`);
               });
 
               const result = await client.query(pgQuery, paramValues);
