@@ -15,14 +15,23 @@ import { existsSync } from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// In production (Render, Vercel, etc.), environment variables are set via platform
+// Only require .env file in development
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Load .env file
 const envPath = join(__dirname, '.env');
 if (existsSync(envPath)) {
   dotenv.config({ path: envPath });
   console.log('✅ .env file found\n');
-} else {
+} else if (!isProduction) {
   console.log('❌ .env file not found. Copy .env.example to .env\n');
+  console.log('For local development, you need a .env file.\n');
+  console.log('For production deployment, set environment variables in your platform dashboard.\n');
   process.exit(1);
+} else {
+  // Production - environment variables should be set via platform
+  console.log('ℹ️  Production mode: Using environment variables from platform\n');
 }
 
 console.log('🔍 Checking Environment Variables...\n');
