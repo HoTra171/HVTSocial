@@ -19,6 +19,7 @@ import ChangePassword from "./page/ChangePassword";
 import NotificationsPage from "./page/NotificationsPage";
 import PostDetail from "./page/PostDetail";
 import { useNavigate } from 'react-router-dom';
+import DebugEnv from "./debug-env";
 
 // SOCKET
 import { socket, connectSocket, disconnectSocket } from "./socket";
@@ -167,6 +168,7 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/debug-env" element={<DebugEnv />} />
 
         {/* ================================
             🔹 PRIVATE ROUTES (CÓ LAYOUT)
