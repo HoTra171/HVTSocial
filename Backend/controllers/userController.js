@@ -255,7 +255,7 @@ export const discoverUsers = async (req, res) => {
       LEFT JOIN friendships f1
         ON f1.user_id = @currentUserId AND f1.friend_id = u.id
       LEFT JOIN friendships f2
-        ON f2.receiver_id = @currentUserId AND f2.requester_id = u.id
+        ON f2.user_id = u.id AND f2.friend_id = @currentUserId
 
       LEFT JOIN follows fo
         ON fo.follower_id = @currentUserId AND fo.following_id = u.id
