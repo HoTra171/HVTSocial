@@ -30,7 +30,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node database/migrate-on-start.js && node server.js",
     "dev": "nodemon server.js",
     "server": "nodemon server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
@@ -40,6 +40,7 @@
     "db:migrate": "node database/migrate.js",
     "db:seed": "node database/seed.js",
     "db:migrate:postgres": "node database/run-postgres-migration.js",
+    "db:fix-schema": "node database/fix-schema.js",
     "check-env": "node check-env.js",
     "generate-secret": "node generate-jwt-secret.js"
   },
