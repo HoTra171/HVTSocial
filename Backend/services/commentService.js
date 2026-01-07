@@ -111,13 +111,7 @@ export const CommentService = {
       .input("commentParent", sql.Int, commentParent)
       .query(`
         INSERT INTO comments (post_id, user_id, content, parent_comment_id, created_at)
-        OUTPUT 
-          INSERTED.id,
-          INSERTED.post_id,
-          INSERTED.user_id,
-          INSERTED.content,
-          INSERTED.parent_comment_id AS comment_parent,
-          INSERTED.created_at
+        OUTPUT INSERTED.*
         VALUES (@postId, @userId, @content, @commentParent, GETDATE())
       `);
 
@@ -140,7 +134,7 @@ export const CommentService = {
       post_id: newComment.post_id,
       user_id: newComment.user_id,
       content: newComment.content,
-      comment_parent: newComment.comment_parent || newComment.parent_comment_id,
+      comment_parent: newComment.parent_comment_id,
       created_at: newComment.created_at,
       likes_count: 0,
       replies_count: 0,
