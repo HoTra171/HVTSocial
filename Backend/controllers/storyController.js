@@ -62,15 +62,9 @@ export const getStories = async (req, res) => {
         id: row.story_id,
         media_type: row.media_type,
         media_url: row.media_url,
-        music_url: row.music_url,
         caption: row.caption,
         background_color: row.background_color,
-        text_color: row.text_color,
-        font_size: row.font_size,
-        text_position: row.text_position,
-        show_frame: row.show_frame,
-        sticker: row.sticker,
-        sticker_position: row.sticker_position,
+
         privacy: row.privacy,
         created_at: row.created_at,
         expires_at: row.expires_at,
@@ -187,15 +181,14 @@ export const createStory = async (req, res) => {
       .input("hours", sql.Int, Number(expires_in_hours))
       .query(`
         INSERT INTO stories (
-          user_id, media_type, media_url, music_url, caption, 
-          background_color, text_color, font_size, text_position, show_frame,
-          sticker, sticker_position, privacy,
+          user_id, media_type, media_url, content,
+          background_color, privacy,
           created_at, expires_at
         )
+        OUTPUT INSERTED.*
         VALUES (
-          @userId, @mediaType, @mediaUrl, @musicUrl, @caption,
-          @bgColor, @textColor, @fontSize, @textPos, @showFrame,
-          @sticker, @stickerPos, @privacy,
+          @userId, @mediaType, @mediaUrl, @caption,
+          @bgColor, @privacy,
           GETDATE(), DATEADD(HOUR, @hours, GETDATE())
         )
       `);

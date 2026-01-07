@@ -124,6 +124,19 @@ if (usePostgreSQL) {
           .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // After GETDATE conversion
           .replace(/OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi, 'OFFSET $$$1 LIMIT $$$2');  // OFFSET/FETCH NEXT -> OFFSET/LIMIT
 
+        // Handle OUTPUT clause (SQL Server) -> RETURNING clause (PostgreSQL)
+        // 1. Remove OUTPUT INSERTED.* / OUTPUT DELETED.* from the middle
+        if (pgQuery.match(/OUTPUT\s+(INSERTED|DELETED)\.\*/i)) {
+          pgQuery = pgQuery.replace(/OUTPUT\s+(INSERTED|DELETED)\.\*/gi, '');
+
+          // 2. Add RETURNING * at the end
+          if (pgQuery.trim().endsWith(';')) {
+            pgQuery = pgQuery.replace(/;\s*$/, ' RETURNING *;');
+          } else {
+            pgQuery += ' RETURNING *';
+          }
+        }
+
         // Handle TOP clause with parameter: SELECT TOP ($1) -> SELECT ... LIMIT $1
         const topMatch = pgQuery.match(/SELECT\s+TOP\s*\(\$(\d+)\)/i);
         if (topMatch) {
