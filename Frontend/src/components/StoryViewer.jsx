@@ -45,16 +45,9 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const stories = viewStory?.stories ?? [];
   const currentStory = stories[currentStoryIndex];
   const user = viewStory?.user;
-  console.log(user)
 
   const me = JSON.parse(localStorage.getItem("user") || "{}");
   const isMyStory = Number(me?.id) === Number(user?.id);
-  console.log(me?.id)
-  console.log(currentUserIndex?.id)
-  console.log("có cùng là một người không:" + isMyStory);
-
-  console.log("trạng thái công khai hay không: " + currentStory.privacy);
-
   //  MARK AS VIEWED
   useEffect(() => {
     if (!currentStory?.id) return;

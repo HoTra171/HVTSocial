@@ -37,142 +37,7 @@ const getAvatar = (obj) =>
   obj?.avatar ||
   buildAvatarFallback(getFullName(obj));
 
-function ReplyRow({ reply, currentUser, canModerate, onDeleted, onChanged }) {
-  const isOwner = currentUser?.id === reply.user_id;
-  const canDelete = isOwner || canModerate;
 
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(reply.content || "");
-
-  useEffect(() => setValue(reply.content || ""), [reply.content]);
-
-  const handleSave = async () => {
-    if (!value.trim()) return;
-
-    try {
-      await api.put(
-        `/comments/${reply.id}`,
-        { content: value },
-        { headers: authHeaders() }
-      );
-      toast.success("Đã cập nhật phản hồi");
-      setIsEditing(false);
-      setMenuOpen(false);
-      onChanged?.(reply.id, value);
-    } catch (e) {
-      console.error("Edit reply error:", e);
-      toast.error("Không thể cập nhật phản hồi");
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm("Bạn có chắc muốn xóa phản hồi này?")) return;
-
-    try {
-      await api.delete(`/comments/${reply.id}`, { headers: authHeaders() });
-      toast.success("Đã xóa phản hồi");
-      setMenuOpen(false);
-      onDeleted?.(reply.id);
-    } catch (e) {
-      console.error("Delete reply error:", e);
-      toast.error("Không thể xóa phản hồi");
-    }
-  };
-
-  return (
-    <div className="flex items-start gap-2">
-      <img
-        src={getAvatar(reply)}
-        className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
-        alt=""
-      />
-      <div className="flex-1 min-w-0">
-        <div className="bg-gray-50 p-2 rounded-lg relative">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-xs truncate">
-                {getFullName(reply)}
-              </p>
-
-              {isEditing ? (
-                <div className="mt-1 space-y-2">
-                  <textarea
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    className="w-full p-2 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    rows={2}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleSave}
-                      className="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                    >
-                      Lưu
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsEditing(false);
-                        setValue(reply.content || "");
-                      }}
-                      className="px-3 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
-                    >
-                      Hủy
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-700 break-words">
-                  {reply.content}
-                </p>
-              )}
-            </div>
-
-            {canDelete && !isEditing && (
-              <div className="relative">
-                <button
-                  onClick={() => setMenuOpen((v) => !v)}
-                  className="p-1 hover:bg-gray-200 rounded-full"
-                >
-                  <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                </button>
-
-                {menuOpen && (
-                  <div className="absolute right-0 mt-1 w-36 bg-white border rounded-lg shadow-lg z-20">
-                    {isOwner && (
-                      <button
-                        onClick={() => {
-                          setIsEditing(true);
-                          setMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-left text-xs"
-                      >
-                        <Edit className="w-3 h-3" />
-                        Sửa
-                      </button>
-                    )}
-                    <button
-                      onClick={handleDelete}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-red-600 text-left text-xs"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Xóa
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <span className="text-xs text-gray-400 mt-0.5 block">
-          {dayjs(reply.created_at).fromNow()}
-        </span>
-      </div>
-    </div>
-  );
-}
 
 const CommentItem = ({
   comment,
@@ -492,21 +357,18 @@ const CommentItem = ({
                 <p className="text-xs text-gray-400">Chưa có phản hồi</p>
               ) : (
                 replies.map((r) => (
-                  <ReplyRow
+                  <CommentItem
                     key={r.id}
-                    reply={r}
+                    comment={r}
                     currentUser={currentUser}
+                    postId={postId}
                     canModerate={canModerate}
-                    onDeleted={(replyId) => {
-                      setReplies((prev) => prev.filter((x) => x.id !== replyId));
+                    onCommentDeleted={(deletedId) => {
+                      setReplies((prev) => prev.filter((x) => x.id !== deletedId));
                       onCommentChanged?.();
                     }}
-                    onChanged={(replyId, newContent) => {
-                      setReplies((prev) =>
-                        prev.map((x) =>
-                          x.id === replyId ? { ...x, content: newContent } : x
-                        )
-                      );
+                    onCommentChanged={() => {
+                      onCommentChanged?.();
                     }}
                   />
                 ))
