@@ -49,27 +49,75 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const me = JSON.parse(localStorage.getItem("user") || "{}");
   const isMyStory = Number(me?.id) === Number(user?.id);
   //  MARK AS VIEWED
-  useEffect(() => {
-    if (!currentStory?.id) return;
+  //  SMART VIEW TRACKING
+  const [isLoaded, setIsLoaded] = useState(false);
+  const storyContainerRef = useRef(null);
+  const viewTimerRef = useRef(null);
+  const hasViewedRef = useRef(false);
 
-    const markAsViewed = async () => {
+  // 1. Reset state khi đổi story
+  useEffect(() => {
+    // Text story coi như đã load xong ngay lập tức
+    setIsLoaded(currentStory?.media_type === "text");
+    hasViewedRef.current = false;
+    if (viewTimerRef.current) {
+      clearTimeout(viewTimerRef.current);
+      viewTimerRef.current = null;
+    }
+  }, [currentStory?.id, currentStory?.media_type]);
+
+  // 2. Logic tracking: Loaded + 80% Visible + 1.5s duration
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!currentStory?.id || hasViewedRef.current || !isLoaded || !token) return;
+
+    const container = storyContainerRef.current;
+    if (!container) return;
+
+    const triggerView = async () => {
+      if (hasViewedRef.current) return;
+      hasViewedRef.current = true; // Optimistic update
+
       try {
         await axios.post(
           `${API_BASE}/api/stories/${currentStory.id}/view`,
           {},
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (err) {
         console.error("Mark viewed error:", err);
       }
     };
 
-    markAsViewed();
-  }, [currentStory?.id]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          // Đủ điều kiện hiển thị > 80% -> Bắt đầu đếm 1.5s
+          if (!viewTimerRef.current && !hasViewedRef.current) {
+            viewTimerRef.current = setTimeout(triggerView, 1500);
+          }
+        } else {
+          // Mất hiển thị -> Hủy đếm
+          if (viewTimerRef.current) {
+            clearTimeout(viewTimerRef.current);
+            viewTimerRef.current = null;
+          }
+        }
+      },
+      { threshold: 0.8 }
+    );
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+      if (viewTimerRef.current) {
+        clearTimeout(viewTimerRef.current);
+        viewTimerRef.current = null;
+      }
+    };
+  }, [currentStory?.id, isLoaded]);
 
   //  NEXT STORY (trong cùng user hoặc next user)
   const nextStory = () => {
@@ -365,7 +413,10 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
       </div>
 
       {/* Story Content */}
-      <div className="relative w-full max-w-md h-full flex items-center justify-center">
+      <div
+        ref={storyContainerRef}
+        className="relative w-full max-w-md h-full flex items-center justify-center"
+      >
         {/* Text Story */}
         {currentStory.media_type === "text" && (
           <div
@@ -390,6 +441,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
         {currentStory.media_type === "image" && (
           <img
             src={toUrl(currentStory.media_url)}
+            onLoad={() => setIsLoaded(true)}
             alt="Story"
             className="w-full h-full object-contain"
           />
@@ -400,6 +452,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
           <video
             ref={videoRef}
             src={toUrl(currentStory.media_url)}
+            onLoadedData={() => setIsLoaded(true)}
             className="w-full h-full object-contain"
             playsInline
             onEnded={nextStory}
