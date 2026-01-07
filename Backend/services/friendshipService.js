@@ -389,13 +389,6 @@ export const FriendshipService = {
       FROM users u
       WHERE u.id <> @userId
 
-        -- loại trừ block 2 chiều
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks b
-          WHERE (b.blocker_id = @userId AND b.blocked_id = u.id)
-             OR (b.blocker_id = u.id AND b.blocked_id = @userId)
-        )
-
         -- loại trừ mọi quan hệ trong friendships (pending/accepted/blocked...)
         AND NOT EXISTS (
           SELECT 1 FROM friendships f

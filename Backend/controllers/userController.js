@@ -222,9 +222,9 @@ export const discoverUsers = async (req, res) => {
         u.location,
 
         CASE WHEN f1.status = 'accepted' OR f2.status = 'accepted' THEN 1 ELSE 0 END AS is_friend,
-        CASE WHEN fo.following_id IS NOT NULL THEN 1 ELSE 0 END AS is_following,
+        0 AS is_following,
 
-        ISNULL(ch.common_hobby_count, 0) AS common_hobby_count,
+        0 AS common_hobby_count,
 
         (
           -- text score
@@ -256,12 +256,6 @@ export const discoverUsers = async (req, res) => {
 
       WHERE u.id <> @currentUserId
 
-        -- block 2 chiá»u
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks b
-          WHERE (b.blocker_id = @currentUserId AND b.blocked_id = u.id)
-             OR (b.blocker_id = u.id AND b.blocked_id = @currentUserId)
-        )
 
         -- search optional
         AND (
@@ -349,11 +343,6 @@ export const suggestUsers = async (req, res) => {
       LEFT JOIN friendships f2 ON f2.friend_id = @currentUserId AND f2.user_id = u.id
 
       WHERE u.id <> @currentUserId
-        AND NOT EXISTS (
-          SELECT 1 FROM user_blocks b
-          WHERE (b.blocker_id = @currentUserId AND b.blocked_id = u.id)
-             OR (b.blocker_id = u.id AND b.blocked_id = @currentUserId)
-        )
         AND (u.username LIKE @like OR u.full_name LIKE @like)
 
       ORDER BY score DESC, u.full_name;

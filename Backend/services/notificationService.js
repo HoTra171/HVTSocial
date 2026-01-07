@@ -285,7 +285,7 @@ export const NotificationService = {
       .input("userId", sql.Int, userId)
       .input("limit", sql.Int, limit)
       .query(`
-        SELECT TOP (@limit)
+        SELECT
           n.id,
           n.message AS content,
           n.type,
@@ -298,6 +298,9 @@ export const NotificationService = {
         FROM notifications n
         LEFT JOIN users u ON n.actor_id = u.id
         WHERE n.user_id = @userId
+        ORDER BY n.created_at DESC
+        OFFSET 0 ROWS
+        FETCH NEXT @limit ROWS ONLY
         ORDER BY n.created_at DESC
       `);
 
