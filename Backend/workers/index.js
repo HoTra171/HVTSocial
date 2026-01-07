@@ -3,7 +3,7 @@
  * Khởi động tất cả background workers
  */
 
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 // Import workers
 import './emailWorker.js';

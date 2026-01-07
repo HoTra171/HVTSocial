@@ -1,6 +1,6 @@
 import { notificationQueue } from '../config/queue.js';
 import * as notificationService from '../services/notificationService.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 // Note: io instance sẽ được set từ server.js
 let io = null;

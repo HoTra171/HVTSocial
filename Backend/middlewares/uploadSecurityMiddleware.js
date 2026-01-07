@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * Upload Security Middleware

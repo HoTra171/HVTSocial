@@ -5,12 +5,14 @@ import sql from "mssql";
 // GET /api/posts
 export const getPosts = async (req, res) => {
   try {
-    const page = Number(req.query.page || 1);
     const limit = Number(req.query.limit || 10);
+    const cursor = req.query.cursor || null;
 
     const viewerId = req.user.id;
-    const posts = await PostService.getFeed(page, limit, viewerId);
-    res.json(posts);
+    const result = await PostService.getFeed(cursor, limit, viewerId);
+
+    // Result now contains { posts, nextCursor }
+    res.json(result);
   } catch (err) {
     console.error("getFeedPosts error:", err);
     res.status(500).json({ message: "Server error" });

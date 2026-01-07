@@ -52,7 +52,15 @@ const requiredVars = {
     default: '5000',
     description: 'Server port'
   },
-  
+
+  // Database
+  'DB_DRIVER': {
+    value: process.env.DB_DRIVER,
+    required: false,
+    default: process.env.DATABASE_URL ? 'postgres' : 'mssql',
+    description: 'Database driver (postgres OR mssql)'
+  },
+
   // Database - SQL Server (cho local)
   'SQL_SERVER': {
     value: process.env.SQL_SERVER,
@@ -75,7 +83,7 @@ const requiredVars = {
     description: 'SQL Server password',
     sensitive: true
   },
-  
+
   // Database - PostgreSQL (cho production)
   'DATABASE_URL': {
     value: process.env.DATABASE_URL,
@@ -83,7 +91,7 @@ const requiredVars = {
     description: 'PostgreSQL connection URL (production)',
     sensitive: true
   },
-  
+
   // Redis
   'REDIS_HOST': {
     value: process.env.REDIS_HOST,
@@ -97,7 +105,7 @@ const requiredVars = {
     description: 'Redis URL (cloud)',
     sensitive: true
   },
-  
+
   // JWT
   'JWT_SECRET': {
     value: process.env.JWT_SECRET,
@@ -112,7 +120,7 @@ const requiredVars = {
     default: '7d',
     description: 'JWT expiration time'
   },
-  
+
   // Cloudinary
   'CLOUDINARY_CLOUD_NAME': {
     value: process.env.CLOUDINARY_CLOUD_NAME,
@@ -131,7 +139,7 @@ const requiredVars = {
     description: 'Cloudinary API secret',
     sensitive: true
   },
-  
+
   // CORS
   'CORS_ORIGINS': {
     value: process.env.CORS_ORIGINS,
@@ -145,7 +153,7 @@ const requiredVars = {
     default: 'http://localhost:3000',
     description: 'Frontend URL'
   },
-  
+
   // Email (optional for testing)
   'EMAIL_HOST': {
     value: process.env.EMAIL_HOST,
@@ -166,7 +174,7 @@ let hasWarnings = false;
 for (const [key, config] of Object.entries(requiredVars)) {
   const value = config.value || config.default;
   const status = value ? '✅' : (config.required ? '❌' : '⚠️');
-  
+
   // Display value (mask sensitive data)
   let displayValue;
   if (!value) {
@@ -176,10 +184,10 @@ for (const [key, config] of Object.entries(requiredVars)) {
   } else {
     displayValue = value.length > 50 ? value.slice(0, 47) + '...' : value;
   }
-  
+
   console.log(`${status} ${key.padEnd(30)} ${displayValue}`);
   console.log(`   ${config.description}`);
-  
+
   // Validate
   if (config.required && !value) {
     console.log(`   ⚠️  REQUIRED: This variable must be set!`);
@@ -190,7 +198,7 @@ for (const [key, config] of Object.entries(requiredVars)) {
   } else if (!config.required && !value) {
     hasWarnings = true;
   }
-  
+
   console.log('');
 }
 

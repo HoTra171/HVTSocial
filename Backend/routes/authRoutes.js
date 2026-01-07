@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, requestResetOtp, resetPasswordWithOtp, changePassword } from '../controllers/authController.js';
+import { register, login, requestResetOtp, resetPasswordWithOtp, changePassword, refreshToken, logout } from '../controllers/authController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -238,5 +238,51 @@ router.get("/me", authMiddleware, (req, res) => {
     id: req.user?.id,
   });
 });
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh Access Token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cấp lại token thành công
+ *       403:
+ *         description: Token không hợp lệ hoặc đã hết hạn
+ */
+router.post('/refresh', refreshToken);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout (Revoke Refresh Token)
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Đăng xuất thành công
+ */
+router.post('/logout', logout);
 
 export default router;

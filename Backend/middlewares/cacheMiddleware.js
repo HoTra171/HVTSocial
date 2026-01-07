@@ -1,5 +1,5 @@
 import { cache } from '../config/redis.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * Cache middleware

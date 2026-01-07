@@ -305,6 +305,22 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
 
 -- ============================================================
+-- 15b. REFRESH_TOKENS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(500) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    revoked BOOLEAN DEFAULT FALSE,
+    replaced_by_token VARCHAR(500)
+);
+
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+
+-- ============================================================
 -- 16. PASSWORD_RESET_TOKENS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -349,6 +365,24 @@ CREATE TABLE IF NOT EXISTS user_roles (
 
 CREATE INDEX idx_user_roles_user ON user_roles(user_id);
 CREATE INDEX idx_user_roles_role ON user_roles(role_id);
+
+-- ============================================================
+-- 19. PERFORMANCE INDEXES (OPTIMIZED)
+-- ============================================================
+-- Feeds
+CREATE INDEX IF NOT EXISTS idx_posts_user_created_opt ON posts(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_created_opt ON posts(created_at DESC);
+
+-- Comments
+CREATE INDEX IF NOT EXISTS idx_comments_post_created_opt ON comments(post_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_parent_opt ON comments(parent_comment_id, created_at ASC);
+
+-- Messages
+CREATE INDEX IF NOT EXISTS idx_messages_chat_created_opt ON messages(chat_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_opt ON messages(sender_id, created_at DESC);
+
+-- Notifications
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read_opt ON notifications(user_id, is_read, created_at DESC);
 
 -- ============================================================
 -- SUMMARY

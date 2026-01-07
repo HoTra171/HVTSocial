@@ -1,6 +1,6 @@
 import sql from 'mssql';
 import { pool } from '../config/db.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 const getPool = async () => {
   const db = await pool;

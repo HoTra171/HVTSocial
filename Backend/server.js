@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import http from "http";
 import swaggerUi from 'swagger-ui-express';
+import { pool } from "./config/db.js"; // Import DB pool for health check & shutdown
 import chatRoutes from "./routes/chatRoutes.js";
 import chatSocket from "./sockets/chatSocket.js";
 import uploadRouter from "./routes/upload.js";
@@ -19,8 +20,8 @@ import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 import { helmetConfig, apiLimiter, authLimiter, uploadLimiter } from './middlewares/security.js';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
-import requestLogger from './middlewares/requestLogger.js';
-import logger from './config/logger.js';
+import morgan from 'morgan';
+import logger, { stream } from './utils/logger.js';
 import { swaggerSpec } from './config/swagger.js';
 import { setSocketIO } from './workers/index.js'; // Initialize background workers
 
@@ -45,14 +46,14 @@ logger.info('Cloudinary configured', {
   api_secret: process.env.CLOUDINARY_API_SECRET ? '***' : 'MISSING',
 });
 
-const allowedOrigins = (process.env.CORS_ORIGINS || process.env.CLIENT_URL || "http://localhost:3000")
+const allowedOrigins = (process.env.CORS_ORIGINS || process.env.CLIENT_URL || "http://localhost:3000,https://hvt-social.vercel.app")
   .split(",")
   .map(s => s.trim())
   .filter(Boolean);
 
 // Security middlewares
 app.use(helmetConfig);
-app.use(requestLogger);
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', { stream }));
 
 app.use(cors({
   origin: (origin, cb) => {
@@ -66,8 +67,27 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Health check endpoint (before rate limiting)
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+// Health check endpoint (expanded)
+app.get('/health', async (req, res) => {
+  try {
+    // Check DB connection
+    await pool.query('SELECT 1');
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      uptime: process.uptime()
+    });
+  } catch (err) {
+    logger.error('Health check failed', err);
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: err.message
+    });
+  }
+});
 
 // API Documentation với Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -135,3 +155,24 @@ server.listen(PORT, "0.0.0.0", () => {
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔒 Security: Helmet + Rate Limiting enabled`);
 });
+
+// Graceful Shutdown
+const shutdown = async () => {
+  logger.info('🛑 SIGTERM/SIGINT received. Shutting down gracefully...');
+  server.close(() => logger.info('🔌 HTTP server closed.'));
+
+  const io = app.get('io');
+  if (io) io.close(() => logger.info('🔌 Socket.io closed.'));
+
+  try {
+    if (pool.close) await pool.close();
+    else if (pool.end) await pool.end();
+    logger.info('🔌 DB closed.');
+    setTimeout(() => process.exit(0), 500);
+  } catch (err) {
+    logger.error('❌ DB close error', err);
+    process.exit(1);
+  }
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

@@ -6,8 +6,11 @@ dotenv.config();
  * Auto-detects PostgreSQL (via DATABASE_URL) or SQL Server
  */
 
-// Check if DATABASE_URL exists (PostgreSQL for production)
-const usePostgreSQL = !!process.env.DATABASE_URL;
+// Check DB_DRIVER or fallback to DATABASE_URL detection
+const dbDriver = process.env.DB_DRIVER || (process.env.DATABASE_URL ? 'postgres' : 'mssql');
+const usePostgreSQL = dbDriver === 'postgres';
+
+console.log(`🔧 DB Configuration: Driver=${dbDriver}`);
 
 let pool;
 

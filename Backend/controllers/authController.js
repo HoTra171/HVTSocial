@@ -2,6 +2,37 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from '../config/db-wrapper.js';
 import { sendOtpEmail } from "../services/mailService.js";
+import { successResponse, errorResponse } from '../utils/response.js';
+import crypto from 'crypto';
+
+// Helper: Generate Tokens (Access + Refresh)
+const generateTokens = async (user) => {
+  // Access Token (15m)
+  const accessToken = jwt.sign(
+    { userId: user.id, id: user.id, email: user.email, username: user.username },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' }
+  );
+
+  // Refresh Token (7d)
+  const refreshToken = crypto.randomBytes(40).toString('hex');
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  // Save to DB (Supports both MSSQL/PG via db-wrapper ideally, but check syntax compatibility)
+  // Simple INSERT works on both usually if strict ANSI.
+  // Using db.request() pattern from existing code.
+  await db.request()
+    .input('user_id', user.id)
+    .input('token', refreshToken)
+    .input('expires_at', expiresAt)
+    .query(`
+       INSERT INTO refresh_tokens (user_id, token, expires_at)
+       VALUES (@user_id, @token, @expires_at)
+    `);
+
+  return { accessToken, refreshToken };
+};
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -124,66 +155,44 @@ export const login = async (req, res) => {
 
     // 1. Validate input
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Vui lòng nhập email và mật khẩu'
-      });
+      return errorResponse(res, 'Vui lòng nhập email và mật khẩu', 400);
     }
 
     // 2. Tìm user theo email
-    const query = `SELECT * FROM users WHERE email = @email`;
-
     const result = await db.request()
       .input('email', email)
-      .query(query);
+      .query('SELECT * FROM users WHERE email = @email');
 
     if (result.recordset.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Email hoặc mật khẩu không đúng'
-      });
+      return errorResponse(res, 'Email hoặc mật khẩu không đúng', 401);
     }
 
     const user = result.recordset[0];
 
     // 3. Kiểm tra mật khẩu
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Email hoặc mật khẩu không đúng'
-      });
+    if (!isMatch) {
+      return errorResponse(res, 'Email hoặc mật khẩu không đúng', 401);
     }
 
-    // 4. Tạo JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        username: user.username
-      },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // 4. Tạo Tokens (Refresh + Access)
+    const { accessToken, refreshToken } = await generateTokens(user);
 
     // 5. Xóa password khỏi response
     delete user.password;
 
     // 6. Trả về response
-    res.json({
-      success: true,
-      message: 'Đăng nhập thành công',
-      token,
-      user
-    });
+    return successResponse(res, {
+      user,
+      token: accessToken, // Frontend expects 'token'
+      accessToken,
+      refreshToken
+    }, 'Đăng nhập thành công');
 
   } catch (error) {
-    console.error(' Login error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Lỗi server, vui lòng thử lại sau'
-    });
+    console.error('Login error:', error);
+    return errorResponse(res, 'Lỗi server, vui lòng thử lại sau');
   }
 };
 
@@ -420,6 +429,82 @@ export const changePassword = async (req, res) => {
       success: false,
       message: "Có lỗi xảy ra, vui lòng thử lại sau.",
     });
+  }
+};
+
+/* ================= REFRESH TOKEN ================= */
+export const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return errorResponse(res, 'Vui lòng cung cấp refresh token', 400);
+
+    // 1. Kiểm tra token trong DB
+    const result = await db.request()
+      .input('token', refreshToken)
+      .query('SELECT * FROM refresh_tokens WHERE token = @token');
+
+    if (result.recordset.length === 0) {
+      return errorResponse(res, 'Refresh token không hợp lệ', 403);
+    }
+
+    const storedToken = result.recordset[0];
+
+    // 2. Kiểm tra thu hồi (Reuse Detection)
+    if (storedToken.revoked) {
+      await db.request()
+        .input('user_id', storedToken.user_id)
+        .query('UPDATE refresh_tokens SET revoked = 1 WHERE user_id = @user_id');
+
+      return errorResponse(res, 'Phát hiện bất thường. Vui lòng đăng nhập lại.', 403);
+    }
+
+    // 3. Kiểm tra hết hạn
+    if (new Date() > new Date(storedToken.expires_at)) {
+      return errorResponse(res, 'Token đã hết hạn, vui lòng đăng nhập lại', 403);
+    }
+
+    // 4. Lấy thông tin user
+    const userResult = await db.request()
+      .input('id', storedToken.user_id)
+      .query('SELECT * FROM users WHERE id = @id');
+
+    if (userResult.recordset.length === 0) return errorResponse(res, 'User không tồn tại', 403);
+    const user = userResult.recordset[0];
+
+    // 5. Rotate
+    const tokens = await generateTokens(user);
+
+    await db.request()
+      .input('id', storedToken.id)
+      .input('new_token', tokens.refreshToken)
+      .query(`
+            UPDATE refresh_tokens 
+            SET revoked = 1, replaced_by_token = @new_token 
+            WHERE id = @id
+        `);
+
+    return successResponse(res, tokens, 'Làm mới token thành công');
+
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return errorResponse(res, 'Lỗi Server');
+  }
+};
+
+/* ================= LOGOUT ================= */
+export const logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (refreshToken) {
+      await db.request()
+        .input('token', refreshToken)
+        .query('UPDATE refresh_tokens SET revoked = 1 WHERE token = @token');
+    }
+
+    return successResponse(res, null, 'Đăng xuất thành công');
+  } catch (err) {
+    return errorResponse(res, err.message);
   }
 };
 

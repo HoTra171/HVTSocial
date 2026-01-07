@@ -20,9 +20,19 @@ const formatPost = (row) => ({
 });
 
 export const PostService = {
-  async getFeed(page, limit, viewerId) {
-    const rows = await PostModel.getAllPosts(page, limit, viewerId);
-    return rows.map(formatPost);
+  async getFeed(cursor = null, limit = 10, viewerId) {
+    const rows = await PostModel.getAllPosts(cursor, limit, viewerId);
+    const posts = rows.map(formatPost);
+
+    let nextCursor = null;
+    if (posts.length === limit) { // Only set cursor if we might have more pages
+      nextCursor = posts[posts.length - 1].createdAt;
+    }
+
+    return {
+      posts,
+      nextCursor
+    };
   },
 
   async getPostsByUser(userId, viewerId) {

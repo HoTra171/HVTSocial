@@ -1,4 +1,4 @@
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 // Error handler middleware
 const errorHandler = (err, req, res, next) => {

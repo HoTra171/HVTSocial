@@ -9,7 +9,7 @@ import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const Feed = () => {
   const [feeds, setFeeds] = useState([]);
-  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -21,12 +21,11 @@ const Feed = () => {
 
   const LIMIT = 10; // số post / trang
 
-  const fetchFeeds = async (pageToLoad = 1) => {
-    // nếu đang load thêm hoặc không còn dữ liệu thì thôi
-    if (pageToLoad !== 1 && (loadingMore || !hasMore)) return;
+  const fetchFeeds = async (cursorToLoad = null) => {
+    // Prevent duplicate calls
+    if (loadingMore) return;
 
-    // phân biệt load lần đầu vs load thêm
-    if (pageToLoad === 1) {
+    if (cursorToLoad === null) {
       setInitialLoading(true);
     } else {
       setLoadingMore(true);
@@ -35,31 +34,38 @@ const Feed = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(`${API_URL}/posts`, {
-        params: { page: pageToLoad, limit: LIMIT },
+        params: { cursor: cursorToLoad, limit: LIMIT },
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const newPosts = res.data || [];
+      // Handle new response { posts, nextCursor }
+      const data = res.data;
+      const newPosts = Array.isArray(data) ? data : (data.posts || []);
+      const nextCursor = data.nextCursor;
 
-      if (pageToLoad === 1) {
-        // lần đầu hoặc refresh
+      if (cursorToLoad === null) {
+        // Initial load or refresh
         setFeeds(newPosts);
       } else {
-        // nối thêm vào cuối
-        setFeeds((prev) => [...prev, ...newPosts]);
+        // Append
+        setFeeds((prev) => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewPosts];
+        });
       }
 
-      // kiểm tra còn data không
-      if (newPosts.length < LIMIT) {
+      if (!nextCursor || newPosts.length < LIMIT) {
         setHasMore(false);
       } else {
         setHasMore(true);
-        setPage(pageToLoad);
+        setCursor(nextCursor);
       }
     } catch (err) {
       console.error("Lỗi load feed:", err);
+      setHasMore(false);
     } finally {
-      if (pageToLoad === 1) {
+      if (cursorToLoad === null) {
         setInitialLoading(false);
       } else {
         setLoadingMore(false);
@@ -69,7 +75,7 @@ const Feed = () => {
 
   // load trang 1 khi vừa vào
   useEffect(() => {
-    fetchFeeds(1);
+    fetchFeeds(null);
   }, []);
 
   useEffect(() => {
@@ -86,7 +92,7 @@ const Feed = () => {
 
   // IntersectionObserver để auto load thêm khi scroll gần cuối
   useEffect(() => {
-    if (!hasMore || initialLoading) return;
+    if (!hasMore || initialLoading || loadingMore) return;
 
     // clear observer cũ nếu có
     if (observerRef.current) {
@@ -96,9 +102,9 @@ const Feed = () => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const first = entries[0];
-        if (first.isIntersecting && !loadingMore && hasMore) {
+        if (first.isIntersecting && !loadingMore && hasMore && cursor) {
           // đang thấy element sentinel -> gọi page tiếp theo
-          fetchFeeds(page + 1);
+          fetchFeeds(cursor);
         }
       },
       {
@@ -118,7 +124,7 @@ const Feed = () => {
         observerRef.current.unobserve(current);
       }
     };
-  }, [page, hasMore, loadingMore, initialLoading]);
+  }, [cursor, hasMore, loadingMore, initialLoading]);
 
   if (initialLoading) {
     return <Loading />;

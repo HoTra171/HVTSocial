@@ -1,5 +1,5 @@
 import { hasPermission, hasRole, canPerformAction } from '../services/rbacService.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * RBAC Middleware - Authorization middleware for routes

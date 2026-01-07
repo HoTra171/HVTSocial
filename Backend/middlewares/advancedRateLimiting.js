@@ -1,7 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import sql from 'mssql';
 import { pool } from '../config/db.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * Advanced Rate Limiting

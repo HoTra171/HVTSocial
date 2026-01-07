@@ -1,5 +1,5 @@
 import Bull from 'bull';
-import logger from './logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * Bull Queue Configuration
@@ -7,14 +7,14 @@ import logger from './logger.js';
  */
 
 // Support both REDIS_URL (Upstash, Railway) and REDIS_HOST/PORT format
-const redisConfig = process.env.REDIS_URL 
+const redisConfig = process.env.REDIS_URL
   ? process.env.REDIS_URL
   : {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD || undefined,
-      db: parseInt(process.env.REDIS_DB || '0')
-    };
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0')
+  };
 
 /**
  * Email Queue

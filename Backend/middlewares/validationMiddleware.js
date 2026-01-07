@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * Input Validation Middleware using Joi

@@ -1,7 +1,7 @@
 import { emailQueue } from '../config/queue.js';
 import { sendEmail } from '../config/email.js';
 import * as emailService from '../services/emailService.js';
-import logger from '../config/logger.js';
+import logger from '../utils/logger.js';
 
 /**
  * Email Worker
