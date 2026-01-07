@@ -62,11 +62,11 @@ if (usePostgreSQL) {
 
   await poolConnection.connect()
     .then(() => {
-      console.log("âœ… Connected to SQL Server");
+      console.log("Connected to SQL Server");
       console.log(">>> Using Database:", poolConnection.config.database);
     })
     .catch((err) => {
-      console.error("âŒ SQL Server connection FAILED:", err.message);
+      console.error("SQL Server connection FAILED:", err.message);
       console.error("Please check:");
       console.error("  - SQL Server is running (check services: SQL Server (MSSQLSERVER))");
       console.error("  - Database exists:", config.database);

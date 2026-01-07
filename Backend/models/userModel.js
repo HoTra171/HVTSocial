@@ -32,7 +32,7 @@ export const findUserById = async (id) => {
     .query(`
       SELECT 
         id, email, full_name, username, date_of_birth, gender,
-        avatar, background, bio, address,
+        avatar, background, bio, location AS address,
         created_at, updated_at
       FROM users
       WHERE id = @id
@@ -86,7 +86,7 @@ export const UserModel = {
           avatar,
           background,
           bio,
-          address,
+          location AS address,
           created_at
         FROM users
         WHERE id = @userId
@@ -96,7 +96,7 @@ export const UserModel = {
   },
 
 
-  
+
   async getConnections(pool, userId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();

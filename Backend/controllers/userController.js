@@ -133,7 +133,7 @@ export const updateProfile = async (req, res) => {
     }
 
     if (address !== undefined) {
-      updates.push('address = @address');
+      updates.push('location = @address');
       request.input('address', sql.NVarChar, address);
     }
 
@@ -167,7 +167,7 @@ export const updateProfile = async (req, res) => {
       .query(`
         SELECT 
           id, full_name, username, email, avatar, background, 
-          bio, address, created_at
+          bio, location AS address, created_at
         FROM users 
         WHERE id = @userId
       `);
