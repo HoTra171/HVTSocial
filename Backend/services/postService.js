@@ -2,6 +2,9 @@ import { pool } from '../config/db.js';
 import { PostModel } from '../models/postModel.js';
 import sql from 'mssql';
 
+// Check if using PostgreSQL
+const isPostgres = process.env.DB_DRIVER === 'postgres' || !!process.env.DATABASE_URL;
+
 const formatPost = (row) => ({
   id: row.id,
   content: row.content,
@@ -26,7 +29,6 @@ export const PostService = {
 
     let nextCursor = null;
     if (posts.length === limit) {
-      // Only set cursor if we might have more pages
       nextCursor = posts[posts.length - 1].createdAt;
     }
 
@@ -93,53 +95,76 @@ export const PostService = {
     return result.recordset[0];
   },
 
-  // postService.js
   async deletePost(postId, userId) {
-    const db = await pool;
-    const tx = new sql.Transaction(db);
+    if (isPostgres) {
+      // PostgreSQL version - use native transactions
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
 
-    await tx.begin();
-    try {
-      const req = new sql.Request(tx);
-      req.input('postId', sql.Int, postId);
-      req.input('userId', sql.Int, userId);
+        // Check ownership
+        const ownResult = await client.query(
+          'SELECT id FROM posts WHERE id = $1 AND user_id = $2',
+          [postId, userId]
+        );
+        if (ownResult.rows.length === 0) {
+          throw new Error('Bạn không có quyền xóa bài viết này');
+        }
 
-      // check quyền sở hữu
-      const own = await req.query(`
-      SELECT id FROM posts
-      WHERE id = @postId AND user_id = @userId
-    `);
+        // Clear shared_post_id references
+        await client.query('UPDATE posts SET shared_post_id = NULL WHERE shared_post_id = $1', [postId]);
 
-      if (own.recordset.length === 0) {
-        throw new Error('Bạn không có quyền xóa bài viết này');
+        // Delete related data
+        await client.query('DELETE FROM saved_posts WHERE post_id = $1', [postId]);
+        await client.query('DELETE FROM notifications WHERE post_id = $1', [postId]);
+        await client.query('DELETE FROM likes WHERE post_id = $1', [postId]);
+        await client.query('DELETE FROM comments WHERE post_id = $1', [postId]);
+
+        // Delete the post
+        await client.query('DELETE FROM posts WHERE id = $1', [postId]);
+
+        await client.query('COMMIT');
+        return { success: true, message: 'Xóa bài viết thành công' };
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
       }
+    } else {
+      // MSSQL version - use sql.Transaction
+      const db = await pool;
+      const tx = new sql.Transaction(db);
 
-      // gỡ các post share đang trỏ tới post này (FK NO ACTION)
-      await req.query(`
-      UPDATE posts
-      SET shared_post_id = NULL
-      WHERE shared_post_id = @postId
-    `);
+      await tx.begin();
+      try {
+        const req = new sql.Request(tx);
+        req.input('postId', sql.Int, postId);
+        req.input('userId', sql.Int, userId);
 
-      // dọn các bảng FK NO ACTION trước
-      await req.query(`DELETE FROM saved_posts     WHERE post_id = @postId`);
-      await req.query(`DELETE FROM post_reactions  WHERE post_id = @postId`);
-      await req.query(`DELETE FROM post_tags       WHERE post_id = @postId`);
-      await req.query(`DELETE FROM notifications   WHERE post_id = @postId`);
+        const own = await req.query(`
+          SELECT id FROM posts WHERE id = @postId AND user_id = @userId
+        `);
 
-      // likes/comments đang CASCADE theo schema nên không bắt buộc,
-      // nhưng để chắc chắn vẫn có thể xóa tay:
-      await req.query(`DELETE FROM likes    WHERE post_id = @postId`);
-      await req.query(`DELETE FROM comments WHERE post_id = @postId`);
+        if (own.recordset.length === 0) {
+          throw new Error('Bạn không có quyền xóa bài viết này');
+        }
 
-      // xóa post
-      await req.query(`DELETE FROM posts WHERE id = @postId`);
+        await req.query(`UPDATE posts SET shared_post_id = NULL WHERE shared_post_id = @postId`);
+        await req.query(`DELETE FROM saved_posts WHERE post_id = @postId`);
+        await req.query(`DELETE FROM post_reactions WHERE post_id = @postId`);
+        await req.query(`DELETE FROM post_tags WHERE post_id = @postId`);
+        await req.query(`DELETE FROM notifications WHERE post_id = @postId`);
+        await req.query(`DELETE FROM likes WHERE post_id = @postId`);
+        await req.query(`DELETE FROM comments WHERE post_id = @postId`);
+        await req.query(`DELETE FROM posts WHERE id = @postId`);
 
-      await tx.commit();
-      return { success: true, message: 'Xóa bài viết thành công' };
-    } catch (err) {
-      await tx.rollback();
-      throw err;
+        await tx.commit();
+        return { success: true, message: 'Xóa bài viết thành công' };
+      } catch (err) {
+        await tx.rollback();
+        throw err;
+      }
     }
   },
 };

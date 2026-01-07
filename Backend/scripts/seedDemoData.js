@@ -1,5 +1,5 @@
 // scripts/seedDemoData.js
-// Run: node scripts/seedDemoData.js
+// Run: DB_DRIVER=postgres node scripts/seedDemoData.js
 import { pool } from '../config/db.js';
 import bcrypt from 'bcryptjs';
 
@@ -42,7 +42,7 @@ const commentTemplates = [
     'Nice one!',
 ];
 
-// Unsplash random images
+// Random images
 const getRandomAvatar = (seed) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
 const getRandomPostImage = () => {
     const topics = ['nature', 'city', 'food', 'travel', 'technology', 'people', 'architecture'];
@@ -57,15 +57,8 @@ async function seedData() {
     console.log('🌱 Starting demo data seed...');
 
     const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, 10);
-    const db = await pool;
 
-    // Check if we already have demo data
-    const existingCheck = await db.request().query(`SELECT COUNT(*) as count FROM users WHERE email LIKE '%@demo.com'`);
-    if (existingCheck.recordset[0].count > 10) {
-        console.log('Demo data already exists. Skipping...');
-        return;
-    }
-
+    // Direct PostgreSQL queries
     const userIds = [];
 
     // 1. Create 50 demo users
@@ -75,43 +68,50 @@ async function seedData() {
         const username = `user${i}_${Date.now() % 10000}`;
         const email = `user${i}@demo.com`;
         const avatar = getRandomAvatar(username);
+        const bio = `Xin chào! Mình là ${fullName.split(' ').pop()} 👋`;
 
         try {
-            const result = await db.request()
-                .input('full_name', fullName)
-                .input('username', username)
-                .input('email', email)
-                .input('password', hashedPassword)
-                .input('avatar', avatar)
-                .input('bio', `Xin chào! Mình là ${fullName.split(' ').pop()} 👋`)
-                .query(`
-          INSERT INTO users (full_name, username, email, password, avatar, bio)
-          OUTPUT INSERTED.id
-          VALUES (@full_name, @username, @email, @password, @avatar, @bio)
-        `);
-            userIds.push(result.recordset[0].id);
+            const result = await pool.query(
+                `INSERT INTO users (full_name, username, email, password, avatar, bio)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (email) DO NOTHING
+         RETURNING id`,
+                [fullName, username, email, hashedPassword, avatar, bio]
+            );
+            if (result.rows.length > 0) {
+                userIds.push(result.rows[0].id);
+            }
         } catch (err) {
-            console.log(`User ${i} skipped (may exist)`);
+            console.log(`User ${i} skipped:`, err.message);
         }
     }
-    console.log(`✅ Created ${userIds.length} users`);
+    console.log(`✅ Created ${userIds.length} new users`);
 
-    // 2. Create friendships between random users
+    // Get all user IDs including existing ones
+    const allUsersResult = await pool.query(`SELECT id FROM users ORDER BY id`);
+    const allUserIds = allUsersResult.rows.map(r => r.id);
+    console.log(`📊 Total users available: ${allUserIds.length}`);
+
+    if (allUserIds.length < 2) {
+        console.log('Not enough users. Exiting.');
+        process.exit(0);
+    }
+
+    // 2. Create friendships
     console.log('🤝 Creating friendships...');
     let friendshipCount = 0;
-    for (let i = 0; i < userIds.length; i++) {
-        const numFriends = randomInt(3, 10);
+    for (let i = 0; i < Math.min(allUserIds.length, 30); i++) {
+        const numFriends = randomInt(3, 8);
         for (let j = 0; j < numFriends; j++) {
-            const friendId = userIds[randomInt(0, userIds.length - 1)];
-            if (friendId !== userIds[i]) {
+            const friendId = allUserIds[randomInt(0, allUserIds.length - 1)];
+            if (friendId !== allUserIds[i]) {
                 try {
-                    await db.request()
-                        .input('user_id', userIds[i])
-                        .input('friend_id', friendId)
-                        .query(`
-              INSERT INTO friendships (user_id, friend_id, status)
-              VALUES (@user_id, @friend_id, 'accepted')
-            `);
+                    await pool.query(
+                        `INSERT INTO friendships (user_id, friend_id, status)
+             VALUES ($1, $2, 'accepted')
+             ON CONFLICT DO NOTHING`,
+                        [allUserIds[i], friendId]
+                    );
                     friendshipCount++;
                 } catch (err) { /* duplicate */ }
             }
@@ -123,41 +123,39 @@ async function seedData() {
     console.log('📝 Creating posts...');
     const postIds = [];
     for (let i = 0; i < 100; i++) {
-        const userId = userIds[randomInt(0, userIds.length - 1)];
+        const userId = allUserIds[randomInt(0, allUserIds.length - 1)];
         const content = randomElement(postTemplates);
-        const hasImage = Math.random() > 0.3; // 70% have images
+        const hasImage = Math.random() > 0.3;
         const mediaUrl = hasImage ? getRandomPostImage() : null;
 
         try {
-            const result = await db.request()
-                .input('user_id', userId)
-                .input('content', content)
-                .input('media_url', mediaUrl)
-                .input('visibility', 'public')
-                .query(`
-          INSERT INTO posts (user_id, content, media_url, visibility)
-          OUTPUT INSERTED.id
-          VALUES (@user_id, @content, @media_url, @visibility)
-        `);
-            postIds.push(result.recordset[0].id);
+            const result = await pool.query(
+                `INSERT INTO posts (user_id, content, media_url, visibility)
+         VALUES ($1, $2, $3, 'public')
+         RETURNING id`,
+                [userId, content, mediaUrl]
+            );
+            postIds.push(result.rows[0].id);
         } catch (err) {
             console.log(`Post ${i} error:`, err.message);
         }
     }
     console.log(`✅ Created ${postIds.length} posts`);
 
-    // 4. Create likes on posts
+    // 4. Create likes
     console.log('❤️ Creating likes...');
     let likeCount = 0;
     for (const postId of postIds) {
-        const numLikes = randomInt(5, 30);
+        const numLikes = randomInt(5, 25);
         for (let i = 0; i < numLikes; i++) {
-            const userId = userIds[randomInt(0, userIds.length - 1)];
+            const userId = allUserIds[randomInt(0, allUserIds.length - 1)];
             try {
-                await db.request()
-                    .input('post_id', postId)
-                    .input('user_id', userId)
-                    .query(`INSERT INTO likes (post_id, user_id) VALUES (@post_id, @user_id)`);
+                await pool.query(
+                    `INSERT INTO likes (post_id, user_id)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+                    [postId, userId]
+                );
                 likeCount++;
             } catch (err) { /* duplicate */ }
         }
@@ -168,16 +166,16 @@ async function seedData() {
     console.log('💬 Creating comments...');
     let commentCount = 0;
     for (const postId of postIds) {
-        const numComments = randomInt(2, 10);
+        const numComments = randomInt(2, 8);
         for (let i = 0; i < numComments; i++) {
-            const userId = userIds[randomInt(0, userIds.length - 1)];
+            const userId = allUserIds[randomInt(0, allUserIds.length - 1)];
             const content = randomElement(commentTemplates);
             try {
-                await db.request()
-                    .input('post_id', postId)
-                    .input('user_id', userId)
-                    .input('content', content)
-                    .query(`INSERT INTO comments (post_id, user_id, content) VALUES (@post_id, @user_id, @content)`);
+                await pool.query(
+                    `INSERT INTO comments (post_id, user_id, content)
+           VALUES ($1, $2, $3)`,
+                    [postId, userId, content]
+                );
                 commentCount++;
             } catch (err) {
                 console.log(`Comment error:`, err.message);
@@ -189,7 +187,8 @@ async function seedData() {
     console.log('\n🎉 Demo data seeding complete!');
     console.log(`
 Summary:
-- Users: ${userIds.length}
+- New Users: ${userIds.length}
+- Total Users: ${allUserIds.length}
 - Posts: ${postIds.length}  
 - Likes: ${likeCount}
 - Comments: ${commentCount}
@@ -202,4 +201,7 @@ Password: ${DEMO_PASSWORD}
     process.exit(0);
 }
 
-seedData().catch(console.error);
+seedData().catch(err => {
+    console.error('Seed error:', err);
+    process.exit(1);
+});
