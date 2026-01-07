@@ -644,7 +644,7 @@ const Chatbox = () => {
         form.append("file", img.file);
 
         const uploadRes = await axios.post(
-          `${API_URL}/upload",
+          `${API_URL}/upload`,
           form,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
@@ -708,7 +708,7 @@ const Chatbox = () => {
           form.append("file", file);
 
           const uploadRes = await axios.post(
-            `${API_URL}/upload",
+            `${API_URL}/upload`,
             form,
             { headers: { "Content-Type": "multipart/form-data" } }
           );
