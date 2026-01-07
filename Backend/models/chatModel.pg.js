@@ -128,6 +128,7 @@ ORDER BY last_time DESC, chat_id DESC;
     `;
 
     const result = await db.query(query, [chatId]);
-    return result.rows;
+    // Return SQL Server compatible format
+    return { recordset: result.rows };
   },
 };
