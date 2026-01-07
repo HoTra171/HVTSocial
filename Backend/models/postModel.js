@@ -16,9 +16,10 @@ export const PostModel = {
       SELECT
         p.id,
         p.content,
-        p.media,
+        p.media_url,
+        p.media_type,
         p.created_at,
-        p.status, -- Trạng thái hiển thị bài viết
+        p.visibility AS status, -- PostgreSQL uses visibility instead of status
 
         u.id        AS user_id,
         u.full_name,
@@ -33,10 +34,10 @@ export const PostModel = {
       JOIN users u ON u.id = p.user_id
 
       WHERE
-        p.status = 'public'
+        p.visibility = 'public'
         OR p.user_id = @viewerId
         OR (
-          p.status = 'friends'
+          p.visibility = 'friends'
           AND EXISTS (
             SELECT 1
             FROM friendships f
@@ -70,9 +71,10 @@ export const PostModel = {
       SELECT
         p.id,
         p.content,
-        p.media,
+        p.media_url,
+        p.media_type,
         p.created_at,
-        p.status, -- Trạng thái hiển thị bài viết
+        p.visibility AS status, -- PostgreSQL uses visibility instead of status
 
         u.id        AS user_id,
         u.full_name,
@@ -88,10 +90,10 @@ export const PostModel = {
       WHERE
         p.user_id = @userId
         AND (
-          p.status = 'public'
+          p.visibility = 'public'
           OR p.user_id = @viewerId
           OR (
-            p.status = 'friends'
+            p.visibility = 'friends'
             AND EXISTS (
               SELECT 1
               FROM friendships f
@@ -111,3 +113,4 @@ export const PostModel = {
   }
 
 };
+

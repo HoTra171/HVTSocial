@@ -123,6 +123,13 @@ if (usePostgreSQL) {
           }
         }
 
+        // Convert OUTER APPLY to LEFT JOIN LATERAL (SQL Server -> PostgreSQL)
+        // Pattern: OUTER APPLY (subquery) alias
+        pgQuery = pgQuery.replace(/OUTER\s+APPLY\s*\(/gi, 'LEFT JOIN LATERAL (');
+        
+        // Convert CROSS APPLY to INNER JOIN LATERAL
+        pgQuery = pgQuery.replace(/CROSS\s+APPLY\s*\(/gi, 'INNER JOIN LATERAL (');
+
         const result = await pool.query(pgQuery, values);
         
         // Return SQL Server compatible result structure
