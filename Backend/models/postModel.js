@@ -28,7 +28,7 @@ export const PostModel = {
 
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id)     AS likes_count,
         (SELECT COUNT(*) FROM comments WHERE post_id = p.id)  AS comments_count,
-        (SELECT COUNT(*) FROM posts sp WHERE sp.shared_post_id = p.id) AS share_count
+        0 AS share_count
 
       FROM posts p
       JOIN users u ON u.id = p.user_id
@@ -83,7 +83,7 @@ export const PostModel = {
 
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id)     AS likes_count,
         (SELECT COUNT(*) FROM comments WHERE post_id = p.id)  AS comments_count,
-        (SELECT COUNT(*) FROM posts sp WHERE sp.shared_post_id = p.id) AS share_count
+        0 AS share_count
 
       FROM posts p
       JOIN users u ON u.id = p.user_id

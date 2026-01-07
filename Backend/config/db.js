@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+﻿import dotenv from "dotenv";
 dotenv.config();
 
 /**
@@ -13,7 +13,7 @@ let pool;
 
 if (usePostgreSQL) {
   // Use PostgreSQL (Railway, Neon, Supabase, etc.)
-  console.log('🐘 Using PostgreSQL database');
+  console.log('ðŸ˜ Using PostgreSQL database');
   
   // Import PostgreSQL pool and test connection
   const dbPostgres = await import('./db-postgres.js');
@@ -23,7 +23,7 @@ if (usePostgreSQL) {
   try {
     await dbPostgres.testConnection();
   } catch (error) {
-    console.error('❌ Failed to connect to PostgreSQL');
+    console.error('âŒ Failed to connect to PostgreSQL');
     console.error('Check:');
     console.error('  - DATABASE_URL is correct');
     console.error('  - Railway/Render database is online');
@@ -33,7 +33,7 @@ if (usePostgreSQL) {
   
 } else {
   // Use SQL Server (local development)
-  console.log('🗄️  Using SQL Server database');
+  console.log('ðŸ—„ï¸  Using SQL Server database');
   
   const sql = (await import('mssql')).default;
   
@@ -57,16 +57,16 @@ if (usePostgreSQL) {
     requestTimeout: 30000,
   };
 
-  // Tạo pool và kết nối
+  // Táº¡o pool vÃ  káº¿t ná»‘i
   const poolConnection = new sql.ConnectionPool(config);
 
   await poolConnection.connect()
     .then(() => {
-      console.log("✅ Connected to SQL Server");
+      console.log("âœ… Connected to SQL Server");
       console.log(">>> Using Database:", poolConnection.config.database);
     })
     .catch((err) => {
-      console.error("❌ SQL Server connection FAILED:", err.message);
+      console.error("âŒ SQL Server connection FAILED:", err.message);
       console.error("Please check:");
       console.error("  - SQL Server is running (check services: SQL Server (MSSQLSERVER))");
       console.error("  - Database exists:", config.database);
@@ -112,7 +112,10 @@ if (usePostgreSQL) {
         pgQuery = pgQuery
           .replace(/GETDATE\(\)/gi, 'NOW()')
           .replace(/\[dbo\]\./gi, '')
-          .replace(/\[(\w+)\]/g, '$1');
+          .replace(/\[(\w+)\]/g, '$1')
+          .replace(/ISNULL\(/gi, 'COALESCE(')  // SQL Server ISNULL -> PostgreSQL COALESCE
+          .replace(/DATEADD\(DAY,\s*(-?\d+),\s*GETDATE\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // DATEADD(DAY, -30, GETDATE())
+          .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`);  // After GETDATE conversion
 
         // Handle TOP clause
         const topMatch = sqlQuery.match(/SELECT\s+TOP\s+(\d+)/i);
@@ -142,3 +145,6 @@ if (usePostgreSQL) {
     };
   };
 }
+
+
+
