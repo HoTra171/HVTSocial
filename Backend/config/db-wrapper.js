@@ -37,7 +37,16 @@ if (usePostgreSQL) {
       const inputs = {};
       const queryBuilder = {
         input(name, type, value) {
-          inputs[name] = value;
+          // Support both 2-param and 3-param syntax
+          // .input(name, value) - PostgreSQL style (2 params)
+          // .input(name, type, value) - SQL Server style (3 params)
+          if (arguments.length === 2) {
+            // 2 params: name, value
+            inputs[name] = type; // type is actually the value
+          } else {
+            // 3 params: name, type, value
+            inputs[name] = value;
+          }
           return this;
         },
         async query(sqlQuery) {
@@ -97,7 +106,12 @@ if (usePostgreSQL) {
           const inputs = {};
           return {
             input(name, type, value) {
-              inputs[name] = value;
+              // Support both 2-param and 3-param syntax
+              if (arguments.length === 2) {
+                inputs[name] = type; // type is actually the value
+              } else {
+                inputs[name] = value;
+              }
               return this;
             },
             async query(sqlQuery) {
