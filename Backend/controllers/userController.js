@@ -1,4 +1,4 @@
-import { pool } from '../config/db.js';
+﻿import { pool } from '../config/db.js';
 import sql from 'mssql';
 import { UserService } from '../services/userService.js';
 import { v2 as cloudinary } from 'cloudinary';
@@ -41,9 +41,9 @@ const uploadToCloudinary = async (fileBuffer, folder, transformation = null) => 
     const options = {
       resource_type: 'image',
       folder: `hvtsocial/${folder}`,
-      // EAGER transformation - Cloudinary xử lý ngay
+      // EAGER transformation - Cloudinary xá»­ lÃ½ ngay
       eager: transformation ? [{ transformation }] : undefined,
-      eager_async: false, // Đợi transform xong mới return
+      eager_async: false, // Äá»£i transform xong má»›i return
     };
 
     if (transformation) {
@@ -73,22 +73,22 @@ export const updateProfile = async (req, res) => {
 
     console.log('UPDATE PROFILE (OPTIMIZED):', userId);
 
-    // Check quyền
+    // Check quyá»n
     if (userId !== currentUserId) {
       return res.status(403).json({
         success: false,
-        message: 'Bạn không có quyền chỉnh sửa profile này'
+        message: 'Báº¡n khÃ´ng cÃ³ quyá»n chá»‰nh sá»­a profile nÃ y'
       });
     }
 
     const { full_name, username, bio, address } = req.body;
     const db = await pool;
 
-    // UPLOAD SONG SONG (PARALLEL) - Nhanh hơn 2x
+    // UPLOAD SONG SONG (PARALLEL) - Nhanh hÆ¡n 2x
     const uploadPromises = [];
 
     if (req.files?.avatar?.[0]) {
-      console.log('📷 Uploading avatar...');
+      console.log('ðŸ“· Uploading avatar...');
       uploadPromises.push(
         uploadToCloudinary(
           req.files.avatar[0].buffer,
@@ -99,7 +99,7 @@ export const updateProfile = async (req, res) => {
     }
 
     if (req.files?.background?.[0]) {
-      console.log('🖼️ Uploading background...');
+      console.log('ðŸ–¼ï¸ Uploading background...');
       uploadPromises.push(
         uploadToCloudinary(
           req.files.background[0].buffer,
@@ -109,7 +109,7 @@ export const updateProfile = async (req, res) => {
       );
     }
 
-    // ĐỢI TẤT CẢ UPLOAD XONG CÙNG LÚC
+    // Äá»¢I Táº¤T Cáº¢ UPLOAD XONG CÃ™NG LÃšC
     const uploadResults = await Promise.all(uploadPromises);
 
     // BUILD UPDATE QUERY
@@ -153,7 +153,7 @@ export const updateProfile = async (req, res) => {
     if (updates.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Không có gì để cập nhật'
+        message: 'KhÃ´ng cÃ³ gÃ¬ Ä‘á»ƒ cáº­p nháº­t'
       });
     }
 
@@ -177,7 +177,7 @@ export const updateProfile = async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Cập nhật profile thành công',
+      message: 'Cáº­p nháº­t profile thÃ nh cÃ´ng',
       user: updatedUser
     });
 
@@ -187,7 +187,7 @@ export const updateProfile = async (req, res) => {
     if (err.message?.includes('UNIQUE') || err.number === 2627) {
       return res.status(400).json({
         success: false,
-        message: 'Username đã tồn tại'
+        message: 'Username Ä‘Ã£ tá»“n táº¡i'
       });
     }
 
@@ -246,16 +246,16 @@ export const discoverUsers = async (req, res) => {
           -- hobby score
           + (ISNULL(ch.common_hobby_count, 0) * 5)
 
-          -- freshness nhỏ
+          -- freshness nhá»
           + CASE WHEN u.created_at >= DATEADD(DAY, -30, GETDATE()) THEN 3 ELSE 0 END
         ) AS score
 
       FROM users u
 
       LEFT JOIN friendships f1
-        ON f1.user_id = @currentUserId AND f1.friend_id = u.id
+        ON f1.requester_id = @currentUserId AND f1.receiver_id = u.id
       LEFT JOIN friendships f2
-        ON f2.friend_id = @currentUserId AND f2.user_id = u.id
+        ON f2.receiver_id = @currentUserId AND f2.requester_id = u.id
 
       LEFT JOIN follows fo
         ON fo.follower_id = @currentUserId AND fo.following_id = u.id
@@ -271,7 +271,7 @@ export const discoverUsers = async (req, res) => {
 
       WHERE u.id <> @currentUserId
 
-        -- block 2 chiều
+        -- block 2 chiá»u
         AND NOT EXISTS (
           SELECT 1 FROM user_blocks b
           WHERE (b.blocker_id = @currentUserId AND b.blocked_id = u.id)
@@ -361,8 +361,8 @@ export const suggestUsers = async (req, res) => {
         ) AS score
 
       FROM users u
-      LEFT JOIN friendships f1 ON f1.user_id = @currentUserId AND f1.friend_id = u.id
-      LEFT JOIN friendships f2 ON f2.friend_id = @currentUserId AND f2.user_id = u.id
+      LEFT JOIN friendships f1 ON f1.requester_id = @currentUserId AND f1.receiver_id = u.id
+      LEFT JOIN friendships f2 ON f2.receiver_id = @currentUserId AND f2.requester_id = u.id
       LEFT JOIN follows fo ON fo.follower_id = @currentUserId AND fo.following_id = u.id
 
       WHERE u.id <> @currentUserId
@@ -400,3 +400,4 @@ export const suggestUsers = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+

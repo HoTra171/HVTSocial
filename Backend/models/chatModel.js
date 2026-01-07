@@ -52,7 +52,7 @@ Base AS (
     FROM messages m
     WHERE m.chat_id = c.id
     ORDER BY m.created_at DESC, m.id DESC
-  ) lmDetail
+  ) lmDetail ON true
 
   OUTER APPLY (
     SELECT COUNT(*) AS unread_count
@@ -60,7 +60,7 @@ Base AS (
     WHERE m.chat_id = c.id
       AND m.sender_id <> @userId
       AND m.status IN ('sent', 'delivered')
-  ) uc
+  ) uc ON true
 
   OUTER APPLY (
     SELECT TOP (1) cu.user_id AS other_user_id
@@ -68,7 +68,7 @@ Base AS (
     WHERE cu.chat_id = c.id
       AND cu.user_id <> @userId
       AND c.is_group_chat = 0
-  ) other
+  ) other ON true
 
   LEFT JOIN users u
     ON u.id = other.other_user_id
