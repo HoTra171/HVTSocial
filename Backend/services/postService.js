@@ -5,7 +5,7 @@ import sql from "mssql";
 const formatPost = (row) => ({
   id: row.id,
   content: row.content,
-  image_urls: row.media ? row.media.split(";") : [],
+  image_urls: row.media_url ? row.media_url.split(";") : [],
   createdAt: row.created_at,
   likes_count: row.likes_count,
   comments_count: row.comments_count,
@@ -41,9 +41,9 @@ export const PostService = {
         SELECT
           p.id,
           p.content,
-          p.media_url AS media,
+          p.media_url,
           p.created_at,
-          p.status,
+          p.visibility AS status,
           p.shared_post_id,
 
           u.id        AS user_id,
@@ -76,7 +76,7 @@ export const PostService = {
       .input("mediaUrl", media)
       .input("status", sql.NVarChar(10), status)
       .query(`
-        INSERT INTO posts (user_id, content, media_url, status)
+        INSERT INTO posts (user_id, content, media_url, visibility)
         OUTPUT INSERTED.*
         VALUES (@user_id, @content, @mediaUrl, @status)
       `);
