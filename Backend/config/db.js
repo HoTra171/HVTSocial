@@ -117,12 +117,17 @@ if (usePostgreSQL) {
           .replace(/DATEADD\(DAY,\s*(-?\d+),\s*GETDATE\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // DATEADD(DAY, -30, GETDATE())
           .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`);  // After GETDATE conversion
 
-        // Handle TOP clause
-        const topMatch = sqlQuery.match(/SELECT\s+TOP\s+(\d+)/i);
-        if (topMatch) {
-          pgQuery = pgQuery.replace(/SELECT\s+TOP\s+\d+/i, 'SELECT');
+        // Handle TOP clause in subqueries: SELECT TOP (n) ... ORDER BY -> SELECT ... ORDER BY LIMIT n
+        pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
+          return `SELECT${middle}${orderBy} LIMIT ${limit}`;
+        });
+        
+        // Handle main query TOP clause
+        const mainTopMatch = sqlQuery.match(/^SELECT\s+TOP\s*\((\d+)\)/i);
+        if (mainTopMatch && pgQuery.includes('SELECT TOP')) {
+          pgQuery = pgQuery.replace(/^SELECT\s+TOP\s*\(\d+\)/i, 'SELECT');
           if (!pgQuery.includes('LIMIT')) {
-            pgQuery += ` LIMIT ${topMatch[1]}`;
+            pgQuery += ` LIMIT ${mainTopMatch[1]}`;
           }
         }
 
@@ -154,6 +159,7 @@ if (usePostgreSQL) {
     };
   };
 }
+
 
 
 
