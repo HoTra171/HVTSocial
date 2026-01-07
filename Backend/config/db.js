@@ -133,6 +133,9 @@ if (usePostgreSQL) {
         // Convert CROSS APPLY to INNER JOIN LATERAL
         pgQuery = pgQuery.replace(/CROSS\s+APPLY\s*\(/gi, 'INNER JOIN LATERAL (');
 
+        // Add ON true after LATERAL JOIN subquery aliases
+        pgQuery = pgQuery.replace(/\) (lmDetail|uc|other)(?!\s+ON)/gi, ') $1 ON true');
+
         const result = await pool.query(pgQuery, values);
         
         // Return SQL Server compatible result structure
@@ -145,6 +148,7 @@ if (usePostgreSQL) {
     };
   };
 }
+
 
 
 

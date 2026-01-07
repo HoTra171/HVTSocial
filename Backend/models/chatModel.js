@@ -1,9 +1,9 @@
-import sql from "mssql";
+﻿import sql from "mssql";
 
 export const ChatModel = {
-  // Lấy danh sách tất cả chat (1-1 + group) của 1 user
+  // Láº¥y danh sÃ¡ch táº¥t cáº£ chat (1-1 + group) cá»§a 1 user
   async getUserChats(pool, userId) {
-    // Đảm bảo pool đã connected
+    // Äáº£m báº£o pool Ä‘Ã£ connected
     if (!pool.connected) {
       await pool.connect();
     }
@@ -52,7 +52,7 @@ Base AS (
     FROM messages m
     WHERE m.chat_id = c.id
     ORDER BY m.created_at DESC, m.id DESC
-  ) lmDetail ON true
+  ) lmDetail
 
   OUTER APPLY (
     SELECT COUNT(*) AS unread_count
@@ -60,7 +60,7 @@ Base AS (
     WHERE m.chat_id = c.id
       AND m.sender_id <> @userId
       AND m.status IN ('sent', 'delivered')
-  ) uc ON true
+  ) uc
 
   OUTER APPLY (
     SELECT TOP (1) cu.user_id AS other_user_id
@@ -68,7 +68,7 @@ Base AS (
     WHERE cu.chat_id = c.id
       AND cu.user_id <> @userId
       AND c.is_group_chat = 0
-  ) other ON true
+  ) other
 
   LEFT JOIN users u
     ON u.id = other.other_user_id
@@ -96,7 +96,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return result.recordset;
   },
 
-  // Lấy tổng số tin nhắn chưa đọc của user
+  // Láº¥y tá»•ng sá»‘ tin nháº¯n chÆ°a Ä‘á»c cá»§a user
   async getUnreadCount(pool, userId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
@@ -115,7 +115,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return result.recordset[0].unread_count;
   },
 
-  // Lấy toàn bộ tin nhắn theo chat_id
+  // Láº¥y toÃ n bá»™ tin nháº¯n theo chat_id
   async getMessagesByChat(pool, chatId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
@@ -140,7 +140,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return req.query(query);
   },
 
-  // Gửi tin nhắn (text / image / voice / reply)
+  // Gá»­i tin nháº¯n (text / image / voice / reply)
   async sendMessage(pool, payload) {
     const {
       chatId,
@@ -158,7 +158,7 @@ ORDER BY last_time DESC, chat_id DESC;
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    // Nếu có reply, lưu JSON vào content
+    // Náº¿u cÃ³ reply, lÆ°u JSON vÃ o content
     let finalContent = content || "";
     if (reply_to_id) {
       const replyData = {
@@ -193,7 +193,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return req.query(query);
   },
 
-  // Đánh dấu tin nhắn đã đọc
+  // ÄÃ¡nh dáº¥u tin nháº¯n Ä‘Ã£ Ä‘á»c
   async markMessagesRead(pool, chatId, userId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
@@ -212,7 +212,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return req.query(query);
   },
 
-  // Thu hồi tin nhắn
+  // Thu há»“i tin nháº¯n
   async recallMessage(pool, messageId) {
     if (!pool.connected) await pool.connect();
     const request = pool.request();
@@ -231,7 +231,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return request.query(query);
   },
 
-  // Chỉnh sửa tin nhắn
+  // Chá»‰nh sá»­a tin nháº¯n
   async editMessage(pool, messageId, newContent) {
     if (!pool.connected) await pool.connect();
     const request = pool.request();
@@ -248,7 +248,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return request.query(query);
   },
 
-  // lấy chat_id và sender_id của tin nhắn để check quyền + emit đúng room
+  // láº¥y chat_id vÃ  sender_id cá»§a tin nháº¯n Ä‘á»ƒ check quyá»n + emit Ä‘Ãºng room
   async getMessageMeta(pool, messageId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
@@ -264,7 +264,7 @@ ORDER BY last_time DESC, chat_id DESC;
   },
 
 
-  // Lấy danh sách users trong 1 chat (dùng cho notification)
+  // Láº¥y danh sÃ¡ch users trong 1 chat (dÃ¹ng cho notification)
   async getChatUsers(pool, chatId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
@@ -280,7 +280,7 @@ ORDER BY last_time DESC, chat_id DESC;
     return result.recordset;
   },
 
-  // gửi tin nhắn với người chưa từng nhắn tin
+  // gá»­i tin nháº¯n vá»›i ngÆ°á»i chÆ°a tá»«ng nháº¯n tin
   async getOrCreateDm(pool, userA, userB) {
     if (!pool.connected) await pool.connect();
 
@@ -291,7 +291,7 @@ ORDER BY last_time DESC, chat_id DESC;
     await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
 
     try {
-      // lock theo cặp user để không tạo trùng
+      // lock theo cáº·p user Ä‘á»ƒ khÃ´ng táº¡o trÃ¹ng
       const lockReq = tx.request();
       lockReq.input("lockKey", sql.NVarChar(100), `dm:${low}:${high}`);
       await lockReq.query(`
@@ -304,7 +304,7 @@ ORDER BY last_time DESC, chat_id DESC;
       IF (@res < 0) THROW 51000, 'applock_failed', 1;
     `);
 
-      // tìm chat 1-1 đã tồn tại
+      // tÃ¬m chat 1-1 Ä‘Ã£ tá»“n táº¡i
       const findReq = tx.request();
       findReq.input("userA", sql.Int, userA);
       findReq.input("userB", sql.Int, userB);
@@ -328,7 +328,7 @@ ORDER BY last_time DESC, chat_id DESC;
         return existing.recordset[0].chat_id;
       }
 
-      // tạo chat mới
+      // táº¡o chat má»›i
       const createReq = tx.request();
       createReq.input("name", sql.NVarChar(100), `Chat 1-1: U${low} & U${high}`);
 
@@ -340,7 +340,7 @@ ORDER BY last_time DESC, chat_id DESC;
 
       const chatId = created.recordset[0].chat_id;
 
-      // add 2 user vào chat_users
+      // add 2 user vÃ o chat_users
       const insReq = tx.request();
       insReq.input("chatId", sql.Int, chatId);
       insReq.input("userA", sql.Int, userA);
