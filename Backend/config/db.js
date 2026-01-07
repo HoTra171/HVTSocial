@@ -124,6 +124,13 @@ if (usePostgreSQL) {
           .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // After GETDATE conversion
           .replace(/OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi, 'OFFSET $$$1 LIMIT $$$2');  // OFFSET/FETCH NEXT -> OFFSET/LIMIT
 
+        // Handle TOP clause with parameter: SELECT TOP ($1) -> SELECT ... LIMIT $1
+        pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\(\$(\d+)\)/gi, 'SELECT');
+        const topParamMatch = sqlQuery.match(/SELECT\s+TOP\s*\(\$(\d+)\)/i);
+        if (topParamMatch && !pgQuery.includes('LIMIT')) {
+          pgQuery += ` LIMIT $${topParamMatch[1]}`;
+        }
+
         // Handle TOP clause in subqueries: SELECT TOP (n) ... ORDER BY -> SELECT ... ORDER BY LIMIT n
         pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
           return `SELECT${middle}${orderBy} LIMIT ${limit}`;
