@@ -107,9 +107,11 @@ if (usePostgreSQL) {
 
         for (const [key, value] of Object.entries(inputs)) {
           const regex = new RegExp(`@${key}\\b`, 'g');
-          pgQuery = pgQuery.replace(regex, `$${paramIndex}`);
-          values.push(value);
-          paramIndex++;
+          if (pgQuery.match(regex)) {
+            pgQuery = pgQuery.replace(regex, `$${paramIndex}`);
+            values.push(value);
+            paramIndex++;
+          }
         }
 
         // Convert SQL Server syntax to PostgreSQL
