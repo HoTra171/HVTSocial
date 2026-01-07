@@ -53,6 +53,9 @@ export const createPost = async (req, res) => {
   try {
     console.log("createPost req.user:", req.user);
     const user_id = req.user.id;
+    if (!user_id) {
+      return res.status(401).json({ success: false, message: "Không xác định được người dùng." });
+    }
     const { content } = req.body;
     const media = req.body.media || null;
 
@@ -104,33 +107,17 @@ export const updatePost = async (req, res) => {
     .request()
     .input("postId", sql.Int, postId)
     .input("content", sql.NVarChar(sql.MAX), content)
-    .input("media", sql.NVarChar(sql.MAX), media)
-    .input("status", sql.NVarChar(10), safeStatus)
+    .input("mediaUrl", sql.NVarChar(sql.MAX), media)
+    .input("visibility", sql.NVarChar(10), safeStatus)
     .query(`
-    DECLARE @OutputTable TABLE (
-      id INT,
-      content NVARCHAR(MAX),
-      media NVARCHAR(MAX),
-      status NVARCHAR(10),
-      updated_at DATETIME
-    );
-
     UPDATE posts
     SET
       content = @content,
-      media = @media,
-      status = @status,
+      media_url = @mediaUrl,
+      visibility = @visibility,
       updated_at = GETDATE()
-    OUTPUT
-      INSERTED.id,
-      INSERTED.content,
-      INSERTED.media,
-      INSERTED.status,
-      INSERTED.updated_at
-    INTO @OutputTable
-    WHERE id = @postId;
-
-    SELECT * FROM @OutputTable;
+    OUTPUT INSERTED.*
+    WHERE id = @postId
   `);
 
   return res.json(result.recordset[0]);
