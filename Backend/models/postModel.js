@@ -7,9 +7,13 @@ export const PostModel = {
   async getAllPosts(cursor, limit = 10, viewerId) {
     const db = await pool;
 
+    // Handle null cursor for first page
+    const hasCursor = cursor !== null && cursor !== undefined;
+
     const result = await db
       .request()
-      .input('cursor', sql.DateTime, cursor)
+      .input('cursor', sql.DateTime, hasCursor ? cursor : new Date())
+      .input('hasCursor', sql.Bit, hasCursor ? 1 : 0)
       .input('limit', sql.Int, limit)
       .input('viewerId', sql.Int, viewerId)
       .query(`
@@ -34,7 +38,7 @@ export const PostModel = {
       JOIN users u ON u.id = p.user_id
 
       WHERE
-        (@cursor IS NULL OR p.created_at < @cursor)
+        (@hasCursor = 0 OR p.created_at < @cursor)
         AND (
           p.visibility = 'public'
           OR p.user_id = @viewerId
