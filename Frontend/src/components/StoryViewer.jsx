@@ -259,7 +259,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
 
       // 2) send message
       await axios.post(
-        `${API_URL}/chat/send",
+        `${API_URL}/chat/send`,
         {
           chatId,
           content: replyText,
