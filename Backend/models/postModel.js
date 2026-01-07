@@ -6,17 +6,19 @@ export const PostModel = {
   // FEED POSTS - Cursor-based pagination
   async getAllPosts(cursor, limit = 10, viewerId) {
     const db = await pool;
+    const request = db.request();
 
-    // Handle null cursor for first page
-    const hasCursor = cursor !== null && cursor !== undefined;
+    request.input('limit', sql.Int, limit);
+    request.input('viewerId', sql.Int, viewerId);
 
-    const result = await db
-      .request()
-      .input('cursor', sql.DateTime, hasCursor ? cursor : new Date())
-      .input('hasCursor', sql.Bit, hasCursor ? 1 : 0)
-      .input('limit', sql.Int, limit)
-      .input('viewerId', sql.Int, viewerId)
-      .query(`
+    // Build WHERE clause dynamically
+    let cursorCondition = '';
+    if (cursor) {
+      request.input('cursor', sql.DateTime, new Date(cursor));
+      cursorCondition = 'p.created_at < @cursor AND';
+    }
+
+    const result = await request.query(`
       SELECT TOP (@limit)
         p.id,
         p.content,
@@ -38,8 +40,8 @@ export const PostModel = {
       JOIN users u ON u.id = p.user_id
 
       WHERE
-        (@hasCursor = 0 OR p.created_at < @cursor)
-        AND (
+        ${cursorCondition}
+        (
           p.visibility = 'public'
           OR p.user_id = @viewerId
           OR (
