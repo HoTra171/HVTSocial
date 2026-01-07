@@ -136,6 +136,12 @@ if (usePostgreSQL) {
         // Add ON true after LATERAL JOIN subquery aliases
         pgQuery = pgQuery.replace(/\) (lmDetail|uc|other)(?!\s+ON)/gi, ') $1 ON true');
 
+        // Debug: Log converted query
+        if (pgQuery.includes('LATERAL')) {
+          console.log('🔍 LATERAL JOIN Query Debug:');
+          console.log(pgQuery.substring(0, 1000));
+        }
+
         const result = await pool.query(pgQuery, values);
         
         // Return SQL Server compatible result structure
@@ -148,6 +154,7 @@ if (usePostgreSQL) {
     };
   };
 }
+
 
 
 
