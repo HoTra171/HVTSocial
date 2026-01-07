@@ -79,6 +79,16 @@ app.use(
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Root route - API info
+app.get('/', (req, res) => {
+  res.json({
+    name: 'HVTSocial API',
+    version: '1.0.0',
+    status: 'running',
+    docs: '/api-docs',
+  });
+});
+
 // Health check endpoint (expanded)
 app.get('/health', async (req, res) => {
   try {
