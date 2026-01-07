@@ -61,11 +61,11 @@ const Profile = () => {
 
         // Gọi song song thông tin user + các bài post của user đó
         const [userRes, postsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/users/${idToFetch}`, {
+          axios.get(`${API_URL}/users/${idToFetch}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
 
-          axios.get(`${API_BASE_URL}/posts/user/${idToFetch}`, {
+          axios.get(`${API_URL}/posts/user/${idToFetch}`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -108,7 +108,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await axios.get(`${API_BASE_URL}/saved-posts`, {
+      const res = await axios.get(`${API_URL}/saved-posts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -124,7 +124,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await axios.get(`${API_BASE_URL}/likes/posts`, {
+      const res = await axios.get(`${API_URL}/likes/posts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -246,7 +246,7 @@ const Profile = () => {
               )}
 
             </div>
-          )} 
+          )}
 
           {/* LIKES TAB */}
           {activeTab === "likes" && (
