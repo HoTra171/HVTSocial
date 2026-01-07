@@ -52,7 +52,7 @@ export const PostService = {
           u.avatar,
 
           (SELECT COUNT(*) FROM likes WHERE post_id = p.id)     AS likes_count,
-          (SELECT COUNT(*) FROM comments WHERE post_id = p.id)  AS comments_count,
+          (SELECT COUNT(*) FROM comments WHERE post_id = p.id)  AS comments_count
 
 
         FROM posts p
