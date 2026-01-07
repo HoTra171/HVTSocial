@@ -301,7 +301,7 @@ export const NotificationService = {
         ORDER BY n.created_at DESC
         OFFSET 0 ROWS
         FETCH NEXT @limit ROWS ONLY
-        ORDER BY n.created_at DESC
+
       `);
 
     return result.recordset;

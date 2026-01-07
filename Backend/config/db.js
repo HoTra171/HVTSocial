@@ -14,11 +14,11 @@ let pool;
 if (usePostgreSQL) {
   // Use PostgreSQL (Railway, Neon, Supabase, etc.)
   console.log('ðŸ˜ Using PostgreSQL database');
-  
+
   // Import PostgreSQL pool and test connection
   const dbPostgres = await import('./db-postgres.js');
   pool = dbPostgres.getPool();
-  
+
   // Test connection immediately
   try {
     await dbPostgres.testConnection();
@@ -30,13 +30,13 @@ if (usePostgreSQL) {
     console.error('  - Network connectivity');
     process.exit(1);
   }
-  
+
 } else {
   // Use SQL Server (local development)
   console.log('ðŸ—„ï¸  Using SQL Server database');
-  
+
   const sql = (await import('mssql')).default;
-  
+
   const config = {
     user: process.env.SQL_USER,
     password: process.env.SQL_PASSWORD,
@@ -86,15 +86,15 @@ export const getPool = () => pool;
 // Add unified request() method for both databases
 if (usePostgreSQL) {
   // PostgreSQL: Add request() method that converts to PostgreSQL syntax
-  pool.request = function() {
+  pool.request = function () {
     const inputs = {};
-    
+
     return {
       input(name, type, value) {
         inputs[name] = value;
         return this;
       },
-      
+
       async query(sqlQuery) {
         // Convert @param to $1, $2, etc.
         let pgQuery = sqlQuery;
@@ -125,17 +125,19 @@ if (usePostgreSQL) {
           .replace(/OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi, 'OFFSET $$$1 LIMIT $$$2');  // OFFSET/FETCH NEXT -> OFFSET/LIMIT
 
         // Handle TOP clause with parameter: SELECT TOP ($1) -> SELECT ... LIMIT $1
-        pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\(\$(\d+)\)/gi, 'SELECT');
-        const topParamMatch = sqlQuery.match(/SELECT\s+TOP\s*\(\$(\d+)\)/i);
-        if (topParamMatch && !pgQuery.includes('LIMIT')) {
-          pgQuery += ` LIMIT $${topParamMatch[1]}`;
+        const topMatch = pgQuery.match(/SELECT\s+TOP\s*\(\$(\d+)\)/i);
+        if (topMatch) {
+          pgQuery = pgQuery.replace(topMatch[0], 'SELECT');
+          if (!pgQuery.includes('LIMIT')) {
+            pgQuery += ` LIMIT $${topMatch[1]}`;
+          }
         }
 
         // Handle TOP clause in subqueries: SELECT TOP (n) ... ORDER BY -> SELECT ... ORDER BY LIMIT n
         pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
           return `SELECT${middle}${orderBy} LIMIT ${limit}`;
         });
-        
+
         // Handle main query TOP clause
         const mainTopMatch = sqlQuery.match(/^SELECT\s+TOP\s*\((\d+)\)/i);
         if (mainTopMatch && pgQuery.includes('SELECT TOP')) {
@@ -148,7 +150,7 @@ if (usePostgreSQL) {
         // Convert OUTER APPLY to LEFT JOIN LATERAL (SQL Server -> PostgreSQL)
         // Pattern: OUTER APPLY (subquery) alias
         pgQuery = pgQuery.replace(/OUTER\s+APPLY\s*\(/gi, 'LEFT JOIN LATERAL (');
-        
+
         // Convert CROSS APPLY to INNER JOIN LATERAL
         pgQuery = pgQuery.replace(/CROSS\s+APPLY\s*\(/gi, 'INNER JOIN LATERAL (');
 
@@ -162,7 +164,7 @@ if (usePostgreSQL) {
         }
 
         const result = await pool.query(pgQuery, values);
-        
+
         // Return SQL Server compatible result structure
         return {
           recordset: result.rows,

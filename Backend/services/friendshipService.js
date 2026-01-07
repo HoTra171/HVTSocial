@@ -396,7 +396,7 @@ export const FriendshipService = {
              OR (f.user_id = u.id AND f.friend_id = @userId)
         )
 
-      ORDER BY score DESC, mutual_friends_count DESC, common_hobby_count DESC, u.created_at DESC;
+      ORDER BY score DESC, mutual_friends_count DESC, u.created_at DESC;
     `);
 
     return result.recordset;
