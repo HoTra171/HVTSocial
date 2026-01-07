@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../constants/api';
+import { Eye, EyeOff } from 'lucide-react';
 
 const API_BASE_URL = `${API_URL}/auth`;
 
@@ -21,6 +22,8 @@ const SignUp = () => {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Handle input change
   const handleChange = (e) => {
@@ -61,7 +64,7 @@ const SignUp = () => {
   // Handle sign up
   const handleSignUp = async (e) => {
     e.preventDefault();
-    
+
     // Clear previous errors
     setError('');
 
@@ -181,26 +184,44 @@ const SignUp = () => {
             />
 
             {/* Password */}
-            <input
-              type="password"
-              name="password"
-              placeholder="Mật khẩu (ít nhất 6 ký tự) *"
-              value={form.password}
-              onChange={handleChange}
-              disabled={loading}
-              className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-70"
-            />
+            <div className="relative mb-4">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Mật khẩu (ít nhất 6 ký tự) *"
+                value={form.password}
+                onChange={handleChange}
+                disabled={loading}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-70 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
 
             {/* Confirm Password */}
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Xác nhận mật khẩu *"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              disabled={loading}
-              className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-70"
-            />
+            <div className="relative mb-4">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Xác nhận mật khẩu *"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                disabled={loading}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-70 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
 
             {/* Date of Birth */}
             <input
@@ -267,9 +288,8 @@ const SignUp = () => {
             {/* Login Link */}
             <p
               onClick={() => !loading && navigate('/')}
-              className={`text-sm text-center text-indigo-700 mt-4 hover:underline ${
-                loading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
-              }`}
+              className={`text-sm text-center text-indigo-700 mt-4 hover:underline ${loading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+                }`}
             >
               Đã có tài khoản? Đăng nhập ngay
             </p>

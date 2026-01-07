@@ -3,6 +3,7 @@ import axios from "axios";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { Eye, EyeOff } from 'lucide-react';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);          // 1: nhập email, 2: nhập OTP + mật khẩu mới
@@ -12,6 +13,7 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const navigate = useNavigate();
 
@@ -21,7 +23,7 @@ const ForgotPassword = () => {
     setMessage("");
     setError("");
     setLoading(true);
- 
+
     try {
       const res = await axios.post(
         `${API_URL}/auth/request-reset-otp`,
@@ -32,7 +34,7 @@ const ForgotPassword = () => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Không thể gửi mã OTP. Vui lòng thử lại."
+        "Không thể gửi mã OTP. Vui lòng thử lại."
       );
     } finally {
       setLoading(false);
@@ -60,7 +62,7 @@ const ForgotPassword = () => {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Không thể đổi mật khẩu. Vui lòng kiểm tra lại OTP."
+        "Không thể đổi mật khẩu. Vui lòng kiểm tra lại OTP."
       );
     } finally {
       setLoading(false);
@@ -126,9 +128,8 @@ const ForgotPassword = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full bg-indigo-600 text-white p-3 rounded-lg transition cursor-pointer ${
-                  loading ? "opacity-70 cursor-not-allowed" : "hover:bg-indigo-700"
-                }`}
+                className={`w-full bg-indigo-600 text-white p-3 rounded-lg transition cursor-pointer ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-indigo-700"
+                  }`}
               >
                 {loading ? "Đang gửi..." : "Gửi mã OTP"}
               </button>
@@ -146,21 +147,29 @@ const ForgotPassword = () => {
                 required
               />
 
-              <input
-                type="password"
-                placeholder="Nhập mật khẩu mới"
-                className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
+              <div className="relative mb-4">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="Nhập mật khẩu mới"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 pr-10"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full bg-indigo-600 text-white p-3 rounded-lg transition cursor-pointer ${
-                  loading ? "opacity-70 cursor-not-allowed" : "hover:bg-indigo-700"
-                }`}
+                className={`w-full bg-indigo-600 text-white p-3 rounded-lg transition cursor-pointer ${loading ? "opacity-70 cursor-not-allowed" : "hover:bg-indigo-700"
+                  }`}
               >
                 {loading ? "Đang đổi mật khẩu..." : "Đổi mật khẩu"}
               </button>
