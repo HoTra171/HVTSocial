@@ -186,21 +186,18 @@ export const createStory = async (req, res) => {
       .input("privacy", sql.NVarChar, privacy)
       .input("hours", sql.Int, Number(expires_in_hours))
       .query(`
-        DECLARE @expiresAt DATETIME = DATEADD(HOUR, @hours, GETDATE());
-        
         INSERT INTO stories (
           user_id, media_type, media_url, music_url, caption, 
           background_color, text_color, font_size, text_position, show_frame,
           sticker, sticker_position, privacy,
           created_at, expires_at
         )
-        OUTPUT INSERTED.*
         VALUES (
           @userId, @mediaType, @mediaUrl, @musicUrl, @caption,
           @bgColor, @textColor, @fontSize, @textPos, @showFrame,
           @sticker, @stickerPos, @privacy,
-          GETDATE(), @expiresAt
-        );
+          GETDATE(), DATEADD(HOUR, @hours, GETDATE())
+        )
       `);
 
     const story = result.recordset[0];

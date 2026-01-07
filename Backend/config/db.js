@@ -114,8 +114,15 @@ if (usePostgreSQL) {
           .replace(/\[dbo\]\./gi, '')
           .replace(/\[(\w+)\]/g, '$1')
           .replace(/ISNULL\(/gi, 'COALESCE(')  // SQL Server ISNULL -> PostgreSQL COALESCE
+          .replace(/DATEADD\(HOUR,\s*(-?\d+),\s*GETDATE\(\)\)/gi, (match, hours) => `NOW() + INTERVAL '${hours} hours'`)  // DATEADD(HOUR, n, GETDATE())
+          .replace(/DATEADD\(HOUR,\s*\$\d+,\s*NOW\(\)\)/gi, (match) => {
+            // DATEADD(HOUR, $1, NOW()) - keep parameter
+            const paramMatch = match.match(/\$(\d+)/);
+            return `NOW() + ($${paramMatch[1]} || ' hours')::INTERVAL`;
+          })
           .replace(/DATEADD\(DAY,\s*(-?\d+),\s*GETDATE\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // DATEADD(DAY, -30, GETDATE())
-          .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`);  // After GETDATE conversion
+          .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // After GETDATE conversion
+          .replace(/OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi, 'OFFSET $$$1 LIMIT $$$2');  // OFFSET/FETCH NEXT -> OFFSET/LIMIT
 
         // Handle TOP clause in subqueries: SELECT TOP (n) ... ORDER BY -> SELECT ... ORDER BY LIMIT n
         pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
