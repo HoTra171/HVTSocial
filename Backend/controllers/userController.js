@@ -144,7 +144,7 @@ export const updateProfile = async (req, res) => {
         request.input('avatar', sql.NVarChar, result.url);
         console.log('Avatar:', result.url);
       } else if (result.type === 'background') {
-        updates.push('background = @background');
+        updates.push('cover_photo = @background');
         request.input('background', sql.NVarChar, result.url);
         console.log('Background:', result.url);
       }
@@ -166,7 +166,7 @@ export const updateProfile = async (req, res) => {
       .input('userId', sql.Int, userId)
       .query(`
         SELECT 
-          id, full_name, username, email, avatar, background, 
+          id, full_name, username, email, avatar, cover_photo AS background, 
           bio, location AS address, created_at
         FROM users 
         WHERE id = @userId

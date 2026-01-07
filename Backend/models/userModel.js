@@ -32,7 +32,7 @@ export const findUserById = async (id) => {
     .query(`
       SELECT 
         id, email, full_name, username, date_of_birth, gender,
-        avatar, background, bio, location AS address,
+        avatar, cover_photo AS background, bio, location AS address,
         created_at, updated_at
       FROM users
       WHERE id = @id
@@ -84,7 +84,7 @@ export const UserModel = {
           full_name,
           username,
           avatar,
-          background,
+          cover_photo AS background,
           bio,
           location AS address,
           created_at
