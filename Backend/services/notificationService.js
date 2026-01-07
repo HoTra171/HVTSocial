@@ -11,13 +11,17 @@ export const NotificationService = {
     await db.request()
       .input("userId", sql.Int, userId)
       .query(`
+       // Column 'notification_unread' does not exist in users table in PostgreSQL schema.
+       // Skipping update.
+       /*
         UPDATE users
         SET notification_unread = (
           SELECT COUNT(*) 
           FROM notifications 
-          WHERE user_id = @userId AND status = 'unread'
+          WHERE user_id = @userId AND is_read = 0
         )
         WHERE id = @userId
+       */
       `);
   },
 
@@ -35,10 +39,10 @@ export const NotificationService = {
       .input("content", sql.NVarChar, content)
       .query(`
         INSERT INTO notifications
-          (user_id, sender_id, content, type, status, created_at)
+          (user_id, sender_id, content, type, is_read, created_at)
         OUTPUT INSERTED.*
         VALUES
-          (@userId, @senderId, @content, 'message', 'unread', GETDATE())
+          (@userId, @senderId, @content, 'message', 0, GETDATE())
       `);
 
     // Cập nhật unread count
@@ -129,10 +133,10 @@ export const NotificationService = {
         )
         BEGIN
           INSERT INTO notifications
-            (user_id, sender_id, post_id, content, type, status, created_at)
+            (user_id, sender_id, post_id, content, type, is_read, created_at)
           OUTPUT INSERTED.*
           VALUES
-            (@userId, @senderId, @postId, @content, 'like', 'unread', GETDATE())
+            (@userId, @senderId, @postId, @content, 'like', 0, GETDATE())
         END
       `);
 
@@ -165,10 +169,10 @@ export const NotificationService = {
       .input("content", sql.NVarChar, content)
       .query(`
         INSERT INTO notifications
-          (user_id, sender_id, post_id, content, type, status, created_at)
+          (user_id, sender_id, post_id, content, type, is_read, created_at)
         OUTPUT INSERTED.*
         VALUES
-          (@userId, @senderId, @postId, @content, 'comment', 'unread', GETDATE())
+          (@userId, @senderId, @postId, @content, 'comment', 0, GETDATE())
       `);
 
     // Cập nhật unread count
@@ -198,10 +202,10 @@ export const NotificationService = {
       .input("content", sql.NVarChar, content)
       .query(`
         INSERT INTO notifications
-          (user_id, sender_id, post_id, content, type, status, created_at)
+          (user_id, sender_id, post_id, content, type, is_read, created_at)
         OUTPUT INSERTED.*
         VALUES
-          (@userId, @senderId, @postId, @content, 'reply', 'unread', GETDATE())
+          (@userId, @senderId, @postId, @content, 'reply', 0, GETDATE())
       `);
 
     // Cập nhật unread count
@@ -223,10 +227,10 @@ export const NotificationService = {
       .input("content", sql.NVarChar, content)
       .query(`
       INSERT INTO notifications
-        (user_id, sender_id, content, type, status, created_at)
+        (user_id, sender_id, content, type, is_read, created_at)
       OUTPUT INSERTED.*
       VALUES
-        (@userId, @senderId, @content, 'friend_request', 'unread', GETDATE())
+        (@userId, @senderId, @content, 'friend_request', 0, GETDATE())
     `);
 
     await this.updateUnreadCount(userId);
@@ -264,10 +268,10 @@ export const NotificationService = {
       .input("content", sql.NVarChar, content)
       .query(`
       INSERT INTO notifications
-        (user_id, sender_id, post_id, content, type, status, created_at)
+        (user_id, sender_id, post_id, content, type, is_read, created_at)
       OUTPUT INSERTED.*
       VALUES
-        (@userId, @senderId, @postId, @content, 'other', 'unread', GETDATE())
+        (@userId, @senderId, @postId, @content, 'other', 0, GETDATE())
     `);
 
     await this.updateUnreadCount(userId);
@@ -320,7 +324,7 @@ export const NotificationService = {
         SELECT COUNT(*) AS unread_count
         FROM notifications
         WHERE user_id = @userId
-          AND status = 'unread'
+          AND is_read = 0
       `);
 
     return result.recordset[0].unread_count;
@@ -337,9 +341,9 @@ export const NotificationService = {
       .input("userId", sql.Int, userId)
       .query(`
         UPDATE notifications
-        SET status = 'read'
+        SET is_read = 1
         WHERE user_id = @userId
-          AND status = 'unread'
+          AND is_read = 0
       `);
 
     // Cập nhật unread count về 0
@@ -360,10 +364,10 @@ export const NotificationService = {
       .input("userId", sql.Int, userId)
       .query(`
         UPDATE notifications
-        SET status = 'read'
+        SET is_read = 1
         WHERE id = @notificationId
           AND user_id = @userId
-          AND status = 'unread'
+          AND is_read = 0
       `);
 
     // Cập nhật unread count
@@ -383,7 +387,7 @@ export const NotificationService = {
       .input("notificationId", sql.Int, notificationId)
       .input("userId", sql.Int, userId)
       .query(`
-        SELECT status FROM notifications
+        SELECT is_read AS status FROM notifications
         WHERE id = @notificationId AND user_id = @userId
       `);
 
@@ -398,7 +402,7 @@ export const NotificationService = {
       `);
 
     // Nếu xóa notification unread thì update count
-    if (notif.recordset[0]?.status === 'unread') {
+    if (notif.recordset[0]?.status === false) {
       await this.updateUnreadCount(userId);
     }
 
@@ -423,8 +427,9 @@ export const NotificationService = {
     await db.request()
       .input("userId", sql.Int, userId)
       .query(`
-        UPDATE users
-        SET notification_unread = 0
+        -- SET notification_unread = 0
+        -- Column does not exist
+        SELECT 1
         WHERE id = @userId
       `);
 

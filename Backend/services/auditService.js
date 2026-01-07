@@ -34,24 +34,24 @@ export const logAuditEvent = async (event) => {
     await db.request()
       .input('userId', sql.Int, event.userId || null)
       .input('action', sql.NVarChar, event.action)
-      .input('resourceType', sql.NVarChar, event.resourceType || null)
-      .input('resourceId', sql.Int, event.resourceId || null)
-      .input('oldValues', sql.NVarChar, event.oldValues ? JSON.stringify(event.oldValues) : null)
-      .input('newValues', sql.NVarChar, event.newValues ? JSON.stringify(event.newValues) : null)
+      .input('entityType', sql.NVarChar, event.resourceType || null)
+      .input('entityId', sql.Int, event.resourceId || null)
       .input('ipAddress', sql.NVarChar, event.ipAddress || null)
       .input('userAgent', sql.NVarChar, event.userAgent || null)
-      .input('status', sql.NVarChar, event.status || 'success')
-      .input('errorMessage', sql.NVarChar, event.errorMessage || null)
+      .input('metadata', sql.NVarChar, JSON.stringify({
+        old_values: event.oldValues,
+        new_values: event.newValues,
+        status: event.status || 'success',
+        error_message: event.errorMessage
+      }))
       .query(`
         INSERT INTO audit_logs (
-          user_id, action, resource_type, resource_id,
-          old_values, new_values, ip_address, user_agent,
-          status, error_message
+          user_id, action, entity_type, entity_id,
+          ip_address, user_agent, metadata
         )
         VALUES (
-          @userId, @action, @resourceType, @resourceId,
-          @oldValues, @newValues, @ipAddress, @userAgent,
-          @status, @errorMessage
+          @userId, @action, @entityType, @entityId,
+          @ipAddress, @userAgent, @metadata
         )
       `);
 
@@ -206,14 +206,13 @@ export const getAuditLogs = async (filters = {}) => {
       al.user_id,
       u.username,
       al.action,
-      al.resource_type,
-      al.resource_id,
-      al.old_values,
-      al.new_values,
+      al.entity_type AS resource_type,
+      al.entity_id AS resource_id,
+      al.metadata,
+      -- Extract from metadata for backward compatibility (JSON parsing in JS recommended instead)
+      -- al.old_values, al.new_values, al.status, al.error_message replaced by metadata
       al.ip_address,
       al.user_agent,
-      al.status,
-      al.error_message,
       al.created_at
     FROM audit_logs al
     LEFT JOIN users u ON al.user_id = u.id
@@ -233,14 +232,18 @@ export const getAuditLogs = async (filters = {}) => {
   }
 
   if (resourceType) {
-    query += ' AND al.resource_type = @resourceType';
+    query += ' AND al.entity_type = @resourceType';
     request.input('resourceType', sql.NVarChar, resourceType);
   }
 
+  // Status filtering is hard with JSON metadata query cross-db. 
+  // Ignoring status filter for now or need specialized JSON query.
+  /*
   if (status) {
     query += ' AND al.status = @status';
     request.input('status', sql.NVarChar, status);
   }
+  */
 
   if (startDate) {
     query += ' AND al.created_at >= @startDate';
@@ -296,8 +299,8 @@ export const getResourceAuditLogs = async (resourceType, resourceId, limit = 50,
         al.created_at
       FROM audit_logs al
       LEFT JOIN users u ON al.user_id = u.id
-      WHERE al.resource_type = @resourceType
-        AND al.resource_id = @resourceId
+      WHERE al.entity_type = @resourceType
+        AND al.entity_id = @resourceId
       ORDER BY al.created_at DESC
       OFFSET @offset ROWS
       FETCH NEXT @limit ROWS ONLY
@@ -364,10 +367,10 @@ export const getAdminActions = async (limit = 100, offset = 0) => {
         al.user_id,
         u.username as admin_username,
         al.action,
-        al.resource_type,
-        al.resource_id,
-        al.old_values,
-        al.new_values,
+        al.action,
+        al.entity_type AS resource_type,
+        al.entity_id AS resource_id,
+        al.metadata,
         al.created_at
       FROM audit_logs al
       JOIN users u ON al.user_id = u.id

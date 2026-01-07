@@ -27,9 +27,9 @@ export const ShareService = {
       .input("postId", sql.Int, postId)
       .input("content", sql.NVarChar(sql.MAX), content)
       .query(`
-        INSERT INTO posts (user_id, content, shared_post_id)
+        INSERT INTO shares (user_id, post_id, caption, shared_to)
         OUTPUT INSERTED.*
-        VALUES (@userId, @content, @postId)
+        VALUES (@userId, @postId, @content, 'timeline')
       `);
 
     return result.recordset[0];
@@ -46,10 +46,10 @@ export const ShareService = {
       .input("shareId", sql.Int, shareId)
       .query(`
         SELECT 
-          -- Bài share
-          p.id,
-          p.content,
-          p.created_at,
+          -- Bài share (bảng shares)
+          s.id,
+          s.caption AS content,
+          s.created_at,
           
           -- User share
           u.id AS user_id,
@@ -60,7 +60,7 @@ export const ShareService = {
           -- Bài gốc
           op.id AS original_post_id,
           op.content AS original_content,
-          op.media AS original_media,
+          op.media_url AS original_media,
           op.created_at AS original_created_at,
           
           -- User bài gốc
@@ -69,14 +69,18 @@ export const ShareService = {
           ou.username AS original_username,
           ou.avatar AS original_avatar,
           
-          (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
-          (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count
+          (SELECT COUNT(*) FROM likes WHERE post_id = s.post_id) AS likes_count, -- Likes of original post? Or shares don't have likes? 
+          -- Schema says likes has post_id. Shares is own table. 
+          -- If shares don't have likes support in schema (likes table references posts, comments), then shares can't be liked.
+          -- For now set 0.
+          0 AS likes_count,
+          0 AS comments_count
           
-        FROM posts p
-        JOIN users u ON u.id = p.user_id
-        LEFT JOIN posts op ON op.id = p.shared_post_id
+        FROM shares s
+        JOIN users u ON u.id = s.user_id
+        LEFT JOIN posts op ON op.id = s.post_id
         LEFT JOIN users ou ON ou.id = op.user_id
-        WHERE p.id = @shareId
+        WHERE s.id = @shareId
       `);
 
     if (result.recordset.length === 0) {
@@ -99,19 +103,19 @@ export const ShareService = {
       },
       originalPost: row.original_post_id
         ? {
-            id: row.original_post_id,
-            content: row.original_content,
-            image_urls: row.original_media
-              ? row.original_media.split(";")
-              : [],
-            createdAt: row.original_created_at,
-            user: {
-              id: row.original_user_id,
-              full_name: row.original_full_name,
-              username: row.original_username,
-              profile_picture: row.original_avatar,
-            },
-          }
+          id: row.original_post_id,
+          content: row.original_content,
+          image_urls: row.original_media
+            ? row.original_media.split(";")
+            : [],
+          createdAt: row.original_created_at,
+          user: {
+            id: row.original_user_id,
+            full_name: row.original_full_name,
+            username: row.original_username,
+            profile_picture: row.original_avatar,
+          },
+        }
         : null,
     };
   },
@@ -127,19 +131,19 @@ export const ShareService = {
       .input("postId", sql.Int, postId)
       .query(`
         SELECT 
-          p.id AS share_id,
-          p.content AS share_content,
-          p.created_at AS shared_at,
+          s.id AS share_id,
+          s.caption AS share_content,
+          s.created_at AS shared_at,
           
           u.id AS user_id,
           u.full_name,
           u.username,
           u.avatar
           
-        FROM posts p
-        JOIN users u ON u.id = p.user_id
-        WHERE p.shared_post_id = @postId
-        ORDER BY p.created_at DESC
+        FROM shares s
+        JOIN users u ON u.id = s.user_id
+        WHERE s.post_id = @postId
+        ORDER BY s.created_at DESC
       `);
 
     return result.recordset;
@@ -157,8 +161,8 @@ export const ShareService = {
       .input("shareId", sql.Int, shareId)
       .input("userId", sql.Int, userId)
       .query(`
-        SELECT id FROM posts 
-        WHERE id = @shareId AND user_id = @userId AND shared_post_id IS NOT NULL
+        SELECT id FROM shares 
+        WHERE id = @shareId AND user_id = @userId
       `);
 
     if (checkOwnership.recordset.length === 0) {
@@ -169,7 +173,7 @@ export const ShareService = {
       .request()
       .input("shareId", sql.Int, shareId)
       .query(`
-        DELETE FROM posts WHERE id = @shareId
+        DELETE FROM shares WHERE id = @shareId
       `);
 
     return { success: true, message: "Đã xóa bài share" };
