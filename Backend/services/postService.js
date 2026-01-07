@@ -30,18 +30,18 @@ export const PostService = {
     return rows.map(formatPost);
   },
 
-  async getPostById(postId,viewerId) {
+  async getPostById(postId, viewerId) {
     const db = await pool;
 
     const result = await db
       .request()
       .input("postId", sql.Int, postId)
-      .input("viewerId", sql.Int, viewerId) 
+      .input("viewerId", sql.Int, viewerId)
       .query(`
         SELECT
           p.id,
           p.content,
-          p.media,
+          p.media_url AS media,
           p.created_at,
           p.status,
           p.shared_post_id,
@@ -73,12 +73,12 @@ export const PostService = {
       .request()
       .input("user_id", userId)
       .input("content", content)
-      .input("media", media)
+      .input("mediaUrl", media)
       .input("status", sql.NVarChar(10), status)
       .query(`
-        INSERT INTO posts (user_id, content, media, status)
+        INSERT INTO posts (user_id, content, media_url, status)
         OUTPUT INSERTED.*
-        VALUES (@user_id, @content, @media, @status)
+        VALUES (@user_id, @content, @mediaUrl, @status)
       `);
 
     return result.recordset[0];

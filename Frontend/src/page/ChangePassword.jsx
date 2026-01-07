@@ -81,14 +81,14 @@ const ChangePassword = () => {
         if (userId) {
           navigate(`/profile/${userId}`);
         } else {
-          navigate(-1); 
+          navigate(-1);
         }
       })
       .finally(() => setLoading(false));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white sm:-ml-60">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-3xl mx-auto p-6">
         {/* Back button */}
         <button
