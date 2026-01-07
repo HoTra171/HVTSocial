@@ -1,30 +1,31 @@
 import { ChatModel } from "../models/chatModel.js";
+import { ChatModelPG } from "../models/chatModel.pg.js";
 import { pool } from "../config/db.js";
 
+// Auto-detect which model to use based on DATABASE_URL
+const usePostgreSQL = !!process.env.DATABASE_URL;
+
+console.log(`📦 ChatService using: ${usePostgreSQL ? 'PostgreSQL (Railway)' : 'SQL Server (Local)'} model`);
+
 export const ChatService = {
-  getUserChats: (userId) => ChatModel.getUserChats(pool, userId),
+  // Methods với PostgreSQL support
+  getUserChats: (userId) => 
+    usePostgreSQL ? ChatModelPG.getUserChats(userId) : ChatModel.getUserChats(pool, userId),
 
-  getMessagesByChat: (chatId) => ChatModel.getMessagesByChat(pool, chatId),
+  getMessagesByChat: (chatId) => 
+    usePostgreSQL ? ChatModelPG.getMessagesByChat(chatId) : ChatModel.getMessagesByChat(pool, chatId),
 
+  getUnreadCount: async (userId) => 
+    usePostgreSQL ? await ChatModelPG.getUnreadCount(userId) : await ChatModel.getUnreadCount(pool, userId),
+
+  // Methods chỉ dùng SQL Server (chưa có PostgreSQL version)
   sendMessage: (payload) => ChatModel.sendMessage(pool, payload),
 
-  markMessagesRead: (chatId, userId) =>
-    ChatModel.markMessagesRead(pool, chatId, userId),
+  markMessagesRead: (chatId, userId) => ChatModel.markMessagesRead(pool, chatId, userId),
 
-  recallMessage: async (messageId) => {
-    const result = await ChatModel.recallMessage(pool, messageId);
-    return result;
-  },
+  recallMessage: (messageId) => ChatModel.recallMessage(pool, messageId),
 
-  editMessage: async (messageId, newContent) => {
-    const result = await ChatModel.editMessage(pool, messageId, newContent);
-    return result;
-  },
-
-  getUnreadCount: async (userId) => {
-    const count = await ChatModel.getUnreadCount(pool, userId);
-    return count;
-  },
+  editMessage: (messageId, newContent) => ChatModel.editMessage(pool, messageId, newContent),
 
   getMessageMeta: (messageId) => ChatModel.getMessageMeta(pool, messageId),
 

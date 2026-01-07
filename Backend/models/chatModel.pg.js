@@ -19,12 +19,12 @@ Base AS (
     c.is_group_chat,
     c.name AS chat_name,
 
-    CASE WHEN c.is_group_chat = 0 THEN u.id ELSE NULL END AS target_id,
-    CASE WHEN c.is_group_chat = 0 THEN u.full_name ELSE c.name END AS target_name,
-    CASE WHEN c.is_group_chat = 0 THEN u.username ELSE NULL END AS target_username,
+    CASE WHEN c.is_group_chat = false THEN u.id ELSE NULL END AS target_id,
+    CASE WHEN c.is_group_chat = false THEN u.full_name ELSE c.name END AS target_name,
+    CASE WHEN c.is_group_chat = false THEN u.username ELSE NULL END AS target_username,
 
     CASE 
-      WHEN c.is_group_chat = 0 THEN u.avatar
+      WHEN c.is_group_chat = false THEN u.avatar
       ELSE uLast.avatar
     END AS avatar,
 
@@ -65,7 +65,7 @@ Base AS (
     FROM chat_users cu
     WHERE cu.chat_id = c.id
       AND cu.user_id <> $1
-      AND c.is_group_chat = 0
+      AND c.is_group_chat = false
     LIMIT 1
   ) other ON true
 
@@ -76,7 +76,7 @@ Ranked AS (
   SELECT
     *,
     CASE 
-      WHEN is_group_chat = 0
+      WHEN is_group_chat = false
         THEN ROW_NUMBER() OVER (PARTITION BY target_id ORDER BY last_time DESC, chat_id DESC)
       ELSE 1
     END AS rn
@@ -84,7 +84,7 @@ Ranked AS (
 )
 SELECT *
 FROM Ranked
-WHERE is_group_chat = 1 OR rn = 1
+WHERE is_group_chat = true OR rn = 1
 ORDER BY last_time DESC, chat_id DESC;
 `;
 
