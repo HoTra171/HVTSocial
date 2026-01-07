@@ -129,7 +129,11 @@ if (usePostgreSQL) {
         if (topMatch) {
           pgQuery = pgQuery.replace(topMatch[0], 'SELECT');
           if (!pgQuery.includes('LIMIT')) {
-            pgQuery += ` LIMIT $${topMatch[1]}`;
+            if (pgQuery.trim().endsWith(';')) {
+              pgQuery = pgQuery.replace(/;\s*$/, ` LIMIT $${topMatch[1]};`);
+            } else {
+              pgQuery += ` LIMIT $${topMatch[1]}`;
+            }
           }
         }
 
@@ -143,7 +147,11 @@ if (usePostgreSQL) {
         if (mainTopMatch && pgQuery.includes('SELECT TOP')) {
           pgQuery = pgQuery.replace(/^SELECT\s+TOP\s*\(\d+\)/i, 'SELECT');
           if (!pgQuery.includes('LIMIT')) {
-            pgQuery += ` LIMIT ${mainTopMatch[1]}`;
+            if (pgQuery.trim().endsWith(';')) {
+              pgQuery = pgQuery.replace(/;\s*$/, ` LIMIT ${mainTopMatch[1]};`);
+            } else {
+              pgQuery += ` LIMIT ${mainTopMatch[1]}`;
+            }
           }
         }
 
