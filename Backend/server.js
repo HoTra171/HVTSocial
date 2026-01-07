@@ -108,6 +108,12 @@ const io = new Server(server, {
     credentials: true,
     methods: ["GET", "POST"],
   },
+  transports: ["polling", "websocket"],
+  pingTimeout: 60000, // 60 seconds
+  pingInterval: 25000, // 25 seconds
+  upgradeTimeout: 30000, // 30 seconds
+  allowUpgrades: true,
+  cookie: false,
 });
 
 // STORE IO INSTANCE IN APP (for controllers: req.app.get('io'))

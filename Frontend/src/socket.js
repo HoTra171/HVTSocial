@@ -19,13 +19,36 @@ let registeredUserId = null;
 export const socket = io(WS_URL, {
   autoConnect: false,
   withCredentials: true,
-  transports: ["websocket", "polling"],
+  transports: ["polling", "websocket"], // Try polling first, then upgrade to websocket
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  reconnectionAttempts: 5,
+  timeout: 20000, // 20 seconds timeout
 });
 
 socket.on("connect", () => {
+  console.log('✅ Socket connected:', socket.id);
   if (registeredUserId) {
     socket.emit("register_user", registeredUserId); // join room user_{id}
   }
+});
+
+socket.on("connect_error", (error) => {
+  console.error('❌ Socket connection error:', error.message);
+  console.error('Error details:', error);
+});
+
+socket.on("disconnect", (reason) => {
+  console.log('🔌 Socket disconnected:', reason);
+});
+
+socket.on("reconnect_attempt", (attempt) => {
+  console.log(`🔄 Reconnection attempt ${attempt}`);
+});
+
+socket.on("reconnect", (attempt) => {
+  console.log(`✅ Reconnected after ${attempt} attempts`);
 });
 
 export const connectSocket = (userId) => {
