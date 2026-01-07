@@ -4,7 +4,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
-const API_URL = 'http://localhost:5000/api';
 
 const FriendButton = ({ userId, currentUserId }) => {
   const [status, setStatus] = useState(null);

@@ -16,7 +16,6 @@ dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 
-const API_BASE_URL = "http://localhost:5000/api";
 
 const Profile = () => {
   // /profile/:profileId => xem người khác, /profile => self

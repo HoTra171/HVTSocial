@@ -6,7 +6,6 @@ import Loading from '../components/Loading';
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 
-const API_URL = 'http://localhost:5000/api';
 
 const Discover = () => {
   const [input, setInput] = useState('');

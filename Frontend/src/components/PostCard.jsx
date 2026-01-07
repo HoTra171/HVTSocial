@@ -25,9 +25,8 @@ import { API_URL, SERVER_ORIGIN } from '../constants/api';
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
-const API_URL = "http://localhost:5000/api";
 
-const api = axios.create({ baseURL: API_URL });
+const api = axios.create({ baseURL: `${API_URL}` });
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
