@@ -217,7 +217,7 @@ export const FriendshipService = {
         u.username,
         u.avatar,
         u.bio,
-        u.address,
+        u.location,
         f.created_at AS friend_since
       FROM friendships f
       JOIN users u ON u.id = f.friend_id
@@ -232,7 +232,7 @@ export const FriendshipService = {
         u.username,
         u.avatar,
         u.bio,
-        u.address,
+        u.location,
         f.created_at AS friend_since
       FROM friendships f
       JOIN users u ON u.id = f.user_id
@@ -272,7 +272,6 @@ export const FriendshipService = {
           u.username,
           u.avatar,
           u.bio,
-          u.address,
           f.created_at AS request_date
         FROM friendships f
         JOIN users u ON u.id = f.user_id
@@ -305,7 +304,6 @@ export const FriendshipService = {
           u.username,
           u.avatar,
           u.bio,
-          u.address,
           f.created_at AS request_date
         FROM friendships f
         JOIN users u ON u.id = f.friend_id
@@ -345,7 +343,7 @@ export const FriendshipService = {
         WHERE a = @userId
       ),
       me AS (
-        SELECT id, address
+        SELECT id, location
         FROM users
         WHERE id = @userId
       )
@@ -381,11 +379,11 @@ export const FriendshipService = {
           WHERE f2.follower_id = u.id AND f2.following_id = @userId
         ) THEN 1 ELSE 0 END AS mutual_follow,
 
-        -- same address
-        CASE WHEN (SELECT address FROM me) IS NOT NULL
-               AND u.address IS NOT NULL
-               AND u.address = (SELECT address FROM me)
-        THEN 1 ELSE 0 END AS same_address,
+        -- same location (using location field instead of address)
+        CASE WHEN (SELECT location FROM me) IS NOT NULL
+               AND u.location IS NOT NULL
+               AND u.location = (SELECT location FROM me)
+        THEN 1 ELSE 0 END AS same_location,
 
         -- score
         (
@@ -411,9 +409,9 @@ export const FriendshipService = {
               WHERE f2.follower_id = u.id AND f2.following_id = @userId
             ) THEN 1 ELSE 0 END) * 5
           +
-          (CASE WHEN (SELECT address FROM me) IS NOT NULL
-                 AND u.address IS NOT NULL
-                 AND u.address = (SELECT address FROM me)
+          (CASE WHEN (SELECT location FROM me) IS NOT NULL
+                 AND u.location IS NOT NULL
+                 AND u.location = (SELECT location FROM me)
            THEN 1 ELSE 0 END) * 2
         ) AS score
 

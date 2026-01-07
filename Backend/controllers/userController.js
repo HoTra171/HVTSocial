@@ -219,7 +219,7 @@ export const discoverUsers = async (req, res) => {
         u.username,
         u.avatar,
         u.bio,
-        u.address,
+        u.location,
 
         CASE WHEN f1.status = 'accepted' OR f2.status = 'accepted' THEN 1 ELSE 0 END AS is_friend,
         CASE WHEN fo.following_id IS NOT NULL THEN 1 ELSE 0 END AS is_following,
@@ -234,7 +234,7 @@ export const discoverUsers = async (req, res) => {
               WHEN u.full_name LIKE @prefix THEN 40
               WHEN u.username LIKE @like THEN 20
               WHEN u.full_name LIKE @like THEN 15
-              WHEN u.bio LIKE @like OR u.address LIKE @like THEN 10
+              WHEN u.bio LIKE @like OR u.location LIKE @like THEN 10
               ELSE 0
             END
           END
@@ -284,7 +284,7 @@ export const discoverUsers = async (req, res) => {
           OR u.full_name LIKE @like
           OR u.username LIKE @like
           OR u.bio LIKE @like
-          OR u.address LIKE @like
+          OR u.location LIKE @like
         )
 
         -- filterType
@@ -313,7 +313,7 @@ export const discoverUsers = async (req, res) => {
       username: u.username,
       avatar: u.avatar,
       bio: u.bio,
-      location: u.address,
+      location: u.location,
       isFriend: !!u.is_friend,
       isFollowing: !!u.is_following,
       commonHobbyCount: u.common_hobby_count,
