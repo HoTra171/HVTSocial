@@ -115,14 +115,14 @@ export const UserModel = {
 
       SELECT u.id, u.full_name, u.username, u.avatar, u.bio
       FROM friendships f
-      JOIN users u ON u.id = f.requester_id
-      WHERE f.receiver_id = @userId AND f.status = 'pending';
+      JOIN users u ON u.id = f.user_id
+      WHERE f.friend_id = @userId AND f.status = 'pending';
 
       SELECT DISTINCT
         u.id, u.full_name, u.username, u.avatar, u.bio
       FROM friendships f1
       JOIN friendships f2
-        ON f1.requester_id = f2.receiver_id
+        ON f1.user_id = f2.friend_id
        AND f1.receiver_id = f2.requester_id
        AND f1.status = 'accepted'
        AND f2.status = 'accepted'

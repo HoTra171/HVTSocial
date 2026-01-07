@@ -43,9 +43,9 @@ export const PostModel = {
             FROM friendships f
             WHERE f.status = 'accepted'
               AND (
-                (f.requester_id = @viewerId AND f.receiver_id = p.user_id)
+                (f.user_id = @viewerId AND f.friend_id = p.user_id)
                 OR
-                (f.receiver_id = @viewerId AND f.requester_id = p.user_id)
+                (f.friend_id = @viewerId AND f.user_id = p.user_id)
               )
           )
         )
@@ -99,9 +99,9 @@ export const PostModel = {
               FROM friendships f
               WHERE f.status = 'accepted'
                 AND (
-                  (f.requester_id = @viewerId AND f.receiver_id = p.user_id)
+                  (f.user_id = @viewerId AND f.friend_id = p.user_id)
                   OR
-                  (f.receiver_id = @viewerId AND f.requester_id = p.user_id)
+                  (f.friend_id = @viewerId AND f.user_id = p.user_id)
                 )
             )
           )

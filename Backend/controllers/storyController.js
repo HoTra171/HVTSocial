@@ -32,8 +32,8 @@ export const getStories = async (req, res) => {
             OR s.user_id = @userId
             OR (s.privacy = 'friends' AND EXISTS (
               SELECT 1 FROM friendships f
-              WHERE (f.requester_id = @userId AND f.receiver_id = s.user_id AND f.status = 'accepted')
-                OR (f.receiver_id = @userId AND f.requester_id = s.user_id AND f.status = 'accepted')
+              WHERE (f.user_id = @userId AND f.friend_id = s.user_id AND f.status = 'accepted')
+                OR (f.friend_id = @userId AND f.user_id = s.user_id AND f.status = 'accepted')
             ))
             OR (s.privacy = 'custom' AND EXISTS (
               SELECT 1 FROM story_viewers sv
