@@ -82,3 +82,56 @@ if (usePostgreSQL) {
 // Export pool (works for both PostgreSQL and SQL Server)
 export { pool };
 export const getPool = () => pool;
+
+// Add unified request() method for both databases
+if (usePostgreSQL) {
+  // PostgreSQL: Add request() method that converts to PostgreSQL syntax
+  pool.request = function() {
+    const inputs = {};
+    
+    return {
+      input(name, type, value) {
+        inputs[name] = value;
+        return this;
+      },
+      
+      async query(sqlQuery) {
+        // Convert @param to $1, $2, etc.
+        let pgQuery = sqlQuery;
+        const values = [];
+        let paramIndex = 1;
+
+        for (const [key, value] of Object.entries(inputs)) {
+          const regex = new RegExp(`@${key}\\b`, 'g');
+          pgQuery = pgQuery.replace(regex, `$${paramIndex}`);
+          values.push(value);
+          paramIndex++;
+        }
+
+        // Convert SQL Server syntax to PostgreSQL
+        pgQuery = pgQuery
+          .replace(/GETDATE\(\)/gi, 'NOW()')
+          .replace(/\[dbo\]\./gi, '')
+          .replace(/\[(\w+)\]/g, '$1');
+
+        // Handle TOP clause
+        const topMatch = sqlQuery.match(/SELECT\s+TOP\s+(\d+)/i);
+        if (topMatch) {
+          pgQuery = pgQuery.replace(/SELECT\s+TOP\s+\d+/i, 'SELECT');
+          if (!pgQuery.includes('LIMIT')) {
+            pgQuery += ` LIMIT ${topMatch[1]}`;
+          }
+        }
+
+        const result = await pool.query(pgQuery, values);
+        
+        // Return SQL Server compatible result structure
+        return {
+          recordset: result.rows,
+          rowsAffected: [result.rowCount],
+          recordsets: [result.rows]
+        };
+      }
+    };
+  };
+}
