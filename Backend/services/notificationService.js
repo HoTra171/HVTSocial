@@ -287,16 +287,16 @@ export const NotificationService = {
       .query(`
         SELECT TOP (@limit)
           n.id,
-          n.content,
+          n.message AS content,
           n.type,
-          n.status,
-          n.post_id,
+          n.is_read AS status,
+          n.target_id AS post_id,
           n.created_at,
           u.full_name AS sender_name,
           u.avatar AS sender_avatar,
           u.id AS sender_id
         FROM notifications n
-        LEFT JOIN users u ON n.sender_id = u.id
+        LEFT JOIN users u ON n.actor_id = u.id
         WHERE n.user_id = @userId
         ORDER BY n.created_at DESC
       `);

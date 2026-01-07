@@ -362,22 +362,8 @@ export const FriendshipService = {
             ON ae.a = u.id AND ae.b = mf.friend_id
         ) AS mutual_friends_count,
 
-        -- common hobbies
-        (
-          SELECT COUNT(*)
-          FROM user_hobbies uh1
-          JOIN user_hobbies uh2 ON uh1.hobby_id = uh2.hobby_id
-          WHERE uh1.user_id = @userId AND uh2.user_id = u.id
-        ) AS common_hobby_count,
-
-        -- mutual follow
-        CASE WHEN EXISTS (
-          SELECT 1 FROM follows f1
-          WHERE f1.follower_id = @userId AND f1.following_id = u.id
-        ) AND EXISTS (
-          SELECT 1 FROM follows f2
-          WHERE f2.follower_id = u.id AND f2.following_id = @userId
-        ) THEN 1 ELSE 0 END AS mutual_follow,
+        -- mutual follow (disabled - follows table not in schema)
+        0 AS mutual_follow,
 
         -- same location (using location field instead of address)
         CASE WHEN (SELECT location FROM me) IS NOT NULL
@@ -385,7 +371,7 @@ export const FriendshipService = {
                AND u.location = (SELECT location FROM me)
         THEN 1 ELSE 0 END AS same_location,
 
-        -- score
+        -- score (simplified - based on mutual friends and location)
         (
           (
             SELECT COUNT(*)
@@ -393,21 +379,6 @@ export const FriendshipService = {
             JOIN accepted_edges ae
               ON ae.a = u.id AND ae.b = mf.friend_id
           ) * 10
-          +
-          (
-            SELECT COUNT(*)
-            FROM user_hobbies uh1
-            JOIN user_hobbies uh2 ON uh1.hobby_id = uh2.hobby_id
-            WHERE uh1.user_id = @userId AND uh2.user_id = u.id
-          ) * 3
-          +
-          (CASE WHEN EXISTS (
-              SELECT 1 FROM follows f1
-              WHERE f1.follower_id = @userId AND f1.following_id = u.id
-            ) AND EXISTS (
-              SELECT 1 FROM follows f2
-              WHERE f2.follower_id = u.id AND f2.following_id = @userId
-            ) THEN 1 ELSE 0 END) * 5
           +
           (CASE WHEN (SELECT location FROM me) IS NOT NULL
                  AND u.location IS NOT NULL

@@ -241,12 +241,8 @@ export const discoverUsers = async (req, res) => {
 
           -- social score
           + CASE WHEN (f1.status = 'accepted' OR f2.status = 'accepted') THEN 30 ELSE 0 END
-          + CASE WHEN fo.following_id IS NOT NULL THEN 15 ELSE 0 END
 
-          -- hobby score
-          + (ISNULL(ch.common_hobby_count, 0) * 5)
-
-          -- freshness nhá»
+          -- freshness score
           + CASE WHEN u.created_at >= DATEADD(DAY, -30, GETDATE()) THEN 3 ELSE 0 END
         ) AS score
 
@@ -257,17 +253,6 @@ export const discoverUsers = async (req, res) => {
       LEFT JOIN friendships f2
         ON f2.user_id = u.id AND f2.friend_id = @currentUserId
 
-      LEFT JOIN follows fo
-        ON fo.follower_id = @currentUserId AND fo.following_id = u.id
-
-      LEFT JOIN (
-        SELECT uh2.user_id, COUNT(*) AS common_hobby_count
-        FROM user_hobbies uh1
-        JOIN user_hobbies uh2 ON uh1.hobby_id = uh2.hobby_id
-        WHERE uh1.user_id = @currentUserId
-          AND uh2.user_id <> @currentUserId
-        GROUP BY uh2.user_id
-      ) ch ON ch.user_id = u.id
 
       WHERE u.id <> @currentUserId
 
@@ -315,8 +300,8 @@ export const discoverUsers = async (req, res) => {
       bio: u.bio,
       location: u.location,
       isFriend: !!u.is_friend,
-      isFollowing: !!u.is_following,
-      commonHobbyCount: u.common_hobby_count,
+      isFollowing: false, // follows table not in schema
+      commonHobbyCount: 0, // user_hobbies table not in schema
       score: u.score,
     }));
 
@@ -356,14 +341,12 @@ export const suggestUsers = async (req, res) => {
             WHEN u.full_name LIKE @like THEN 30
             ELSE 0
           END
-          + CASE WHEN fo.following_id IS NOT NULL THEN 10 ELSE 0 END
           + CASE WHEN (f1.status = 'accepted' OR f2.status = 'accepted') THEN 10 ELSE 0 END
         ) AS score
 
       FROM users u
       LEFT JOIN friendships f1 ON f1.user_id = @currentUserId AND f1.friend_id = u.id
-      LEFT JOIN friendships f2 ON f2.receiver_id = @currentUserId AND f2.requester_id = u.id
-      LEFT JOIN follows fo ON fo.follower_id = @currentUserId AND fo.following_id = u.id
+      LEFT JOIN friendships f2 ON f2.friend_id = @currentUserId AND f2.user_id = u.id
 
       WHERE u.id <> @currentUserId
         AND NOT EXISTS (
@@ -390,7 +373,7 @@ export const suggestUsers = async (req, res) => {
       avatar: u.avatar,
       bio: u.bio,
       isFriend: !!u.is_friend,
-      isFollowing: !!u.is_following,
+      isFollowing: false, // follows table not in schema
       score: u.score,
     }));
 
