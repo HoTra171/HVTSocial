@@ -1,7 +1,7 @@
 /**
  * Chat Controller - Use PostgreSQL native model when on PostgreSQL
  */
-import db from "../config/db.js";
+import db from "../config/db.unified.js";
 import { ChatModel } from "../models/chatModel.js";
 import { ChatModelPG } from "../models/chatModel.pg.js";
 
