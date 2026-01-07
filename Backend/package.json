@@ -44,7 +44,8 @@
     "db:migrate:postgres": "node database/run-postgres-migration.js",
     "db:fix-schema": "node database/fix-schema.js",
     "check-env": "node check-env.js",
-    "generate-secret": "node generate-jwt-secret.js"
+    "generate-secret": "node generate-jwt-secret.js",
+    "db:seed-demo": "node scripts/seedDemoData.js"
   },
   "author": "",
   "license": "ISC",
