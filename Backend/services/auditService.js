@@ -31,20 +31,24 @@ export const logAuditEvent = async (event) => {
   const db = await getPool();
 
   try {
-    await db.request()
+    await db
+      .request()
       .input('userId', sql.Int, event.userId || null)
       .input('action', sql.NVarChar, event.action)
       .input('entityType', sql.NVarChar, event.resourceType || null)
       .input('entityId', sql.Int, event.resourceId || null)
       .input('ipAddress', sql.NVarChar, event.ipAddress || null)
       .input('userAgent', sql.NVarChar, event.userAgent || null)
-      .input('metadata', sql.NVarChar, JSON.stringify({
-        old_values: event.oldValues,
-        new_values: event.newValues,
-        status: event.status || 'success',
-        error_message: event.errorMessage
-      }))
-      .query(`
+      .input(
+        'metadata',
+        sql.NVarChar,
+        JSON.stringify({
+          old_values: event.oldValues,
+          new_values: event.newValues,
+          status: event.status || 'success',
+          error_message: event.errorMessage,
+        })
+      ).query(`
         INSERT INTO audit_logs (
           user_id, action, entity_type, entity_id,
           ip_address, user_agent, metadata
@@ -59,14 +63,14 @@ export const logAuditEvent = async (event) => {
     const logLevel = event.status === 'failed' ? 'warn' : 'info';
     logger[logLevel]({
       audit: true,
-      ...event
+      ...event,
     });
   } catch (error) {
     // Don't throw - audit logging should never break the main flow
     logger.error({
       message: 'Failed to write audit log',
       error: error.message,
-      event
+      event,
     });
   }
 };
@@ -76,7 +80,14 @@ export const logAuditEvent = async (event) => {
 /**
  * Log authentication events
  */
-export const logAuth = async (userId, action, status, ipAddress, userAgent, errorMessage = null) => {
+export const logAuth = async (
+  userId,
+  action,
+  status,
+  ipAddress,
+  userAgent,
+  errorMessage = null
+) => {
   await logAuditEvent({
     userId,
     action,
@@ -85,7 +96,7 @@ export const logAuth = async (userId, action, status, ipAddress, userAgent, erro
     ipAddress,
     userAgent,
     status,
-    errorMessage
+    errorMessage,
   });
 };
 
@@ -100,14 +111,21 @@ export const logCreate = async (userId, resourceType, resourceId, values, ipAddr
     resourceId,
     newValues: values,
     ipAddress,
-    status: 'success'
+    status: 'success',
   });
 };
 
 /**
  * Log resource update
  */
-export const logUpdate = async (userId, resourceType, resourceId, oldValues, newValues, ipAddress = null) => {
+export const logUpdate = async (
+  userId,
+  resourceType,
+  resourceId,
+  oldValues,
+  newValues,
+  ipAddress = null
+) => {
   await logAuditEvent({
     userId,
     action: `update_${resourceType}`,
@@ -116,14 +134,20 @@ export const logUpdate = async (userId, resourceType, resourceId, oldValues, new
     oldValues,
     newValues,
     ipAddress,
-    status: 'success'
+    status: 'success',
   });
 };
 
 /**
  * Log resource deletion
  */
-export const logDelete = async (userId, resourceType, resourceId, oldValues = null, ipAddress = null) => {
+export const logDelete = async (
+  userId,
+  resourceType,
+  resourceId,
+  oldValues = null,
+  ipAddress = null
+) => {
   await logAuditEvent({
     userId,
     action: `delete_${resourceType}`,
@@ -131,14 +155,20 @@ export const logDelete = async (userId, resourceType, resourceId, oldValues = nu
     resourceId,
     oldValues,
     ipAddress,
-    status: 'success'
+    status: 'success',
   });
 };
 
 /**
  * Log permission changes
  */
-export const logPermissionChange = async (adminId, targetUserId, action, details, ipAddress = null) => {
+export const logPermissionChange = async (
+  adminId,
+  targetUserId,
+  action,
+  details,
+  ipAddress = null
+) => {
   await logAuditEvent({
     userId: adminId,
     action,
@@ -146,14 +176,21 @@ export const logPermissionChange = async (adminId, targetUserId, action, details
     resourceId: targetUserId,
     newValues: details,
     ipAddress,
-    status: 'success'
+    status: 'success',
   });
 };
 
 /**
  * Log account status changes
  */
-export const logAccountStatusChange = async (adminId, targetUserId, oldStatus, newStatus, reason, ipAddress = null) => {
+export const logAccountStatusChange = async (
+  adminId,
+  targetUserId,
+  oldStatus,
+  newStatus,
+  reason,
+  ipAddress = null
+) => {
   await logAuditEvent({
     userId: adminId,
     action: 'change_account_status',
@@ -162,14 +199,21 @@ export const logAccountStatusChange = async (adminId, targetUserId, oldStatus, n
     oldValues: { status: oldStatus },
     newValues: { status: newStatus, reason },
     ipAddress,
-    status: 'success'
+    status: 'success',
   });
 };
 
 /**
  * Log security events
  */
-export const logSecurityEvent = async (userId, action, details, ipAddress, userAgent, status = 'success') => {
+export const logSecurityEvent = async (
+  userId,
+  action,
+  details,
+  ipAddress,
+  userAgent,
+  status = 'success'
+) => {
   await logAuditEvent({
     userId,
     action,
@@ -177,7 +221,7 @@ export const logSecurityEvent = async (userId, action, details, ipAddress, userA
     newValues: details,
     ipAddress,
     userAgent,
-    status
+    status,
   });
 };
 
@@ -197,7 +241,7 @@ export const getAuditLogs = async (filters = {}) => {
     startDate = null,
     endDate = null,
     limit = 100,
-    offset = 0
+    offset = 0,
   } = filters;
 
   let query = `
@@ -236,7 +280,7 @@ export const getAuditLogs = async (filters = {}) => {
     request.input('resourceType', sql.NVarChar, resourceType);
   }
 
-  // Status filtering is hard with JSON metadata query cross-db. 
+  // Status filtering is hard with JSON metadata query cross-db.
   // Ignoring status filter for now or need specialized JSON query.
   /*
   if (status) {
@@ -281,12 +325,12 @@ export const getUserAuditLogs = async (userId, limit = 50, offset = 0) => {
 export const getResourceAuditLogs = async (resourceType, resourceId, limit = 50, offset = 0) => {
   const db = await getPool();
 
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('resourceType', sql.NVarChar, resourceType)
     .input('resourceId', sql.Int, resourceId)
     .input('limit', sql.Int, limit)
-    .input('offset', sql.Int, offset)
-    .query(`
+    .input('offset', sql.Int, offset).query(`
       SELECT
         al.id,
         al.user_id,
@@ -316,7 +360,7 @@ export const getFailedLoginAttempts = async (email, limit = 10) => {
   return await getAuditLogs({
     action: 'login',
     status: 'failed',
-    limit
+    limit,
   });
 };
 
@@ -358,9 +402,7 @@ export const getSecurityEvents = async (userId = null, limit = 50, offset = 0) =
 export const getAdminActions = async (limit = 100, offset = 0) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('limit', sql.Int, limit)
-    .input('offset', sql.Int, offset)
+  const result = await db.request().input('limit', sql.Int, limit).input('offset', sql.Int, offset)
     .query(`
       SELECT
         al.id,
@@ -436,5 +478,5 @@ export const auditService = {
   getFailedLoginAttempts,
   getSecurityEvents,
   getAdminActions,
-  getAuditStatistics
+  getAuditStatistics,
 };

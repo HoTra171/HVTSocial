@@ -1,5 +1,5 @@
 // routes/chatRoutes.js
-import express from "express";
+import express from 'express';
 import {
   getUserChats,
   getMessages,
@@ -9,8 +9,8 @@ import {
   editMessage,
   getUnreadCount,
   getOrCreateDm,
-} from "../controllers/chatController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+} from '../controllers/chatController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -55,7 +55,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/user/:userId/chats", authMiddleware, getUserChats);
+router.get('/user/:userId/chats', authMiddleware, getUserChats);
 
 /**
  * @swagger
@@ -86,7 +86,7 @@ router.get("/user/:userId/chats", authMiddleware, getUserChats);
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.get("/messages/:chatId", authMiddleware, getMessages);
+router.get('/messages/:chatId', authMiddleware, getMessages);
 
 /**
  * @swagger
@@ -126,7 +126,7 @@ router.get("/messages/:chatId", authMiddleware, getMessages);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/send", authMiddleware, sendMessage);
+router.post('/send', authMiddleware, sendMessage);
 
 /**
  * @swagger
@@ -160,7 +160,7 @@ router.post("/send", authMiddleware, sendMessage);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/read", authMiddleware, markRead);
+router.post('/read', authMiddleware, markRead);
 
 /**
  * @swagger
@@ -192,7 +192,7 @@ router.post("/read", authMiddleware, markRead);
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.delete("/message/:id", authMiddleware, deleteMessage);
+router.delete('/message/:id', authMiddleware, deleteMessage);
 
 /**
  * @swagger
@@ -236,7 +236,7 @@ router.delete("/message/:id", authMiddleware, deleteMessage);
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
-router.put("/message/:id", authMiddleware, editMessage);
+router.put('/message/:id', authMiddleware, editMessage);
 
 /**
  * @swagger
@@ -266,7 +266,7 @@ router.put("/message/:id", authMiddleware, editMessage);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/user/:userId/unread-count", authMiddleware, getUnreadCount);
+router.get('/user/:userId/unread-count', authMiddleware, getUnreadCount);
 
 /**
  * @swagger
@@ -301,6 +301,6 @@ router.get("/user/:userId/unread-count", authMiddleware, getUnreadCount);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/dm", authMiddleware, getOrCreateDm);
+router.post('/dm', authMiddleware, getOrCreateDm);
 
 export default router;

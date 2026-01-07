@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const SavedPostService = {
   /**
@@ -11,37 +11,28 @@ export const SavedPostService = {
     // Kiểm tra xem đã lưu chưa
     const checkResult = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("postId", sql.Int, postId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('postId', sql.Int, postId).query(`
         SELECT * FROM saved_posts 
         WHERE user_id = @userId AND post_id = @postId
       `);
 
     if (checkResult.recordset.length > 0) {
       // Đã lưu -> Bỏ lưu
-      await db
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("postId", sql.Int, postId)
-        .query(`
+      await db.request().input('userId', sql.Int, userId).input('postId', sql.Int, postId).query(`
           DELETE FROM saved_posts 
           WHERE user_id = @userId AND post_id = @postId
         `);
 
-      return { action: "unsaved", message: "Đã bỏ lưu bài viết" };
+      return { action: 'unsaved', message: 'Đã bỏ lưu bài viết' };
     } else {
       // Chưa lưu -> Lưu
-      await db
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("postId", sql.Int, postId)
-        .query(`
+      await db.request().input('userId', sql.Int, userId).input('postId', sql.Int, postId).query(`
           INSERT INTO saved_posts (user_id, post_id)
           VALUES (@userId, @postId)
         `);
 
-      return { action: "saved", message: "Đã lưu bài viết" };
+      return { action: 'saved', message: 'Đã lưu bài viết' };
     }
   },
 
@@ -54,10 +45,9 @@ export const SavedPostService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("offset", sql.Int, offset)
-      .input("limit", sql.Int, limit)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('offset', sql.Int, offset)
+      .input('limit', sql.Int, limit).query(`
         SELECT 
           p.id,
           p.content,
@@ -87,7 +77,7 @@ export const SavedPostService = {
     return result.recordset.map((row) => ({
       id: row.id,
       content: row.content,
-      image_urls: row.media ? row.media.split(";") : [],
+      image_urls: row.media ? row.media.split(';') : [],
       createdAt: row.created_at,
       savedAt: row.saved_at,
       likes_count: row.likes_count,
@@ -110,9 +100,8 @@ export const SavedPostService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("postId", sql.Int, postId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('postId', sql.Int, postId).query(`
         SELECT * FROM saved_posts 
         WHERE user_id = @userId AND post_id = @postId
       `);

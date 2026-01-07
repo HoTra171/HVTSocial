@@ -2,7 +2,7 @@
  * Chat Model - PostgreSQL Version
  * Native PostgreSQL syntax with LATERAL JOINs and $1 parameters
  */
-import db from "../config/db.unified.js";
+import db from '../config/db.unified.js';
 
 export const ChatModelPG = {
   // Get user's chats with last message and unread count

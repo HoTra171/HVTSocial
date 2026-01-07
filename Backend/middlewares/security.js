@@ -8,12 +8,12 @@ const helmetConfig = helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
+      imgSrc: ["'self'", 'data:', 'https:', 'http:'],
+      connectSrc: ["'self'", 'ws:', 'wss:'],
     },
   },
   crossOriginEmbedderPolicy: false,
-  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 });
 
 // Rate limiting for API endpoints
@@ -49,9 +49,4 @@ const uploadLimiter = rateLimit({
   },
 });
 
-export {
-  helmetConfig,
-  apiLimiter,
-  authLimiter,
-  uploadLimiter,
-};
+export { helmetConfig, apiLimiter, authLimiter, uploadLimiter };

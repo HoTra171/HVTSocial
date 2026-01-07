@@ -1,11 +1,11 @@
-import { pool } from "../config/db.js";
-import { PostModel } from "../models/postModel.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import { PostModel } from '../models/postModel.js';
+import sql from 'mssql';
 
 const formatPost = (row) => ({
   id: row.id,
   content: row.content,
-  image_urls: row.media_url ? row.media_url.split(";") : [],
+  image_urls: row.media_url ? row.media_url.split(';') : [],
   createdAt: row.created_at,
   likes_count: row.likes_count,
   comments_count: row.comments_count,
@@ -25,13 +25,14 @@ export const PostService = {
     const posts = rows.map(formatPost);
 
     let nextCursor = null;
-    if (posts.length === limit) { // Only set cursor if we might have more pages
+    if (posts.length === limit) {
+      // Only set cursor if we might have more pages
       nextCursor = posts[posts.length - 1].createdAt;
     }
 
     return {
       posts,
-      nextCursor
+      nextCursor,
     };
   },
 
@@ -45,9 +46,8 @@ export const PostService = {
 
     const result = await db
       .request()
-      .input("postId", sql.Int, postId)
-      .input("viewerId", sql.Int, viewerId)
-      .query(`
+      .input('postId', sql.Int, postId)
+      .input('viewerId', sql.Int, viewerId).query(`
         SELECT
           p.id,
           p.content,
@@ -71,7 +71,7 @@ export const PostService = {
       `);
 
     if (result.recordset.length === 0) {
-      throw new Error("Bài viết không tồn tại");
+      throw new Error('Bài viết không tồn tại');
     }
 
     return formatPost(result.recordset[0]);
@@ -81,11 +81,10 @@ export const PostService = {
     const db = await pool;
     const result = await db
       .request()
-      .input("user_id", userId)
-      .input("content", content)
-      .input("mediaUrl", media)
-      .input("status", sql.NVarChar(10), status)
-      .query(`
+      .input('user_id', userId)
+      .input('content', content)
+      .input('mediaUrl', media)
+      .input('status', sql.NVarChar(10), status).query(`
         INSERT INTO posts (user_id, content, media_url, visibility)
         OUTPUT INSERTED.*
         VALUES (@user_id, @content, @mediaUrl, @status)
@@ -102,8 +101,8 @@ export const PostService = {
     await tx.begin();
     try {
       const req = new sql.Request(tx);
-      req.input("postId", sql.Int, postId);
-      req.input("userId", sql.Int, userId);
+      req.input('postId', sql.Int, postId);
+      req.input('userId', sql.Int, userId);
 
       // check quyền sở hữu
       const own = await req.query(`
@@ -112,7 +111,7 @@ export const PostService = {
     `);
 
       if (own.recordset.length === 0) {
-        throw new Error("Bạn không có quyền xóa bài viết này");
+        throw new Error('Bạn không có quyền xóa bài viết này');
       }
 
       // gỡ các post share đang trỏ tới post này (FK NO ACTION)
@@ -137,11 +136,10 @@ export const PostService = {
       await req.query(`DELETE FROM posts WHERE id = @postId`);
 
       await tx.commit();
-      return { success: true, message: "Xóa bài viết thành công" };
+      return { success: true, message: 'Xóa bài viết thành công' };
     } catch (err) {
       await tx.rollback();
       throw err;
     }
-  }
-
+  },
 };

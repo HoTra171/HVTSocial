@@ -35,7 +35,7 @@ function convertQueryToPostgreSQL(query, inputs) {
   // Convert SQL Server specific syntax to PostgreSQL
   pgQuery = pgQuery
     .replace(/GETDATE\(\)/gi, 'NOW()')
-    .replace(/\bTOP\s+(\d+)\b/gi, '')  // Remove TOP, will add LIMIT at end
+    .replace(/\bTOP\s+(\d+)\b/gi, '') // Remove TOP, will add LIMIT at end
     .replace(/\bIDENTITY\s*\(\s*\d+\s*,\s*\d+\s*\)/gi, 'SERIAL');
 
   // Add LIMIT if TOP was found
@@ -66,28 +66,30 @@ class PostgreSQLRequest {
 
   async query(sqlQuery) {
     const { query: pgQuery, values } = convertQueryToPostgreSQL(sqlQuery, this.inputs);
-    
+
     console.log('🔍 DB Query Debug:', {
       originalQuery: sqlQuery.substring(0, 50) + '...',
       pgQuery: pgQuery.substring(0, 50) + '...',
       paramValues: values,
-      inputs: this.inputs
+      inputs: this.inputs,
     });
 
     const result = await this.pool.query(pgQuery, values);
-    
+
     // Mimic SQL Server result structure
     return {
       recordset: result.rows,
       rowsAffected: [result.rowCount],
-      recordsets: [result.rows]
+      recordsets: [result.rows],
     };
   }
 
   async execute(procedureName) {
     // PostgreSQL doesn't use stored procedures the same way
     // This is a simplified implementation
-    throw new Error('Stored procedures not supported in PostgreSQL adapter. Please use query() instead.');
+    throw new Error(
+      'Stored procedures not supported in PostgreSQL adapter. Please use query() instead.'
+    );
   }
 }
 
@@ -98,12 +100,12 @@ export async function getDatabasePool() {
   if (usePostgreSQL) {
     const dbPostgres = await import('./db-postgres.js');
     const pool = dbPostgres.getPool();
-    
+
     // Add request() method to PostgreSQL pool
-    pool.request = function() {
+    pool.request = function () {
       return new PostgreSQLRequest(pool);
     };
-    
+
     return pool;
   } else {
     const { pool } = await import('./db.js');
@@ -117,16 +119,16 @@ export async function getDatabasePool() {
 export async function executeQuery(query, inputs = {}) {
   const pool = await getDatabasePool();
   const request = pool.request();
-  
+
   // Add inputs
   for (const [key, value] of Object.entries(inputs)) {
     request.input(key, null, value);
   }
-  
+
   return await request.query(query);
 }
 
 export default {
   getDatabasePool,
-  executeQuery
+  executeQuery,
 };

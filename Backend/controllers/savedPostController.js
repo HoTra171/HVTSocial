@@ -1,4 +1,4 @@
-import { SavedPostService } from "../services/savedPostService.js";
+import { SavedPostService } from '../services/savedPostService.js';
 
 // POST /api/saved-posts/:postId
 export const toggleSavePost = async (req, res) => {
@@ -10,8 +10,8 @@ export const toggleSavePost = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("toggleSavePost error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('toggleSavePost error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -26,8 +26,8 @@ export const getSavedPosts = async (req, res) => {
 
     res.json(posts);
   } catch (err) {
-    console.error("getSavedPosts error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('getSavedPosts error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -41,7 +41,7 @@ export const checkSavedPost = async (req, res) => {
 
     res.json({ saved });
   } catch (err) {
-    console.error("checkSavedPost error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('checkSavedPost error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };

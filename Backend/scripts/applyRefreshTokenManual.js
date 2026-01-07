@@ -4,24 +4,24 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const config = {
-    user: process.env.SQL_USER,
-    password: process.env.SQL_PASSWORD,
-    server: process.env.SQL_SERVER,
-    port: parseInt(process.env.SQL_PORT) || 1433,
-    database: process.env.SQL_DATABASE,
-    options: {
-        encrypt: process.env.SQL_ENCRYPT === 'true',
-        trustServerCertificate: process.env.SQL_TRUST_CERT === 'true',
-        useUTC: false,
-    },
+  user: process.env.SQL_USER,
+  password: process.env.SQL_PASSWORD,
+  server: process.env.SQL_SERVER,
+  port: parseInt(process.env.SQL_PORT) || 1433,
+  database: process.env.SQL_DATABASE,
+  options: {
+    encrypt: process.env.SQL_ENCRYPT === 'true',
+    trustServerCertificate: process.env.SQL_TRUST_CERT === 'true',
+    useUTC: false,
+  },
 };
 
 async function applyMigration() {
-    try {
-        const pool = await sql.connect(config);
-        console.log('Connected to MSSQL');
+  try {
+    const pool = await sql.connect(config);
+    console.log('Connected to MSSQL');
 
-        const query = `
+    const query = `
       IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='refresh_tokens' AND xtype='U')
       BEGIN
           CREATE TABLE refresh_tokens (
@@ -44,12 +44,12 @@ async function applyMigration() {
       END
     `;
 
-        await pool.request().query(query);
-        console.log('Migration applied successfully.');
-        await pool.close();
-    } catch (err) {
-        console.error('Migration failed:', err);
-    }
+    await pool.request().query(query);
+    console.log('Migration applied successfully.');
+    await pool.close();
+  } catch (err) {
+    console.error('Migration failed:', err);
+  }
 }
 
 applyMigration();

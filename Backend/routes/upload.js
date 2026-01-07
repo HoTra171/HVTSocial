@@ -9,7 +9,7 @@ import {
   mediaUpload,
   checkUploadQuota,
   validateFileBuffer,
-  handleUploadError
+  handleUploadError,
 } from '../middlewares/uploadSecurityMiddleware.js';
 
 const router = express.Router();
@@ -65,69 +65,71 @@ const upload = multer({
  *       400:
  *         description: No file uploaded
  */
-router.post('/',
+router.post(
+  '/',
   authMiddleware,
   checkUploadQuota,
   mediaUpload.single('file'),
   validateFileBuffer,
   handleUploadError,
   async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file uploaded',
+        });
+      }
+
+      let resourceType = 'image';
+      if (req.file.mimetype.startsWith('video/')) {
+        resourceType = 'video';
+      } else if (req.file.mimetype.startsWith('audio/')) {
+        resourceType = 'raw';
+      }
+
+      const stream = Readable.from(req.file.buffer);
+
+      const uploadPromise = new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: resourceType,
+            folder: 'hvtsocial/stories',
+            format: resourceType === 'raw' ? 'mp3' : undefined,
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+
+        stream.pipe(uploadStream);
+      });
+
+      const result = await uploadPromise;
+
+      console.log(' Uploaded to Cloudinary:', result.secure_url);
+
+      res.json({
+        success: true,
+        url: result.secure_url,
+        publicId: result.public_id,
+        resourceType: result.resource_type,
+        format: result.format,
+        width: result.width,
+        height: result.height,
+        duration: result.duration,
+      });
+    } catch (error) {
+      console.error(' Upload error:', error);
+      res.status(500).json({
         success: false,
-        message: 'No file uploaded'
+        message: 'Upload failed',
+        error: error.message,
       });
     }
-
-    let resourceType = 'image';
-    if (req.file.mimetype.startsWith('video/')) {
-      resourceType = 'video';
-    } else if (req.file.mimetype.startsWith('audio/')) {
-      resourceType = 'raw';
-    }
-
-    const stream = Readable.from(req.file.buffer);
-
-    const uploadPromise = new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: resourceType,
-          folder: 'hvtsocial/stories',
-          format: resourceType === 'raw' ? 'mp3' : undefined,
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-
-      stream.pipe(uploadStream);
-    });
-
-    const result = await uploadPromise;
-
-    console.log(' Uploaded to Cloudinary:', result.secure_url);
-
-    res.json({
-      success: true,
-      url: result.secure_url,
-      publicId: result.public_id,
-      resourceType: result.resource_type,
-      format: result.format,
-      width: result.width,
-      height: result.height,
-      duration: result.duration,
-    });
-  } catch (error) {
-    console.error(' Upload error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Upload failed',
-      error: error.message,
-    });
   }
-});
+);
 
 /**
  * @swagger
@@ -162,61 +164,63 @@ router.post('/',
  *                   items:
  *                     type: string
  */
-router.post('/multiple',
+router.post(
+  '/multiple',
   authMiddleware,
   checkUploadQuota,
   mediaUpload.array('files', 10),
   validateFileBuffer,
   handleUploadError,
   async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No files uploaded',
-      });
-    }
-
-    const uploadPromises = req.files.map(async (file) => {
-      let resourceType = 'image';
-      if (file.mimetype.startsWith('video/')) {
-        resourceType = 'video';
-      } else if (file.mimetype.startsWith('audio/')) {
-        resourceType = 'raw';
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No files uploaded',
+        });
       }
 
-      const stream = Readable.from(file.buffer);
+      const uploadPromises = req.files.map(async (file) => {
+        let resourceType = 'image';
+        if (file.mimetype.startsWith('video/')) {
+          resourceType = 'video';
+        } else if (file.mimetype.startsWith('audio/')) {
+          resourceType = 'raw';
+        }
 
-      return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: 'hvtsocial/stories',
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result.secure_url);
-          }
-        );
+        const stream = Readable.from(file.buffer);
 
-        stream.pipe(uploadStream);
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type: resourceType,
+              folder: 'hvtsocial/stories',
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result.secure_url);
+            }
+          );
+
+          stream.pipe(uploadStream);
+        });
       });
-    });
 
-    const urls = await Promise.all(uploadPromises);
+      const urls = await Promise.all(uploadPromises);
 
-    res.json({
-      success: true,
-      urls,
-    });
-  } catch (error) {
-    console.error(' Multiple upload error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Upload failed',
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        urls,
+      });
+    } catch (error) {
+      console.error(' Multiple upload error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Upload failed',
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 export default router;

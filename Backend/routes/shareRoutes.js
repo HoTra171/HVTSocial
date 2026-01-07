@@ -1,12 +1,12 @@
 // shareRoutes.js
-import express from "express";
+import express from 'express';
 import {
   sharePost,
   getSharedPost,
   getPostShares,
   deleteShare,
-} from "../controllers/shareController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+} from '../controllers/shareController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -37,7 +37,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/", authMiddleware, sharePost);
+router.post('/', authMiddleware, sharePost);
 
 /**
  * @swagger
@@ -57,7 +57,7 @@ router.post("/", authMiddleware, sharePost);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get("/:id", getSharedPost);
+router.get('/:id', getSharedPost);
 
 /**
  * @swagger
@@ -75,7 +75,7 @@ router.get("/:id", getSharedPost);
  *       200:
  *         description: Danh sách shares
  */
-router.get("/post/:postId", getPostShares);
+router.get('/post/:postId', getPostShares);
 
 /**
  * @swagger
@@ -97,6 +97,6 @@ router.get("/post/:postId", getPostShares);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.delete("/:id", authMiddleware, deleteShare);
+router.delete('/:id', authMiddleware, deleteShare);
 
 export default router;

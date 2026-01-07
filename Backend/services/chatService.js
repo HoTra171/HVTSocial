@@ -1,22 +1,28 @@
-import { ChatModel } from "../models/chatModel.js";
-import { ChatModelPG } from "../models/chatModel.pg.js";
-import { pool } from "../config/db.js";
+import { ChatModel } from '../models/chatModel.js';
+import { ChatModelPG } from '../models/chatModel.pg.js';
+import { pool } from '../config/db.js';
 
 // Auto-detect which model to use based on DATABASE_URL
 const usePostgreSQL = !!process.env.DATABASE_URL;
 
-console.log(`📦 ChatService using: ${usePostgreSQL ? 'PostgreSQL (Railway)' : 'SQL Server (Local)'} model`);
+console.log(
+  `📦 ChatService using: ${usePostgreSQL ? 'PostgreSQL (Railway)' : 'SQL Server (Local)'} model`
+);
 
 export const ChatService = {
   // Methods với PostgreSQL support
-  getUserChats: (userId) => 
+  getUserChats: (userId) =>
     usePostgreSQL ? ChatModelPG.getUserChats(userId) : ChatModel.getUserChats(pool, userId),
 
-  getMessagesByChat: (chatId) => 
-    usePostgreSQL ? ChatModelPG.getMessagesByChat(chatId) : ChatModel.getMessagesByChat(pool, chatId),
+  getMessagesByChat: (chatId) =>
+    usePostgreSQL
+      ? ChatModelPG.getMessagesByChat(chatId)
+      : ChatModel.getMessagesByChat(pool, chatId),
 
-  getUnreadCount: async (userId) => 
-    usePostgreSQL ? await ChatModelPG.getUnreadCount(userId) : await ChatModel.getUnreadCount(pool, userId),
+  getUnreadCount: async (userId) =>
+    usePostgreSQL
+      ? await ChatModelPG.getUnreadCount(userId)
+      : await ChatModel.getUnreadCount(pool, userId),
 
   // Methods chỉ dùng SQL Server (chưa có PostgreSQL version)
   sendMessage: (payload) => ChatModel.sendMessage(pool, payload),
@@ -32,5 +38,4 @@ export const ChatService = {
   getChatUsers: (chatId) => ChatModel.getChatUsers(pool, chatId),
 
   getOrCreateDm: (userA, userB) => ChatModel.getOrCreateDm(pool, userA, userB),
-
 };

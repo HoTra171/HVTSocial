@@ -26,12 +26,12 @@ export const suspendAccount = async (userId, reason, until = null, suspendedBy =
   const db = await getPool();
 
   try {
-    await db.request()
+    await db
+      .request()
       .input('userId', sql.Int, userId)
       .input('reason', sql.NVarChar, reason)
       .input('until', sql.DateTime, until)
-      .input('suspendedBy', sql.Int, suspendedBy)
-      .query(`
+      .input('suspendedBy', sql.Int, suspendedBy).query(`
         UPDATE users
         SET account_status = 'suspended',
             suspended_at = GETDATE(),
@@ -47,20 +47,20 @@ export const suspendAccount = async (userId, reason, until = null, suspendedBy =
       userId,
       reason,
       suspendedUntil: until,
-      suspendedBy
+      suspendedBy,
     });
 
     return {
       success: true,
       message: 'Account suspended successfully',
       suspendedUntil: until,
-      reason
+      reason,
     };
   } catch (error) {
     logger.error({
       message: 'Error suspending account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -73,9 +73,7 @@ export const unsuspendAccount = async (userId, unsuspendedBy = null) => {
   const db = await getPool();
 
   try {
-    await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         UPDATE users
         SET account_status = 'active',
             suspended_at = NULL,
@@ -89,18 +87,18 @@ export const unsuspendAccount = async (userId, unsuspendedBy = null) => {
     logger.info({
       message: 'Account unsuspended',
       userId,
-      unsuspendedBy
+      unsuspendedBy,
     });
 
     return {
       success: true,
-      message: 'Account unsuspended successfully'
+      message: 'Account unsuspended successfully',
     };
   } catch (error) {
     logger.error({
       message: 'Error unsuspending account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -112,9 +110,7 @@ export const unsuspendAccount = async (userId, unsuspendedBy = null) => {
 export const checkSuspensionExpiry = async (userId) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT account_status, suspended_until
       FROM users
       WHERE id = @userId
@@ -142,9 +138,7 @@ export const checkSuspensionExpiry = async (userId) => {
 export const getSuspensionDetails = async (userId) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         u.account_status,
         u.suspended_at,
@@ -169,9 +163,7 @@ export const deactivateAccount = async (userId, reason = null) => {
   const db = await getPool();
 
   try {
-    await db.request()
-      .input('userId', sql.Int, userId)
-      .input('reason', sql.NVarChar, reason)
+    await db.request().input('userId', sql.Int, userId).input('reason', sql.NVarChar, reason)
       .query(`
         UPDATE users
         SET account_status = 'deactivated',
@@ -183,18 +175,18 @@ export const deactivateAccount = async (userId, reason = null) => {
     logger.info({
       message: 'Account deactivated by user',
       userId,
-      reason
+      reason,
     });
 
     return {
       success: true,
-      message: 'Account deactivated successfully'
+      message: 'Account deactivated successfully',
     };
   } catch (error) {
     logger.error({
       message: 'Error deactivating account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -207,9 +199,7 @@ export const reactivateAccount = async (userId) => {
   const db = await getPool();
 
   try {
-    await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         UPDATE users
         SET account_status = 'active',
             suspension_reason = NULL,
@@ -219,18 +209,18 @@ export const reactivateAccount = async (userId) => {
 
     logger.info({
       message: 'Account reactivated',
-      userId
+      userId,
     });
 
     return {
       success: true,
-      message: 'Account reactivated successfully'
+      message: 'Account reactivated successfully',
     };
   } catch (error) {
     logger.error({
       message: 'Error reactivating account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -245,9 +235,7 @@ export const softDeleteAccount = async (userId, reason = null) => {
   const db = await getPool();
 
   try {
-    await db.request()
-      .input('userId', sql.Int, userId)
-      .input('reason', sql.NVarChar, reason)
+    await db.request().input('userId', sql.Int, userId).input('reason', sql.NVarChar, reason)
       .query(`
         UPDATE users
         SET account_status = 'deleted',
@@ -259,18 +247,18 @@ export const softDeleteAccount = async (userId, reason = null) => {
     logger.warn({
       message: 'Account soft deleted',
       userId,
-      reason
+      reason,
     });
 
     return {
       success: true,
-      message: 'Account marked as deleted'
+      message: 'Account marked as deleted',
     };
   } catch (error) {
     logger.error({
       message: 'Error soft deleting account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -287,11 +275,11 @@ export const anonymizeAccount = async (userId) => {
     const anonymousEmail = `deleted_${userId}@anonymous.com`;
     const anonymousName = `Deleted User ${userId}`;
 
-    await db.request()
+    await db
+      .request()
       .input('userId', sql.Int, userId)
       .input('email', sql.NVarChar, anonymousEmail)
-      .input('name', sql.NVarChar, anonymousName)
-      .query(`
+      .input('name', sql.NVarChar, anonymousName).query(`
         UPDATE users
         SET account_status = 'deleted',
             email = @email,
@@ -311,9 +299,7 @@ export const anonymizeAccount = async (userId) => {
       `);
 
     // Also delete related sensitive data
-    await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         -- Delete messages
         DELETE FROM messages WHERE sender_id = @userId;
 
@@ -338,18 +324,18 @@ export const anonymizeAccount = async (userId) => {
 
     logger.warn({
       message: 'Account anonymized (GDPR)',
-      userId
+      userId,
     });
 
     return {
       success: true,
-      message: 'Account anonymized successfully'
+      message: 'Account anonymized successfully',
     };
   } catch (error) {
     logger.error({
       message: 'Error anonymizing account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -364,26 +350,24 @@ export const hardDeleteAccount = async (userId) => {
 
   try {
     // This will cascade delete most related data
-    await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         DELETE FROM users WHERE id = @userId
       `);
 
     logger.error({
       message: 'Account hard deleted (PERMANENT)',
-      userId
+      userId,
     });
 
     return {
       success: true,
-      message: 'Account permanently deleted'
+      message: 'Account permanently deleted',
     };
   } catch (error) {
     logger.error({
       message: 'Error hard deleting account',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -397,9 +381,7 @@ export const hardDeleteAccount = async (userId) => {
 export const getAccountStatus = async (userId) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         account_status,
         suspended_at,
@@ -429,9 +411,7 @@ export const isAccountActive = async (userId) => {
 export const listSuspendedAccounts = async (limit = 50, offset = 0) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('limit', sql.Int, limit)
-    .input('offset', sql.Int, offset)
+  const result = await db.request().input('limit', sql.Int, limit).input('offset', sql.Int, offset)
     .query(`
       SELECT
         u.id,
@@ -464,5 +444,5 @@ export const accountManagementService = {
   hardDeleteAccount,
   getAccountStatus,
   isAccountActive,
-  listSuspendedAccounts
+  listSuspendedAccounts,
 };

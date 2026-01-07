@@ -52,8 +52,9 @@ async function runMigrations() {
       return;
     }
 
-    const files = fs.readdirSync(migrationsDir)
-      .filter(f => f.endsWith('.sql'))
+    const files = fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
       .sort();
 
     if (files.length === 0) {
@@ -66,7 +67,8 @@ async function runMigrations() {
     // Run each migration
     for (const file of files) {
       // Check if already executed
-      const result = await pool.request()
+      const result = await pool
+        .request()
         .input('filename', sql.NVarChar, file)
         .query('SELECT * FROM migrations WHERE filename = @filename');
 
@@ -83,7 +85,7 @@ async function runMigrations() {
 
       try {
         // Split by GO statements and execute each batch
-        const batches = migrationSQL.split(/^\s*GO\s*$/gim).filter(b => b.trim());
+        const batches = migrationSQL.split(/^\s*GO\s*$/gim).filter((b) => b.trim());
 
         for (const batch of batches) {
           if (batch.trim()) {
@@ -92,7 +94,8 @@ async function runMigrations() {
         }
 
         // Record migration
-        await pool.request()
+        await pool
+          .request()
           .input('filename', sql.NVarChar, file)
           .query('INSERT INTO migrations (filename) VALUES (@filename)');
 
@@ -104,7 +107,6 @@ async function runMigrations() {
     }
 
     console.log('🎉 All migrations completed successfully!\n');
-
   } catch (error) {
     console.error('❌ Migration failed:', error.message);
     console.error('\nPlease check:');

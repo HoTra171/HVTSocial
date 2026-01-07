@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const CommentService = {
   /**
@@ -8,10 +8,7 @@ export const CommentService = {
   async getCommentsByPost(postId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("postId", sql.Int, postId)
-      .query(`
+    const result = await db.request().input('postId', sql.Int, postId).query(`
         SELECT 
           c.id,
           c.post_id,
@@ -56,10 +53,7 @@ export const CommentService = {
   async getReplies(commentId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("commentId", sql.Int, commentId)
-      .query(`
+    const result = await db.request().input('commentId', sql.Int, commentId).query(`
         SELECT 
           c.id,
           c.post_id,
@@ -104,12 +98,11 @@ export const CommentService = {
 
     const result = await db
       .request()
-      .input("postId", sql.Int, postId)
-      .input("userId", sql.Int, userId)
+      .input('postId', sql.Int, postId)
+      .input('userId', sql.Int, userId)
       // FIX: luôn dùng NVARCHAR(MAX) để tránh lỗi 500 khi content dài
-      .input("content", sql.NVarChar(sql.MAX), content)
-      .input("commentParent", sql.Int, commentParent)
-      .query(`
+      .input('content', sql.NVarChar(sql.MAX), content)
+      .input('commentParent', sql.Int, commentParent).query(`
         INSERT INTO comments (post_id, user_id, content, parent_comment_id, created_at)
         OUTPUT INSERTED.*
         VALUES (@postId, @userId, @content, @commentParent, GETDATE())
@@ -118,10 +111,7 @@ export const CommentService = {
     const newComment = result.recordset[0];
 
     // Lấy thông tin user để frontend render ngay
-    const userResult = await db
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    const userResult = await db.request().input('userId', sql.Int, userId).query(`
         SELECT id, full_name, username, avatar
         FROM users
         WHERE id = @userId
@@ -155,24 +145,22 @@ export const CommentService = {
 
     const checkResult = await db
       .request()
-      .input("commentId", sql.Int, commentId)
-      .input("userId", sql.Int, userId)
-      .query(`
+      .input('commentId', sql.Int, commentId)
+      .input('userId', sql.Int, userId).query(`
         SELECT id
         FROM comments
         WHERE id = @commentId AND user_id = @userId
       `);
 
     if (checkResult.recordset.length === 0) {
-      throw new Error("Unauthorized or comment not found");
+      throw new Error('Unauthorized or comment not found');
     }
 
     await db
       .request()
-      .input("commentId", sql.Int, commentId)
+      .input('commentId', sql.Int, commentId)
       // FIX: NVARCHAR(MAX) + updated_at
-      .input("content", sql.NVarChar(sql.MAX), content)
-      .query(`
+      .input('content', sql.NVarChar(sql.MAX), content).query(`
         UPDATE comments
         SET content = @content, updated_at = GETDATE()
         WHERE id = @commentId
@@ -189,10 +177,7 @@ export const CommentService = {
   async deleteComment(commentId, userId) {
     const db = await pool;
 
-    const meta = await db
-      .request()
-      .input("commentId", sql.Int, commentId)
-      .query(`
+    const meta = await db.request().input('commentId', sql.Int, commentId).query(`
         SELECT c.id, c.user_id AS comment_owner_id, p.user_id AS post_owner_id
         FROM comments c
         JOIN posts p ON p.id = c.post_id
@@ -200,12 +185,12 @@ export const CommentService = {
       `);
 
     if (meta.recordset.length === 0) {
-      throw new Error("Unauthorized or comment not found");
+      throw new Error('Unauthorized or comment not found');
     }
 
     const { comment_owner_id, post_owner_id } = meta.recordset[0];
     if (userId !== comment_owner_id && userId !== post_owner_id) {
-      throw new Error("Unauthorized or comment not found");
+      throw new Error('Unauthorized or comment not found');
     }
 
     if (process.env.DATABASE_URL) {
@@ -213,14 +198,11 @@ export const CommentService = {
       // Tự động xóa likes và replies (đệ quy)
       await db
         .request()
-        .input("commentId", sql.Int, commentId)
+        .input('commentId', sql.Int, commentId)
         .query(`DELETE FROM comments WHERE id = @commentId`);
     } else {
       // MSSQL: Xử lý xóa thủ công đệ quy (do giới hạn cycles hoặc chưa setup cascade)
-      await db
-        .request()
-        .input("commentId", sql.Int, commentId)
-        .query(`
+      await db.request().input('commentId', sql.Int, commentId).query(`
           ;WITH tree AS (
             SELECT id FROM comments WHERE id = @commentId
             UNION ALL
@@ -254,10 +236,7 @@ export const CommentService = {
   async getCommentById(commentId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("commentId", sql.Int, commentId)
-      .query(`
+    const result = await db.request().input('commentId', sql.Int, commentId).query(`
         SELECT id, post_id, user_id, parent_comment_id AS comment_parent, content, created_at
         FROM comments
         WHERE id = @commentId

@@ -110,10 +110,7 @@ export const checkPostAccess = async (req, res, next) => {
     const userId = req.user.id;
 
     // Get post with privacy info
-    const postResult = await pool
-      .request()
-      .input('postId', postId)
-      .query(`
+    const postResult = await pool.request().input('postId', postId).query(`
         SELECT user_id, privacy
         FROM posts
         WHERE id = @postId AND deleted_at IS NULL
@@ -158,8 +155,7 @@ export const checkPostAccess = async (req, res, next) => {
       const friendshipResult = await pool
         .request()
         .input('userId1', userId)
-        .input('userId2', post.user_id)
-        .query(`
+        .input('userId2', post.user_id).query(`
           SELECT id
           FROM friendships
           WHERE (
@@ -202,11 +198,7 @@ export const checkChatAccess = async (req, res, next) => {
     const chatId = req.params.id || req.params.chatId;
     const userId = req.user.id;
 
-    const result = await pool
-      .request()
-      .input('chatId', chatId)
-      .input('userId', userId)
-      .query(`
+    const result = await pool.request().input('chatId', chatId).input('userId', userId).query(`
         SELECT id
         FROM chats
         WHERE id = @chatId

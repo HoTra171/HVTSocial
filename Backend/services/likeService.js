@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const LikeService = {
   /**
@@ -11,37 +11,28 @@ export const LikeService = {
     // Kiểm tra xem đã like chưa
     const checkResult = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("postId", sql.Int, postId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('postId', sql.Int, postId).query(`
         SELECT id FROM likes 
         WHERE user_id = @userId AND post_id = @postId
       `);
 
     if (checkResult.recordset.length > 0) {
       // Đã like -> Unlike
-      await db
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("postId", sql.Int, postId)
-        .query(`
+      await db.request().input('userId', sql.Int, userId).input('postId', sql.Int, postId).query(`
           DELETE FROM likes 
           WHERE user_id = @userId AND post_id = @postId
         `);
 
-      return { action: "unliked", message: "Đã bỏ thích" };
+      return { action: 'unliked', message: 'Đã bỏ thích' };
     } else {
       // Chưa like -> Like
-      await db
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("postId", sql.Int, postId)
-        .query(`
+      await db.request().input('userId', sql.Int, userId).input('postId', sql.Int, postId).query(`
           INSERT INTO likes (user_id, post_id)
           VALUES (@userId, @postId)
         `);
 
-      return { action: "liked", message: "Đã thích" };
+      return { action: 'liked', message: 'Đã thích' };
     }
   },
 
@@ -53,37 +44,30 @@ export const LikeService = {
 
     const checkResult = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("commentId", sql.Int, commentId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('commentId', sql.Int, commentId).query(`
         SELECT id FROM likes 
         WHERE user_id = @userId AND comment_id = @commentId
       `);
 
     if (checkResult.recordset.length > 0) {
       // Unlike
-      await db
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("commentId", sql.Int, commentId)
+      await db.request().input('userId', sql.Int, userId).input('commentId', sql.Int, commentId)
         .query(`
           DELETE FROM likes 
           WHERE user_id = @userId AND comment_id = @commentId
         `);
 
-      return { action: "unliked", message: "Đã bỏ thích comment" };
+      return { action: 'unliked', message: 'Đã bỏ thích comment' };
     } else {
       // Like
-      await db
-        .request()
-        .input("userId", sql.Int, userId)
-        .input("commentId", sql.Int, commentId)
+      await db.request().input('userId', sql.Int, userId).input('commentId', sql.Int, commentId)
         .query(`
           INSERT INTO likes (user_id, comment_id)
           VALUES (@userId, @commentId)
         `);
 
-      return { action: "liked", message: "Đã thích comment" };
+      return { action: 'liked', message: 'Đã thích comment' };
     }
   },
 
@@ -93,10 +77,7 @@ export const LikeService = {
   async getPostLikes(postId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("postId", sql.Int, postId)
-      .query(`
+    const result = await db.request().input('postId', sql.Int, postId).query(`
         SELECT 
           u.id,
           u.full_name,
@@ -120,9 +101,8 @@ export const LikeService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("postId", sql.Int, postId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('postId', sql.Int, postId).query(`
         SELECT id FROM likes 
         WHERE user_id = @userId AND post_id = @postId
       `);
@@ -131,18 +111,17 @@ export const LikeService = {
   },
 
   /**
-  * Lấy danh sách bài viết user đã thích
-  */
+   * Lấy danh sách bài viết user đã thích
+   */
   async getLikedPosts(userId, page = 1, limit = 10) {
     const offset = (page - 1) * limit;
     const db = await pool;
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("offset", sql.Int, offset)
-      .input("limit", sql.Int, limit)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('offset', sql.Int, offset)
+      .input('limit', sql.Int, limit).query(`
         SELECT 
           p.id,
           p.content,
@@ -172,7 +151,7 @@ export const LikeService = {
     return result.recordset.map((row) => ({
       id: row.id,
       content: row.content,
-      image_urls: row.media ? row.media.split(";") : [],
+      image_urls: row.media ? row.media.split(';') : [],
       createdAt: row.created_at,
       likedAt: row.liked_at,
       likes_count: row.likes_count,

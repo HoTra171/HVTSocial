@@ -21,8 +21,8 @@ if (!DATABASE_URL) {
 const client = new pg.Client({
   connectionString: DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 async function applyMigration() {
@@ -52,7 +52,7 @@ async function applyMigration() {
     `);
 
     console.log('📋 Tables in database:');
-    result.rows.forEach(row => {
+    result.rows.forEach((row) => {
       console.log(`  - ${row.table_name}`);
     });
 
@@ -66,8 +66,10 @@ async function applyMigration() {
     `);
 
     console.log('📋 Stories columns:');
-    storiesSchema.rows.forEach(row => {
-      console.log(`  - ${row.column_name} (${row.data_type}) ${row.is_nullable === 'NO' ? 'NOT NULL' : ''}`);
+    storiesSchema.rows.forEach((row) => {
+      console.log(
+        `  - ${row.column_name} (${row.data_type}) ${row.is_nullable === 'NO' ? 'NOT NULL' : ''}`
+      );
     });
 
     // Check chat_users schema
@@ -81,7 +83,7 @@ async function applyMigration() {
 
     if (chatUsersExists.rows[0].exists) {
       console.log('✅ chat_users table exists');
-      
+
       const chatUsersSchema = await client.query(`
         SELECT column_name, data_type
         FROM information_schema.columns
@@ -90,13 +92,12 @@ async function applyMigration() {
       `);
 
       console.log('📋 chat_users columns:');
-      chatUsersSchema.rows.forEach(row => {
+      chatUsersSchema.rows.forEach((row) => {
         console.log(`  - ${row.column_name} (${row.data_type})`);
       });
     } else {
       console.log('❌ chat_users table does NOT exist');
     }
-
   } catch (error) {
     console.error('❌ Migration failed:', error.message);
     console.error('Stack:', error.stack);

@@ -16,14 +16,17 @@ console.log(query);
 
 // Current regex
 let converted = query;
-converted = converted.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
-  console.log('\n==== REGEX MATCH ====');
-  console.log('Full match:', match);
-  console.log('Limit:', limit);
-  console.log('Middle:', middle);
-  console.log('OrderBy:', orderBy);
-  return `SELECT${middle}${orderBy} LIMIT ${limit}`;
-});
+converted = converted.replace(
+  /SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi,
+  (match, limit, middle, orderBy) => {
+    console.log('\n==== REGEX MATCH ====');
+    console.log('Full match:', match);
+    console.log('Limit:', limit);
+    console.log('Middle:', middle);
+    console.log('OrderBy:', orderBy);
+    return `SELECT${middle}${orderBy} LIMIT ${limit}`;
+  }
+);
 
 console.log('\n\nCONVERTED:');
 console.log(converted);
@@ -34,11 +37,14 @@ console.log(converted);
 console.log('\n\n==== BETTER APPROACH ====');
 // Better: Only match until we hit the closing paren of subquery
 let better = query;
-better = better.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(\s+ORDER BY[^\)]+?)(\s*\))/gi, (match, limit, middle, orderBy, closeParen) => {
-  console.log('Match:', match);
-  console.log('OrderBy:', orderBy);
-  console.log('CloseParen:', closeParen);
-  return `SELECT${middle}${orderBy} LIMIT ${limit}${closeParen}`;
-});
+better = better.replace(
+  /SELECT\s+TOP\s*\((\d+)\)([^]*?)(\s+ORDER BY[^\)]+?)(\s*\))/gi,
+  (match, limit, middle, orderBy, closeParen) => {
+    console.log('Match:', match);
+    console.log('OrderBy:', orderBy);
+    console.log('CloseParen:', closeParen);
+    return `SELECT${middle}${orderBy} LIMIT ${limit}${closeParen}`;
+  }
+);
 
 console.log(better);

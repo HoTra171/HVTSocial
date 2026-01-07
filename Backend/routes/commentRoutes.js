@@ -1,12 +1,12 @@
-import express from "express";
+import express from 'express';
 import {
   getCommentsByPost,
   getReplies,
   createComment,
   updateComment,
   deleteComment,
-} from "../controllers/commentController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+} from '../controllers/commentController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ const router = express.Router();
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get("/post/:postId", getCommentsByPost);
+router.get('/post/:postId', getCommentsByPost);
 
 /**
  * @swagger
@@ -67,7 +67,7 @@ router.get("/post/:postId", getCommentsByPost);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get("/:id/replies", getReplies);
+router.get('/:id/replies', getReplies);
 
 /**
  * @swagger
@@ -114,7 +114,7 @@ router.get("/:id/replies", getReplies);
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  */
-router.post("/", authMiddleware, createComment);
+router.post('/', authMiddleware, createComment);
 
 /**
  * @swagger
@@ -162,7 +162,7 @@ router.post("/", authMiddleware, createComment);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.put("/:id", authMiddleware, updateComment);
+router.put('/:id', authMiddleware, updateComment);
 
 /**
  * @swagger
@@ -198,6 +198,6 @@ router.put("/:id", authMiddleware, updateComment);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.delete("/:id", authMiddleware, deleteComment);
+router.delete('/:id', authMiddleware, deleteComment);
 
 export default router;

@@ -62,7 +62,7 @@ Object.entries(swaggerSpec.paths).forEach(([path, methods]) => {
     };
 
     // Add auth if required
-    if (spec.security && spec.security.some(s => s.bearerAuth)) {
+    if (spec.security && spec.security.some((s) => s.bearerAuth)) {
       request.request.auth = {
         type: 'bearer',
         bearer: [
@@ -90,7 +90,8 @@ Object.entries(swaggerSpec.paths).forEach(([path, methods]) => {
 
         if (schema.properties) {
           Object.entries(schema.properties).forEach(([key, prop]) => {
-            body[key] = prop.example || (prop.type === 'integer' ? 1 : prop.type === 'boolean' ? true : '');
+            body[key] =
+              prop.example || (prop.type === 'integer' ? 1 : prop.type === 'boolean' ? true : '');
           });
         }
 
@@ -109,10 +110,7 @@ Object.entries(swaggerSpec.paths).forEach(([path, methods]) => {
 collection.item = Object.values(folders);
 
 // Write to file
-fs.writeFileSync(
-  './HVTSocial-API.postman_collection.json',
-  JSON.stringify(collection, null, 2)
-);
+fs.writeFileSync('./HVTSocial-API.postman_collection.json', JSON.stringify(collection, null, 2));
 
 console.log('✅ Exported Postman collection: HVTSocial-API.postman_collection.json');
 console.log('📝 Import file này vào Postman để test API');

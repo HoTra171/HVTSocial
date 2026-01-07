@@ -1,4 +1,4 @@
-import sql from "mssql";
+import sql from 'mssql';
 
 export const NotificationModel = {
   // Tạo thông báo tin nhắn mới
@@ -8,9 +8,9 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("senderId", sql.Int, senderId);
-    req.input("content", sql.NVarChar(255), content);
+    req.input('userId', sql.Int, userId);
+    req.input('senderId', sql.Int, senderId);
+    req.input('content', sql.NVarChar(255), content);
 
     const query = `
       INSERT INTO notifications
@@ -29,7 +29,7 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("notificationId", sql.Int, notificationId);
+    req.input('notificationId', sql.Int, notificationId);
 
     const query = `
       UPDATE notifications
@@ -45,7 +45,7 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
+    req.input('userId', sql.Int, userId);
 
     const query = `
       SELECT 
@@ -75,10 +75,10 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("senderId", sql.Int, senderId);
-    req.input("postId", sql.Int, postId);
-    req.input("content", sql.NVarChar(255), "đã tag bạn trong một bài viết");
+    req.input('userId', sql.Int, userId);
+    req.input('senderId', sql.Int, senderId);
+    req.input('postId', sql.Int, postId);
+    req.input('content', sql.NVarChar(255), 'đã tag bạn trong một bài viết');
 
     const query = `
     INSERT INTO notifications (user_id, sender_id, post_id, content, type, status, created_at)
@@ -96,10 +96,10 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("senderId", sql.Int, senderId);
-    req.input("postId", sql.Int, postId);
-    req.input("content", sql.NVarChar(255), "đã tag bạn trong một bình luận");
+    req.input('userId', sql.Int, userId);
+    req.input('senderId', sql.Int, senderId);
+    req.input('postId', sql.Int, postId);
+    req.input('content', sql.NVarChar(255), 'đã tag bạn trong một bình luận');
 
     const query = `
     INSERT INTO notifications (user_id, sender_id, post_id, content, type, status, created_at)
@@ -117,9 +117,9 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("senderId", sql.Int, senderId);
-    req.input("content", sql.NVarChar(255), "đã theo dõi bạn");
+    req.input('userId', sql.Int, userId);
+    req.input('senderId', sql.Int, senderId);
+    req.input('content', sql.NVarChar(255), 'đã theo dõi bạn');
 
     const query = `
     INSERT INTO notifications (user_id, sender_id, content, type, status, created_at)
@@ -137,9 +137,9 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("senderId", sql.Int, senderId);
-    req.input("content", sql.NVarChar(255), "đã xem story của bạn");
+    req.input('userId', sql.Int, userId);
+    req.input('senderId', sql.Int, senderId);
+    req.input('content', sql.NVarChar(255), 'đã xem story của bạn');
 
     const query = `
     INSERT INTO notifications (user_id, sender_id, content, type, status, created_at)
@@ -157,8 +157,8 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("content", sql.NVarChar(255), content);
+    req.input('userId', sql.Int, userId);
+    req.input('content', sql.NVarChar(255), content);
 
     const query = `
     INSERT INTO notifications (user_id, content, type, status, created_at)
@@ -175,8 +175,8 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("senderId", sql.Int, senderId);
+    req.input('userId', sql.Int, userId);
+    req.input('senderId', sql.Int, senderId);
 
     const query = `
     SELECT COUNT(*) AS is_blocked
@@ -193,7 +193,7 @@ export const NotificationModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
+    req.input('userId', sql.Int, userId);
 
     const query = `
       SELECT COUNT(*) AS unread_count

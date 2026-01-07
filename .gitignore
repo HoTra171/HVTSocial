@@ -63,6 +63,7 @@ docker-compose.override.yml
 
 # Markdown files
 *.md
+!README.md
 *.resolved
 *.resolved.0
 

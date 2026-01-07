@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express';
 import {
   // getSuggestedFriends
   sendFriendRequest,
@@ -11,8 +11,8 @@ import {
   getPendingRequests,
   getSentRequests,
   getSuggestedFriends,
-} from "../controllers/friendshipController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+} from '../controllers/friendshipController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -43,7 +43,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/send-request", authMiddleware, sendFriendRequest);
+router.post('/send-request', authMiddleware, sendFriendRequest);
 
 /**
  * @swagger
@@ -70,7 +70,7 @@ router.post("/send-request", authMiddleware, sendFriendRequest);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/accept", authMiddleware, acceptFriendRequest);
+router.post('/accept', authMiddleware, acceptFriendRequest);
 
 /**
  * @swagger
@@ -97,7 +97,7 @@ router.post("/accept", authMiddleware, acceptFriendRequest);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/reject", authMiddleware, rejectFriendRequest);
+router.post('/reject', authMiddleware, rejectFriendRequest);
 
 /**
  * @swagger
@@ -124,7 +124,7 @@ router.post("/reject", authMiddleware, rejectFriendRequest);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.delete("/unfriend", authMiddleware, unfriend);
+router.delete('/unfriend', authMiddleware, unfriend);
 
 /**
  * @swagger
@@ -151,7 +151,7 @@ router.delete("/unfriend", authMiddleware, unfriend);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.delete("/cancel", authMiddleware, cancelFriendRequest);
+router.delete('/cancel', authMiddleware, cancelFriendRequest);
 
 // ========== QUERIES ==========
 
@@ -175,7 +175,7 @@ router.delete("/cancel", authMiddleware, cancelFriendRequest);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/status/:friendId", authMiddleware, getFriendshipStatus);
+router.get('/status/:friendId', authMiddleware, getFriendshipStatus);
 
 /**
  * @swagger
@@ -191,7 +191,7 @@ router.get("/status/:friendId", authMiddleware, getFriendshipStatus);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/friends", authMiddleware, getFriends);
+router.get('/friends', authMiddleware, getFriends);
 
 /**
  * @swagger
@@ -207,7 +207,7 @@ router.get("/friends", authMiddleware, getFriends);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/pending", authMiddleware, getPendingRequests);
+router.get('/pending', authMiddleware, getPendingRequests);
 
 /**
  * @swagger
@@ -223,7 +223,7 @@ router.get("/pending", authMiddleware, getPendingRequests);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/sent", authMiddleware, getSentRequests);
+router.get('/sent', authMiddleware, getSentRequests);
 
 /**
  * @swagger
@@ -239,6 +239,6 @@ router.get("/sent", authMiddleware, getSentRequests);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/suggestions", authMiddleware, getSuggestedFriends);
+router.get('/suggestions', authMiddleware, getSuggestedFriends);
 
 export default router;

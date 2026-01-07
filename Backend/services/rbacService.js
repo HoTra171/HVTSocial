@@ -33,7 +33,8 @@ export const getAllRoles = async () => {
  */
 export const getRoleByName = async (roleName) => {
   const db = await getPool();
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('name', sql.NVarChar, roleName)
     .query('SELECT * FROM roles WHERE name = @name');
   return result.recordset[0];
@@ -44,9 +45,7 @@ export const getRoleByName = async (roleName) => {
  */
 export const getUserRoles = async (userId) => {
   const db = await getPool();
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         r.id, r.name, r.description,
         ur.assigned_at, ur.assigned_by
@@ -62,9 +61,7 @@ export const getUserRoles = async (userId) => {
  */
 export const getUserPermissions = async (userId) => {
   const db = await getPool();
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT DISTINCT
         p.id, p.name, p.resource, p.action, p.description
       FROM user_roles ur
@@ -80,10 +77,10 @@ export const getUserPermissions = async (userId) => {
  */
 export const hasPermission = async (userId, permissionName) => {
   const db = await getPool();
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('userId', sql.Int, userId)
-    .input('permissionName', sql.NVarChar, permissionName)
-    .query(`
+    .input('permissionName', sql.NVarChar, permissionName).query(`
       SELECT COUNT(*) as count
       FROM user_roles ur
       JOIN role_permissions rp ON ur.role_id = rp.role_id
@@ -98,10 +95,10 @@ export const hasPermission = async (userId, permissionName) => {
  */
 export const hasRole = async (userId, roleName) => {
   const db = await getPool();
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('userId', sql.Int, userId)
-    .input('roleName', sql.NVarChar, roleName)
-    .query(`
+    .input('roleName', sql.NVarChar, roleName).query(`
       SELECT COUNT(*) as count
       FROM user_roles ur
       JOIN roles r ON ur.role_id = r.id
@@ -129,11 +126,11 @@ export const assignRole = async (userId, roleName, assignedBy = null) => {
   }
 
   // Assign role
-  await db.request()
+  await db
+    .request()
     .input('userId', sql.Int, userId)
     .input('roleId', sql.Int, role.id)
-    .input('assignedBy', sql.Int, assignedBy)
-    .query(`
+    .input('assignedBy', sql.Int, assignedBy).query(`
       INSERT INTO user_roles (user_id, role_id, assigned_by)
       VALUES (@userId, @roleId, @assignedBy)
     `);
@@ -142,7 +139,7 @@ export const assignRole = async (userId, roleName, assignedBy = null) => {
     message: 'Role assigned',
     userId,
     roleName,
-    assignedBy
+    assignedBy,
   });
 
   return { message: 'Role assigned successfully', role: role.name };
@@ -159,10 +156,10 @@ export const removeRole = async (userId, roleName) => {
     throw new Error(`Role '${roleName}' not found`);
   }
 
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('userId', sql.Int, userId)
-    .input('roleId', sql.Int, role.id)
-    .query(`
+    .input('roleId', sql.Int, role.id).query(`
       DELETE FROM user_roles
       WHERE user_id = @userId AND role_id = @roleId
     `);
@@ -170,13 +167,13 @@ export const removeRole = async (userId, roleName) => {
   logger.info({
     message: 'Role removed',
     userId,
-    roleName
+    roleName,
   });
 
   return {
     message: 'Role removed successfully',
     role: role.name,
-    rowsAffected: result.rowsAffected[0]
+    rowsAffected: result.rowsAffected[0],
   };
 };
 
@@ -190,7 +187,7 @@ export const isResourceOwner = async (userId, resourceType, resourceId) => {
   const tableMap = {
     post: 'posts',
     comment: 'comments',
-    story: 'stories'
+    story: 'stories',
   };
 
   const tableName = tableMap[resourceType];
@@ -198,10 +195,10 @@ export const isResourceOwner = async (userId, resourceType, resourceId) => {
     throw new Error(`Unknown resource type: ${resourceType}`);
   }
 
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('userId', sql.Int, userId)
-    .input('resourceId', sql.Int, resourceId)
-    .query(`
+    .input('resourceId', sql.Int, resourceId).query(`
       SELECT COUNT(*) as count
       FROM ${tableName}
       WHERE id = @resourceId AND user_id = @userId
@@ -252,9 +249,7 @@ export const getAllPermissions = async () => {
  */
 export const getRolePermissions = async (roleName) => {
   const db = await getPool();
-  const result = await db.request()
-    .input('roleName', sql.NVarChar, roleName)
-    .query(`
+  const result = await db.request().input('roleName', sql.NVarChar, roleName).query(`
       SELECT
         p.id, p.name, p.resource, p.action, p.description
       FROM role_permissions rp
@@ -278,5 +273,5 @@ export const rbacService = {
   isResourceOwner,
   canPerformAction,
   getAllPermissions,
-  getRolePermissions
+  getRolePermissions,
 };

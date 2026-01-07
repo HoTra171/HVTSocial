@@ -1,6 +1,6 @@
-import { LikeService } from "../services/likeService.js";
+import { LikeService } from '../services/likeService.js';
 
-import { PostService } from "../services/postService.js";
+import { PostService } from '../services/postService.js';
 import { emitNotification } from '../helpers/notificationHelper.js';
 
 export const likePost = async (req, res) => {
@@ -17,8 +17,8 @@ export const likePost = async (req, res) => {
     // Tạo và emit notification
     if (req.app.get('io') && post.user_id !== userId) {
       await emitNotification(req.app.get('io'), {
-        userId: post.user_id,  // Owner của post
-        senderId: userId,       // Người like
+        userId: post.user_id, // Owner của post
+        senderId: userId, // Người like
         type: 'like',
         postId: postId,
       });
@@ -41,9 +41,7 @@ export const togglePostLike = async (req, res) => {
     const userId = req.user.id;
     const postId = Number(req.params.postId);
 
-
     const result = await LikeService.togglePostLike(userId, postId);
-
 
     // Notification (ONLY when the toggle results in "liked")
     try {
@@ -70,17 +68,15 @@ export const togglePostLike = async (req, res) => {
         }
 
         if (likedNow) {
-
           const post = await PostService.getPostById(postId);
 
-          console.log("Đây là bài post của tôi: " + post);
-
+          console.log('Đây là bài post của tôi: ' + post);
 
           const postOwnerId = post?.user_id ?? post?.user?.id;
 
           if (!postOwnerId) {
-            console.warn("[like] missing postOwnerId", { postId, post });
-            return res.json({ success: true }); 
+            console.warn('[like] missing postOwnerId', { postId, post });
+            return res.json({ success: true });
           }
 
           if (postOwnerId && postOwnerId !== userId) {
@@ -98,8 +94,8 @@ export const togglePostLike = async (req, res) => {
     }
     res.json(result);
   } catch (err) {
-    console.error("togglePostLike error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('togglePostLike error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -113,8 +109,8 @@ export const toggleCommentLike = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("toggleCommentLike error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('toggleCommentLike error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -127,8 +123,8 @@ export const getPostLikes = async (req, res) => {
 
     res.json(likes);
   } catch (err) {
-    console.error("getPostLikes error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('getPostLikes error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -142,8 +138,8 @@ export const checkUserLikedPost = async (req, res) => {
 
     res.json({ liked });
   } catch (err) {
-    console.error("checkUserLikedPost error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('checkUserLikedPost error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -158,7 +154,7 @@ export const getLikedPosts = async (req, res) => {
 
     res.json(posts);
   } catch (err) {
-    console.error("getLikedPosts error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('getLikedPosts error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };

@@ -1,11 +1,11 @@
 // savedPostRoutes.js
-import express from "express";
+import express from 'express';
 import {
   toggleSavePost,
   getSavedPosts,
   checkSavedPost,
-} from "../controllers/savedPostController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+} from '../controllers/savedPostController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/", authMiddleware, getSavedPosts);
+router.get('/', authMiddleware, getSavedPosts);
 
 /**
  * @swagger
@@ -45,7 +45,7 @@ router.get("/", authMiddleware, getSavedPosts);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/:postId", authMiddleware, toggleSavePost);
+router.post('/:postId', authMiddleware, toggleSavePost);
 
 /**
  * @swagger
@@ -67,6 +67,6 @@ router.post("/:postId", authMiddleware, toggleSavePost);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/check/:postId", authMiddleware, checkSavedPost);
+router.get('/check/:postId', authMiddleware, checkSavedPost);
 
 export default router;

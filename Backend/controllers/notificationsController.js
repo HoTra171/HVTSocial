@@ -1,10 +1,10 @@
-import { NotificationService } from "../services/notificationService.js";
+import { NotificationService } from '../services/notificationService.js';
 
 const emitUnreadCount = async (req, userId) => {
-  const io = req.app.get("io");
+  const io = req.app.get('io');
   if (!io) return;
   const count = await NotificationService.getUnreadCount(userId);
-  io.to(`user_${userId}`).emit("unread_count", count);
+  io.to(`user_${userId}`).emit('unread_count', count);
 };
 // GET /api/notifications
 export const getNotifications = async (req, res) => {
@@ -12,20 +12,17 @@ export const getNotifications = async (req, res) => {
     const userId = req.user.id;
     const limit = Number(req.query.limit) || 50;
 
-    const notifications = await NotificationService.getNotifications(
-      userId,
-      limit
-    );
+    const notifications = await NotificationService.getNotifications(userId, limit);
 
     res.json({
       success: true,
       data: notifications,
     });
   } catch (err) {
-    console.error("getNotifications error:", err);
+    console.error('getNotifications error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -42,10 +39,10 @@ export const getUnreadCount = async (req, res) => {
       count,
     });
   } catch (err) {
-    console.error("getUnreadCount error:", err);
+    console.error('getUnreadCount error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -57,15 +54,14 @@ export const markAllRead = async (req, res) => {
 
     await NotificationService.markAllRead(userId);
 
-
     await emitUnreadCount(req, userId);
 
     res.json({ success: true });
   } catch (err) {
-    console.error("markAllRead error:", err);
+    console.error('markAllRead error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -78,15 +74,14 @@ export const markAsRead = async (req, res) => {
 
     await NotificationService.markAsRead(notificationId, userId);
 
-
     await emitUnreadCount(req, userId);
 
     res.json({ success: true });
   } catch (err) {
-    console.error("markAsRead error:", err);
+    console.error('markAsRead error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -99,15 +94,14 @@ export const deleteNotification = async (req, res) => {
 
     await NotificationService.deleteNotification(notificationId, userId);
 
-
     await emitUnreadCount(req, userId);
 
     res.json({ success: true });
   } catch (err) {
-    console.error("deleteNotification error:", err);
+    console.error('deleteNotification error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -119,15 +113,14 @@ export const deleteAllNotifications = async (req, res) => {
 
     await NotificationService.deleteAllNotifications(userId);
 
-
     await emitUnreadCount(req, userId);
 
     res.json({ success: true });
   } catch (err) {
-    console.error("deleteAllNotifications error:", err);
+    console.error('deleteAllNotifications error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };

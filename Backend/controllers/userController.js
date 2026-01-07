@@ -23,12 +23,12 @@ export const getUserProfile = async (req, res) => {
     const user = await UserService.getUserProfile(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.json(user);
   } catch (err) {
-    console.error("getUserProfile ERROR:", err);
+    console.error('getUserProfile ERROR:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -50,16 +50,13 @@ const uploadToCloudinary = async (fileBuffer, folder, transformation = null) => 
       options.transformation = transformation;
     }
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      options,
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result.secure_url);
-        }
+    const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result.secure_url);
       }
-    );
+    });
 
     stream.pipe(uploadStream);
   });
@@ -77,7 +74,7 @@ export const updateProfile = async (req, res) => {
     if (userId !== currentUserId) {
       return res.status(403).json({
         success: false,
-        message: 'Báº¡n khÃ´ng cÃ³ quyá»n chá»‰nh sá»­a profile nÃ y'
+        message: 'Báº¡n khÃ´ng cÃ³ quyá»n chá»‰nh sá»­a profile nÃ y',
       });
     }
 
@@ -90,22 +87,18 @@ export const updateProfile = async (req, res) => {
     if (req.files?.avatar?.[0]) {
       console.log('ðŸ“· Uploading avatar...');
       uploadPromises.push(
-        uploadToCloudinary(
-          req.files.avatar[0].buffer,
-          'avatars',
-          [{ width: 400, height: 400, crop: 'fill', gravity: 'face' }]
-        ).then(url => ({ type: 'avatar', url }))
+        uploadToCloudinary(req.files.avatar[0].buffer, 'avatars', [
+          { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+        ]).then((url) => ({ type: 'avatar', url }))
       );
     }
 
     if (req.files?.background?.[0]) {
       console.log('ðŸ–¼ï¸ Uploading background...');
       uploadPromises.push(
-        uploadToCloudinary(
-          req.files.background[0].buffer,
-          'backgrounds',
-          [{ width: 1200, height: 400, crop: 'fill' }]
-        ).then(url => ({ type: 'background', url }))
+        uploadToCloudinary(req.files.background[0].buffer, 'backgrounds', [
+          { width: 1200, height: 400, crop: 'fill' },
+        ]).then((url) => ({ type: 'background', url }))
       );
     }
 
@@ -138,7 +131,7 @@ export const updateProfile = async (req, res) => {
     }
 
     // Apply uploaded URLs
-    uploadResults.forEach(result => {
+    uploadResults.forEach((result) => {
       if (result.type === 'avatar') {
         updates.push('avatar = @avatar');
         request.input('avatar', sql.NVarChar, result.url);
@@ -153,7 +146,7 @@ export const updateProfile = async (req, res) => {
     if (updates.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'KhÃ´ng cÃ³ gÃ¬ Ä‘á»ƒ cáº­p nháº­t'
+        message: 'KhÃ´ng cÃ³ gÃ¬ Ä‘á»ƒ cáº­p nháº­t',
       });
     }
 
@@ -162,9 +155,7 @@ export const updateProfile = async (req, res) => {
     await request.query(updateQuery);
 
     // FETCH UPDATED USER
-    const result = await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    const result = await db.request().input('userId', sql.Int, userId).query(`
         SELECT 
           id, full_name, username, email, avatar, cover_photo AS background, 
           bio, location AS address, created_at
@@ -178,23 +169,22 @@ export const updateProfile = async (req, res) => {
     res.json({
       success: true,
       message: 'Cáº­p nháº­t profile thÃ nh cÃ´ng',
-      user: updatedUser
+      user: updatedUser,
     });
-
   } catch (err) {
     console.error('updateProfile error:', err);
 
     if (err.message?.includes('UNIQUE') || err.number === 2627) {
       return res.status(400).json({
         success: false,
-        message: 'Username Ä‘Ã£ tá»“n táº¡i'
+        message: 'Username Ä‘Ã£ tá»“n táº¡i',
       });
     }
 
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: err.message
+      error: err.message,
     });
   }
 };
@@ -203,12 +193,12 @@ export const updateProfile = async (req, res) => {
 export const discoverUsers = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const search = (req.query.search || "").trim();
-    const filterType = (req.query.filterType || "all").trim();
+    const search = (req.query.search || '').trim();
+    const filterType = (req.query.filterType || 'all').trim();
     const limit = Math.min(Number(req.query.limit || 50), 100);
 
-    const prefix = search ? `${search}%` : "";
-    const like = search ? `%${search}%` : "";
+    const prefix = search ? `${search}%` : '';
+    const like = search ? `%${search}%` : '';
 
     const db = await pool;
 
@@ -277,16 +267,17 @@ export const discoverUsers = async (req, res) => {
       ORDER BY score DESC, u.created_at DESC;
     `;
 
-    const result = await db.request()
-      .input("currentUserId", sql.Int, currentUserId)
-      .input("search", sql.NVarChar, search)
-      .input("prefix", sql.NVarChar, prefix)
-      .input("like", sql.NVarChar, like)
-      .input("filterType", sql.NVarChar, filterType)
-      .input("limit", sql.Int, limit)
+    const result = await db
+      .request()
+      .input('currentUserId', sql.Int, currentUserId)
+      .input('search', sql.NVarChar, search)
+      .input('prefix', sql.NVarChar, prefix)
+      .input('like', sql.NVarChar, like)
+      .input('filterType', sql.NVarChar, filterType)
+      .input('limit', sql.Int, limit)
       .query(query);
 
-    const users = result.recordset.map(u => ({
+    const users = result.recordset.map((u) => ({
       _id: u.id,
       name: u.full_name,
       username: u.username,
@@ -301,8 +292,8 @@ export const discoverUsers = async (req, res) => {
 
     return res.json({ success: true, data: users });
   } catch (err) {
-    console.error("discoverUsers error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    console.error('discoverUsers error:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
@@ -310,7 +301,7 @@ export const discoverUsers = async (req, res) => {
 export const suggestUsers = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const q = (req.query.q || "").trim();
+    const q = (req.query.q || '').trim();
     const limit = Math.min(Number(req.query.limit || 8), 20);
 
     if (!q) return res.json({ success: true, data: [] });
@@ -348,14 +339,15 @@ export const suggestUsers = async (req, res) => {
       ORDER BY score DESC, u.full_name;
     `;
 
-    const result = await db.request()
-      .input("currentUserId", sql.Int, currentUserId)
-      .input("prefix", sql.NVarChar, prefix)
-      .input("like", sql.NVarChar, like)
-      .input("limit", sql.Int, limit)
+    const result = await db
+      .request()
+      .input('currentUserId', sql.Int, currentUserId)
+      .input('prefix', sql.NVarChar, prefix)
+      .input('like', sql.NVarChar, like)
+      .input('limit', sql.Int, limit)
       .query(query);
 
-    const users = result.recordset.map(u => ({
+    const users = result.recordset.map((u) => ({
       id: u.id,
       full_name: u.full_name,
       username: u.username,
@@ -368,8 +360,7 @@ export const suggestUsers = async (req, res) => {
 
     return res.json({ success: true, data: users });
   } catch (err) {
-    console.error("suggestUsers error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    console.error('suggestUsers error:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
-

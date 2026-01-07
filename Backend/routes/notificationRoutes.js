@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express';
 import {
   getNotifications,
   getUnreadCount,
@@ -6,9 +6,8 @@ import {
   markAsRead,
   deleteNotification,
   deleteAllNotifications,
-} from "../controllers/notificationsController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
-
+} from '../controllers/notificationsController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -32,7 +31,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/", authMiddleware, getNotifications);
+router.get('/', authMiddleware, getNotifications);
 
 /**
  * @swagger
@@ -55,7 +54,7 @@ router.get("/", authMiddleware, getNotifications);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/unread-count", authMiddleware, getUnreadCount);
+router.get('/unread-count', authMiddleware, getUnreadCount);
 
 /**
  * @swagger
@@ -78,7 +77,7 @@ router.get("/unread-count", authMiddleware, getUnreadCount);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.patch("/mark-all-read", authMiddleware, markAllRead);
+router.patch('/mark-all-read', authMiddleware, markAllRead);
 
 /**
  * @swagger
@@ -110,7 +109,7 @@ router.patch("/mark-all-read", authMiddleware, markAllRead);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.patch("/:id/read", authMiddleware, markAsRead);
+router.patch('/:id/read', authMiddleware, markAsRead);
 
 /**
  * @swagger
@@ -142,7 +141,7 @@ router.patch("/:id/read", authMiddleware, markAsRead);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.delete("/:id", authMiddleware, deleteNotification);
+router.delete('/:id', authMiddleware, deleteNotification);
 
 /**
  * @swagger
@@ -165,6 +164,6 @@ router.delete("/:id", authMiddleware, deleteNotification);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.delete("/", authMiddleware, deleteAllNotifications);
+router.delete('/', authMiddleware, deleteAllNotifications);
 
 export default router;

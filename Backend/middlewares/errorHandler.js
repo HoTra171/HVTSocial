@@ -19,9 +19,7 @@ const errorHandler = (err, req, res, next) => {
   // Send error response
   res.status(statusCode).json({
     success: false,
-    message: process.env.NODE_ENV === 'production'
-      ? 'Đã có lỗi xảy ra'
-      : message,
+    message: process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra' : message,
     ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
 };
@@ -33,7 +31,4 @@ const notFoundHandler = (req, res, next) => {
   next(error);
 };
 
-export {
-  errorHandler,
-  notFoundHandler,
-};
+export { errorHandler, notFoundHandler };

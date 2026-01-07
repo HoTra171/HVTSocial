@@ -1,4 +1,4 @@
-﻿import dotenv from "dotenv";
+﻿import dotenv from 'dotenv';
 dotenv.config();
 
 /**
@@ -33,7 +33,6 @@ if (usePostgreSQL) {
     console.error('  - Network connectivity');
     process.exit(1);
   }
-
 } else {
   // Use SQL Server (local development)
   console.log('ðŸ—„ï¸  Using SQL Server database');
@@ -63,19 +62,20 @@ if (usePostgreSQL) {
   // Táº¡o pool vÃ  káº¿t ná»‘i
   const poolConnection = new sql.ConnectionPool(config);
 
-  await poolConnection.connect()
+  await poolConnection
+    .connect()
     .then(() => {
-      console.log("Connected to SQL Server");
-      console.log(">>> Using Database:", poolConnection.config.database);
+      console.log('Connected to SQL Server');
+      console.log('>>> Using Database:', poolConnection.config.database);
     })
     .catch((err) => {
-      console.error("SQL Server connection FAILED:", err.message);
-      console.error("Please check:");
-      console.error("  - SQL Server is running (check services: SQL Server (MSSQLSERVER))");
-      console.error("  - Database exists:", config.database);
-      console.error("  - Credentials - User:", config.user);
-      console.error("  - Server:", config.server);
-      console.error("  - Port:", config.port);
+      console.error('SQL Server connection FAILED:', err.message);
+      console.error('Please check:');
+      console.error('  - SQL Server is running (check services: SQL Server (MSSQLSERVER))');
+      console.error('  - Database exists:', config.database);
+      console.error('  - Credentials - User:', config.user);
+      console.error('  - Server:', config.server);
+      console.error('  - Port:', config.port);
       process.exit(1);
     });
 
@@ -122,16 +122,28 @@ if (usePostgreSQL) {
           .replace(/GETDATE\(\)/gi, 'NOW()')
           .replace(/\[dbo\]\./gi, '')
           .replace(/\[(\w+)\]/g, '$1')
-          .replace(/ISNULL\(/gi, 'COALESCE(')  // SQL Server ISNULL -> PostgreSQL COALESCE
-          .replace(/DATEADD\(HOUR,\s*(-?\d+),\s*GETDATE\(\)\)/gi, (match, hours) => `NOW() + INTERVAL '${hours} hours'`)  // DATEADD(HOUR, n, GETDATE())
+          .replace(/ISNULL\(/gi, 'COALESCE(') // SQL Server ISNULL -> PostgreSQL COALESCE
+          .replace(
+            /DATEADD\(HOUR,\s*(-?\d+),\s*GETDATE\(\)\)/gi,
+            (match, hours) => `NOW() + INTERVAL '${hours} hours'`
+          ) // DATEADD(HOUR, n, GETDATE())
           .replace(/DATEADD\(HOUR,\s*\$\d+,\s*NOW\(\)\)/gi, (match) => {
             // DATEADD(HOUR, $1, NOW()) - keep parameter
             const paramMatch = match.match(/\$(\d+)/);
             return `NOW() + ($${paramMatch[1]} || ' hours')::INTERVAL`;
           })
-          .replace(/DATEADD\(DAY,\s*(-?\d+),\s*GETDATE\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // DATEADD(DAY, -30, GETDATE())
-          .replace(/DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi, (match, days) => `NOW() + INTERVAL '${days} days'`)  // After GETDATE conversion
-          .replace(/OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi, 'OFFSET $$$1 LIMIT $$$2');  // OFFSET/FETCH NEXT -> OFFSET/LIMIT
+          .replace(
+            /DATEADD\(DAY,\s*(-?\d+),\s*GETDATE\(\)\)/gi,
+            (match, days) => `NOW() + INTERVAL '${days} days'`
+          ) // DATEADD(DAY, -30, GETDATE())
+          .replace(
+            /DATEADD\(DAY,\s*(-?\d+),\s*NOW\(\)\)/gi,
+            (match, days) => `NOW() + INTERVAL '${days} days'`
+          ) // After GETDATE conversion
+          .replace(
+            /OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi,
+            'OFFSET $$$1 LIMIT $$$2'
+          ); // OFFSET/FETCH NEXT -> OFFSET/LIMIT
 
         // Handle OUTPUT clause (SQL Server) -> RETURNING clause (PostgreSQL)
         // 1. Remove OUTPUT INSERTED.* / OUTPUT DELETED.* from the middle
@@ -160,9 +172,12 @@ if (usePostgreSQL) {
         }
 
         // Handle TOP clause in subqueries: SELECT TOP (n) ... ORDER BY -> SELECT ... ORDER BY LIMIT n
-        pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
-          return `SELECT${middle}${orderBy} LIMIT ${limit}`;
-        });
+        pgQuery = pgQuery.replace(
+          /SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi,
+          (match, limit, middle, orderBy) => {
+            return `SELECT${middle}${orderBy} LIMIT ${limit}`;
+          }
+        );
 
         // Handle main query TOP clause
         const mainTopMatch = sqlQuery.match(/^SELECT\s+TOP\s*\((\d+)\)/i);
@@ -199,15 +214,9 @@ if (usePostgreSQL) {
         return {
           recordset: result.rows,
           rowsAffected: [result.rowCount],
-          recordsets: [result.rows]
+          recordsets: [result.rows],
         };
-      }
+      },
     };
   };
 }
-
-
-
-
-
-

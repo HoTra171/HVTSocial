@@ -29,9 +29,7 @@ export const requestDataExport = async (userId) => {
 
   try {
     // Check if there's already a pending request
-    const existingRequest = await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    const existingRequest = await db.request().input('userId', sql.Int, userId).query(`
         SELECT *
         FROM data_export_requests
         WHERE user_id = @userId
@@ -43,14 +41,12 @@ export const requestDataExport = async (userId) => {
       return {
         success: false,
         message: 'A data export request is already in progress',
-        requestId: existingRequest.recordset[0].id
+        requestId: existingRequest.recordset[0].id,
       };
     }
 
     // Create new export request
-    const result = await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    const result = await db.request().input('userId', sql.Int, userId).query(`
         INSERT INTO data_export_requests (user_id, status)
         OUTPUT INSERTED.*
         VALUES (@userId, 'pending')
@@ -61,7 +57,7 @@ export const requestDataExport = async (userId) => {
     logger.info({
       message: 'Data export requested',
       userId,
-      requestId: request.id
+      requestId: request.id,
     });
 
     // TODO: Trigger background job to process export
@@ -71,13 +67,13 @@ export const requestDataExport = async (userId) => {
     return {
       success: true,
       message: 'Data export request created',
-      requestId: request.id
+      requestId: request.id,
     };
   } catch (error) {
     logger.error({
       message: 'Error requesting data export',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -91,18 +87,14 @@ export const processDataExport = async (requestId) => {
 
   try {
     // Update status to processing
-    await db.request()
-      .input('requestId', sql.Int, requestId)
-      .query(`
+    await db.request().input('requestId', sql.Int, requestId).query(`
         UPDATE data_export_requests
         SET status = 'processing'
         WHERE id = @requestId
       `);
 
     // Get request details
-    const requestResult = await db.request()
-      .input('requestId', sql.Int, requestId)
-      .query(`
+    const requestResult = await db.request().input('requestId', sql.Int, requestId).query(`
         SELECT * FROM data_export_requests WHERE id = @requestId
       `);
 
@@ -124,11 +116,11 @@ export const processDataExport = async (requestId) => {
     // Update request with file info
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    await db.request()
+    await db
+      .request()
       .input('requestId', sql.Int, requestId)
       .input('fileUrl', sql.NVarChar, `/exports/${filename}`)
-      .input('expiresAt', sql.DateTime, expiresAt)
-      .query(`
+      .input('expiresAt', sql.DateTime, expiresAt).query(`
         UPDATE data_export_requests
         SET status = 'completed',
             file_url = @fileUrl,
@@ -141,20 +133,20 @@ export const processDataExport = async (requestId) => {
       message: 'Data export completed',
       userId,
       requestId,
-      filename
+      filename,
     });
 
     return {
       success: true,
       fileUrl: `/exports/${filename}`,
-      expiresAt
+      expiresAt,
     };
   } catch (error) {
     // Mark as failed
-    await db.request()
+    await db
+      .request()
       .input('requestId', sql.Int, requestId)
-      .input('errorMessage', sql.NVarChar, error.message)
-      .query(`
+      .input('errorMessage', sql.NVarChar, error.message).query(`
         UPDATE data_export_requests
         SET status = 'failed',
             error_message = @errorMessage
@@ -164,7 +156,7 @@ export const processDataExport = async (requestId) => {
     logger.error({
       message: 'Data export failed',
       error: error.message,
-      requestId
+      requestId,
     });
 
     throw error;
@@ -178,7 +170,8 @@ async function collectUserData(userId) {
   const db = await getPool();
 
   // User profile
-  const profileResult = await db.request()
+  const profileResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM users WHERE id = @userId`);
   const profile = profileResult.recordset[0];
@@ -189,46 +182,51 @@ async function collectUserData(userId) {
   delete profile.reset_otp;
 
   // Posts
-  const postsResult = await db.request()
+  const postsResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM posts WHERE user_id = @userId ORDER BY created_at DESC`);
 
   // Comments
-  const commentsResult = await db.request()
+  const commentsResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM comments WHERE user_id = @userId ORDER BY created_at DESC`);
 
   // Likes
-  const likesResult = await db.request()
+  const likesResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM likes WHERE user_id = @userId ORDER BY created_at DESC`);
 
   // Messages
-  const messagesResult = await db.request()
+  const messagesResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM messages WHERE sender_id = @userId ORDER BY created_at DESC`);
 
   // Friendships
-  const friendshipsResult = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const friendshipsResult = await db.request().input('userId', sql.Int, userId).query(`
       SELECT * FROM friendships
       WHERE user_id = @userId OR friend_id = @userId
       ORDER BY created_at DESC
     `);
 
   // Stories
-  const storiesResult = await db.request()
+  const storiesResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM stories WHERE user_id = @userId ORDER BY created_at DESC`);
 
   // Notifications
-  const notificationsResult = await db.request()
+  const notificationsResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM notifications WHERE user_id = @userId ORDER BY created_at DESC`);
 
   // Saved posts
-  const savedPostsResult = await db.request()
+  const savedPostsResult = await db
+    .request()
     .input('userId', sql.Int, userId)
     .query(`SELECT * FROM saved_posts WHERE user_id = @userId ORDER BY created_at DESC`);
 
@@ -242,7 +240,7 @@ async function collectUserData(userId) {
     friendships: friendshipsResult.recordset,
     stories: storiesResult.recordset,
     notifications: notificationsResult.recordset,
-    savedPosts: savedPostsResult.recordset
+    savedPosts: savedPostsResult.recordset,
   };
 }
 
@@ -252,9 +250,7 @@ async function collectUserData(userId) {
 export const getExportStatus = async (userId) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         id, status, file_url, file_expires_at,
         requested_at, completed_at, error_message
@@ -276,9 +272,7 @@ export const requestDataDeletion = async (userId, reason = null) => {
 
   try {
     // Check for existing pending request
-    const existingRequest = await db.request()
-      .input('userId', sql.Int, userId)
-      .query(`
+    const existingRequest = await db.request().input('userId', sql.Int, userId).query(`
         SELECT *
         FROM data_deletion_requests
         WHERE user_id = @userId
@@ -289,15 +283,15 @@ export const requestDataDeletion = async (userId, reason = null) => {
       return {
         success: false,
         message: 'A deletion request already exists',
-        requestId: existingRequest.recordset[0].id
+        requestId: existingRequest.recordset[0].id,
       };
     }
 
     // Create deletion request
-    const result = await db.request()
+    const result = await db
+      .request()
       .input('userId', sql.Int, userId)
-      .input('reason', sql.NVarChar, reason)
-      .query(`
+      .input('reason', sql.NVarChar, reason).query(`
         INSERT INTO data_deletion_requests (user_id, reason, status)
         OUTPUT INSERTED.*
         VALUES (@userId, @reason, 'pending')
@@ -308,20 +302,20 @@ export const requestDataDeletion = async (userId, reason = null) => {
     logger.warn({
       message: 'Data deletion requested',
       userId,
-      requestId: request.id
+      requestId: request.id,
     });
 
     return {
       success: true,
       message: 'Deletion request submitted',
       requestId: request.id,
-      note: 'Request will be reviewed within 30 days'
+      note: 'Request will be reviewed within 30 days',
     };
   } catch (error) {
     logger.error({
       message: 'Error requesting data deletion',
       error: error.message,
-      userId
+      userId,
     });
     throw error;
   }
@@ -334,10 +328,10 @@ export const approveDeletionRequest = async (requestId, reviewedBy) => {
   const db = await getPool();
 
   try {
-    await db.request()
+    await db
+      .request()
       .input('requestId', sql.Int, requestId)
-      .input('reviewedBy', sql.Int, reviewedBy)
-      .query(`
+      .input('reviewedBy', sql.Int, reviewedBy).query(`
         UPDATE data_deletion_requests
         SET status = 'approved',
             reviewed_at = GETDATE(),
@@ -348,20 +342,20 @@ export const approveDeletionRequest = async (requestId, reviewedBy) => {
     logger.warn({
       message: 'Deletion request approved',
       requestId,
-      reviewedBy
+      reviewedBy,
     });
 
     // TODO: Schedule actual deletion (30-day grace period)
 
     return {
       success: true,
-      message: 'Deletion request approved'
+      message: 'Deletion request approved',
     };
   } catch (error) {
     logger.error({
       message: 'Error approving deletion request',
       error: error.message,
-      requestId
+      requestId,
     });
     throw error;
   }
@@ -374,11 +368,11 @@ export const rejectDeletionRequest = async (requestId, reviewedBy, rejectionReas
   const db = await getPool();
 
   try {
-    await db.request()
+    await db
+      .request()
       .input('requestId', sql.Int, requestId)
       .input('reviewedBy', sql.Int, reviewedBy)
-      .input('rejectionReason', sql.NVarChar, rejectionReason)
-      .query(`
+      .input('rejectionReason', sql.NVarChar, rejectionReason).query(`
         UPDATE data_deletion_requests
         SET status = 'rejected',
             reviewed_at = GETDATE(),
@@ -391,18 +385,18 @@ export const rejectDeletionRequest = async (requestId, reviewedBy, rejectionReas
       message: 'Deletion request rejected',
       requestId,
       reviewedBy,
-      reason: rejectionReason
+      reason: rejectionReason,
     });
 
     return {
       success: true,
-      message: 'Deletion request rejected'
+      message: 'Deletion request rejected',
     };
   } catch (error) {
     logger.error({
       message: 'Error rejecting deletion request',
       error: error.message,
-      requestId
+      requestId,
     });
     throw error;
   }
@@ -416,9 +410,7 @@ export const processDeletion = async (requestId, method = 'anonymize') => {
 
   try {
     // Get request details
-    const requestResult = await db.request()
-      .input('requestId', sql.Int, requestId)
-      .query(`
+    const requestResult = await db.request().input('requestId', sql.Int, requestId).query(`
         SELECT * FROM data_deletion_requests
         WHERE id = @requestId AND status = 'approved'
       `);
@@ -440,9 +432,7 @@ export const processDeletion = async (requestId, method = 'anonymize') => {
     }
 
     // Mark request as completed
-    await db.request()
-      .input('requestId', sql.Int, requestId)
-      .query(`
+    await db.request().input('requestId', sql.Int, requestId).query(`
         UPDATE data_deletion_requests
         SET status = 'completed',
             completed_at = GETDATE()
@@ -453,18 +443,18 @@ export const processDeletion = async (requestId, method = 'anonymize') => {
       message: 'Data deletion completed',
       requestId,
       userId,
-      method
+      method,
     });
 
     return {
       success: true,
-      message: `Account ${method === 'anonymize' ? 'anonymized' : 'deleted'} successfully`
+      message: `Account ${method === 'anonymize' ? 'anonymized' : 'deleted'} successfully`,
     };
   } catch (error) {
     logger.error({
       message: 'Error processing deletion',
       error: error.message,
-      requestId
+      requestId,
     });
     throw error;
   }
@@ -476,9 +466,7 @@ export const processDeletion = async (requestId, method = 'anonymize') => {
 export const getDeletionStatus = async (userId) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         id, status, reason, requested_at, reviewed_at,
         reviewed_by, rejection_reason, completed_at
@@ -496,11 +484,11 @@ export const getDeletionStatus = async (userId) => {
 export const listDeletionRequests = async (status = 'pending', limit = 50, offset = 0) => {
   const db = await getPool();
 
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('status', sql.NVarChar, status)
     .input('limit', sql.Int, limit)
-    .input('offset', sql.Int, offset)
-    .query(`
+    .input('offset', sql.Int, offset).query(`
       SELECT
         dr.id,
         dr.user_id,
@@ -532,5 +520,5 @@ export const gdprService = {
   rejectDeletionRequest,
   processDeletion,
   getDeletionStatus,
-  listDeletionRequests
+  listDeletionRequests,
 };

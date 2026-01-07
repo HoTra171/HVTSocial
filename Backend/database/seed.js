@@ -41,8 +41,9 @@ async function runSeeds() {
       return;
     }
 
-    const files = fs.readdirSync(seedsDir)
-      .filter(f => f.endsWith('.sql'))
+    const files = fs
+      .readdirSync(seedsDir)
+      .filter((f) => f.endsWith('.sql'))
       .sort();
 
     if (files.length === 0) {
@@ -64,7 +65,7 @@ async function runSeeds() {
 
       try {
         // Split by GO statements and execute each batch
-        const batches = seedSQL.split(/^\s*GO\s*$/gim).filter(b => b.trim());
+        const batches = seedSQL.split(/^\s*GO\s*$/gim).filter((b) => b.trim());
 
         for (const batch of batches) {
           if (batch.trim()) {
@@ -81,7 +82,6 @@ async function runSeeds() {
     }
 
     console.log('🎉 All seeds completed!\n');
-
   } catch (error) {
     console.error('❌ Seeding failed:', error.message);
     console.error('\nPlease check:');

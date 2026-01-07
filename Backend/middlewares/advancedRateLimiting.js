@@ -30,7 +30,7 @@ export const createUserRateLimiter = (options) => {
     max = 100,
     message = 'Too many requests, please try again later.',
     skipSuccessfulRequests = false,
-    endpoint = null
+    endpoint = null,
   } = options;
 
   return async (req, res, next) => {
@@ -51,12 +51,12 @@ export const createUserRateLimiter = (options) => {
       const windowStart = new Date(now.getTime() - windowMs);
 
       // Check existing rate limit record
-      const result = await db.request()
+      const result = await db
+        .request()
         .input('userId', sql.Int, userId)
         .input('ipAddress', sql.NVarChar, ipAddress)
         .input('endpoint', sql.NVarChar, requestEndpoint)
-        .input('windowStart', sql.DateTime, windowStart)
-        .query(`
+        .input('windowStart', sql.DateTime, windowStart).query(`
           SELECT *
           FROM rate_limit_tracking
           WHERE user_id = @userId
@@ -71,14 +71,14 @@ export const createUserRateLimiter = (options) => {
         // Create new rate limit record
         const windowEnd = new Date(now.getTime() + windowMs);
 
-        await db.request()
+        await db
+          .request()
           .input('userId', sql.Int, userId)
           .input('ipAddress', sql.NVarChar, ipAddress)
           .input('endpoint', sql.NVarChar, requestEndpoint)
           .input('requestCount', sql.Int, 1)
           .input('windowStart', sql.DateTime, now)
-          .input('windowEnd', sql.DateTime, windowEnd)
-          .query(`
+          .input('windowEnd', sql.DateTime, windowEnd).query(`
             INSERT INTO rate_limit_tracking
               (user_id, ip_address, endpoint, request_count, window_start, window_end)
             VALUES
@@ -98,25 +98,29 @@ export const createUserRateLimiter = (options) => {
           userId,
           endpoint: requestEndpoint,
           count: rateLimitRecord.request_count,
-          max
+          max,
         });
 
         // Set rate limit headers
-        setRateLimitHeaders(res, rateLimitRecord.request_count, max, new Date(rateLimitRecord.window_end), true);
+        setRateLimitHeaders(
+          res,
+          rateLimitRecord.request_count,
+          max,
+          new Date(rateLimitRecord.window_end),
+          true
+        );
 
         return res.status(429).json({
           success: false,
           message,
           retryAfter: Math.ceil((new Date(rateLimitRecord.window_end) - now) / 1000),
           limit: max,
-          current: rateLimitRecord.request_count
+          current: rateLimitRecord.request_count,
         });
       }
 
       // Increment request count
-      await db.request()
-        .input('id', sql.Int, rateLimitRecord.id)
-        .query(`
+      await db.request().input('id', sql.Int, rateLimitRecord.id).query(`
           UPDATE rate_limit_tracking
           SET request_count = request_count + 1
           WHERE id = @id
@@ -134,7 +138,7 @@ export const createUserRateLimiter = (options) => {
     } catch (error) {
       logger.error({
         message: 'Error in user rate limiter',
-        error: error.message
+        error: error.message,
       });
 
       // Fail open - allow request if rate limiting fails
@@ -151,7 +155,7 @@ function setRateLimitHeaders(res, current, limit, resetTime, exceeded = false) {
     'X-RateLimit-Limit': limit,
     'X-RateLimit-Remaining': exceeded ? 0 : Math.max(0, limit - current),
     'X-RateLimit-Reset': Math.ceil(resetTime.getTime() / 1000),
-    'X-RateLimit-Used': current
+    'X-RateLimit-Used': current,
   });
 
   if (exceeded) {
@@ -172,14 +176,14 @@ const ipBasedLimiter = rateLimit({
     logger.warn({
       message: 'IP rate limit exceeded',
       ip: req.ip,
-      path: req.path
+      path: req.path,
     });
 
     res.status(429).json({
       success: false,
-      message: 'Too many requests from this IP, please try again later.'
+      message: 'Too many requests from this IP, please try again later.',
     });
-  }
+  },
 });
 
 /* ================= ENDPOINT-SPECIFIC RATE LIMITERS ================= */
@@ -191,7 +195,7 @@ export const authRateLimiter = createUserRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 attempts
   message: 'Too many login attempts, please try again later.',
-  endpoint: 'auth'
+  endpoint: 'auth',
 });
 
 /**
@@ -200,7 +204,7 @@ export const authRateLimiter = createUserRateLimiter({
 export const apiRateLimiter = createUserRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
-  message: 'Too many API requests, please try again later.'
+  message: 'Too many API requests, please try again later.',
 });
 
 /**
@@ -210,7 +214,7 @@ export const postCreationRateLimiter = createUserRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 20, // 20 posts per hour
   message: 'Too many posts created, please wait before posting again.',
-  endpoint: 'create_post'
+  endpoint: 'create_post',
 });
 
 /**
@@ -220,7 +224,7 @@ export const commentRateLimiter = createUserRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // 50 comments per 15 minutes
   message: 'Too many comments, please slow down.',
-  endpoint: 'create_comment'
+  endpoint: 'create_comment',
 });
 
 /**
@@ -230,7 +234,7 @@ export const uploadRateLimiter = createUserRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 50, // 50 uploads per hour
   message: 'Too many uploads, please wait before uploading again.',
-  endpoint: 'upload'
+  endpoint: 'upload',
 });
 
 /**
@@ -240,7 +244,7 @@ export const searchRateLimiter = createUserRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // 20 searches per minute
   message: 'Too many search requests, please wait.',
-  endpoint: 'search'
+  endpoint: 'search',
 });
 
 /**
@@ -250,7 +254,7 @@ export const friendRequestRateLimiter = createUserRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
   max: 50, // 50 friend requests per day
   message: 'Too many friend requests sent today.',
-  endpoint: 'friend_request'
+  endpoint: 'friend_request',
 });
 
 /* ================= ADMIN UTILITIES ================= */
@@ -261,9 +265,7 @@ export const friendRequestRateLimiter = createUserRateLimiter({
 export const getUserRateLimitStatus = async (userId) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('userId', sql.Int, userId)
-    .query(`
+  const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         endpoint,
         request_count,
@@ -301,12 +303,12 @@ export const resetUserRateLimit = async (userId, endpoint = null) => {
   logger.info({
     message: 'Rate limit reset',
     userId,
-    endpoint: endpoint || 'all'
+    endpoint: endpoint || 'all',
   });
 
   return {
     success: true,
-    message: 'Rate limit reset successfully'
+    message: 'Rate limit reset successfully',
   };
 };
 
@@ -323,11 +325,11 @@ export const cleanExpiredRateLimits = async () => {
 
   logger.info({
     message: 'Expired rate limits cleaned',
-    deletedRows: result.rowsAffected[0]
+    deletedRows: result.rowsAffected[0],
   });
 
   return {
-    deleted: result.rowsAffected[0]
+    deleted: result.rowsAffected[0],
   };
 };
 
@@ -344,5 +346,5 @@ export default {
   friendRequestRateLimiter,
   getUserRateLimitStatus,
   resetUserRateLimit,
-  cleanExpiredRateLimits
+  cleanExpiredRateLimits,
 };

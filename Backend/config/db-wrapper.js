@@ -4,7 +4,7 @@
  * Automatically detects which database is being used based on environment
  */
 
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 dotenv.config();
 
 const usePostgreSQL = !!process.env.DATABASE_URL;
@@ -26,7 +26,7 @@ if (usePostgreSQL) {
       const result = await pool.query(query, params);
       return {
         recordset: result.rows,
-        rowsAffected: result.rowCount ? [result.rowCount] : [0]
+        rowsAffected: result.rowCount ? [result.rowCount] : [0],
       };
     },
 
@@ -60,7 +60,7 @@ if (usePostgreSQL) {
           const paramMatches = sqlQuery.match(/@\w+/g) || [];
           const seenParams = new Set();
 
-          paramMatches.forEach(match => {
+          paramMatches.forEach((match) => {
             const paramName = match.substring(1); // Remove @
             if (!seenParams.has(paramName)) {
               seenParams.add(paramName);
@@ -81,15 +81,15 @@ if (usePostgreSQL) {
             originalQuery: sqlQuery.substring(0, 100) + '...',
             pgQuery: pgQuery.substring(0, 100) + '...',
             paramValues: paramValues,
-            inputs: inputs
+            inputs: inputs,
           });
 
           const result = await pool.query(pgQuery, paramValues);
           return {
             recordset: result.rows,
-            rowsAffected: result.rowCount ? [result.rowCount] : [0]
+            rowsAffected: result.rowCount ? [result.rowCount] : [0],
           };
-        }
+        },
       };
       return queryBuilder;
     },
@@ -125,7 +125,7 @@ if (usePostgreSQL) {
               const paramMatches = sqlQuery.match(/@\w+/g) || [];
               const seenParams = new Set();
 
-              paramMatches.forEach(match => {
+              paramMatches.forEach((match) => {
                 const paramName = match.substring(1); // Remove @
                 if (!seenParams.has(paramName)) {
                   seenParams.add(paramName);
@@ -144,9 +144,9 @@ if (usePostgreSQL) {
               const result = await client.query(pgQuery, paramValues);
               return {
                 recordset: result.rows,
-                rowsAffected: result.rowCount ? [result.rowCount] : [0]
+                rowsAffected: result.rowCount ? [result.rowCount] : [0],
               };
-            }
+            },
           };
         },
         async commit() {
@@ -156,11 +156,10 @@ if (usePostgreSQL) {
         async rollback() {
           await client.query('ROLLBACK');
           client.release();
-        }
+        },
       };
-    }
+    },
   };
-
 } else {
   // SQL Server adapter - use as is
   const sql = (await import('mssql')).default;
@@ -183,7 +182,7 @@ if (usePostgreSQL) {
       const transaction = new sql.Transaction(pool);
       await transaction.begin();
       return transaction;
-    }
+    },
   };
 }
 

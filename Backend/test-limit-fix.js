@@ -20,9 +20,12 @@ pgQuery = pgQuery.replace(/OUTER\s+APPLY\s*\(/gi, 'LEFT JOIN LATERAL (');
 console.log('\nAfter OUTER APPLY conversion:', pgQuery);
 
 // Step 2: Handle SELECT TOP (n) ... ORDER BY -> SELECT ... ORDER BY LIMIT n
-pgQuery = pgQuery.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
-  return `SELECT${middle}${orderBy} LIMIT ${limit}`;
-});
+pgQuery = pgQuery.replace(
+  /SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi,
+  (match, limit, middle, orderBy) => {
+    return `SELECT${middle}${orderBy} LIMIT ${limit}`;
+  }
+);
 console.log('\nAfter TOP to LIMIT:', pgQuery);
 
 // Step 3: Add ON true
@@ -55,9 +58,12 @@ const fullQuery = `  LEFT JOIN LATERAL (
   ) other`;
 
 let converted = fullQuery;
-converted = converted.replace(/SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi, (match, limit, middle, orderBy) => {
-  return `SELECT${middle}${orderBy} LIMIT ${limit}`;
-});
+converted = converted.replace(
+  /SELECT\s+TOP\s*\((\d+)\)([^]*?)(ORDER BY[^)]+)/gi,
+  (match, limit, middle, orderBy) => {
+    return `SELECT${middle}${orderBy} LIMIT ${limit}`;
+  }
+);
 converted = converted.replace(/\) (lmDetail|uc|other)(?!\s+ON)/gi, ') $1 ON true');
 
 console.log(converted);

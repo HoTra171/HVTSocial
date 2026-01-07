@@ -48,7 +48,7 @@ export const checkContent = async (content, contentType = 'post') => {
         ruleType: rule.rule_type,
         action: rule.action,
         severity: rule.severity,
-        matched: violated.matched
+        matched: violated.matched,
       });
 
       // If action is auto_remove, stop checking (content will be removed)
@@ -62,7 +62,7 @@ export const checkContent = async (content, contentType = 'post') => {
     hasViolations: violations.length > 0,
     violations,
     action: violations.length > 0 ? violations[0].action : 'approve',
-    severity: violations.length > 0 ? violations[0].severity : null
+    severity: violations.length > 0 ? violations[0].severity : null,
   };
 };
 
@@ -95,13 +95,13 @@ async function checkRule(content, rule) {
  * Check keyword-based rule
  */
 function checkKeywordRule(content, rule) {
-  const keywords = rule.pattern.split(',').map(k => k.trim().toLowerCase());
+  const keywords = rule.pattern.split(',').map((k) => k.trim().toLowerCase());
 
   for (const keyword of keywords) {
     if (content.includes(keyword)) {
       return {
         matched: keyword,
-        type: 'keyword'
+        type: 'keyword',
       };
     }
   }
@@ -120,7 +120,7 @@ function checkRegexRule(content, rule) {
     if (match) {
       return {
         matched: match[0],
-        type: 'regex'
+        type: 'regex',
       };
     }
   } catch (error) {
@@ -128,7 +128,7 @@ function checkRegexRule(content, rule) {
       message: 'Invalid regex pattern in moderation rule',
       ruleId: rule.id,
       pattern: rule.pattern,
-      error: error.message
+      error: error.message,
     });
   }
 
@@ -146,7 +146,7 @@ function checkSpamRule(content, rule) {
   if (urls.length > 3) {
     return {
       matched: `${urls.length} URLs found`,
-      type: 'spam'
+      type: 'spam',
     };
   }
 
@@ -164,7 +164,7 @@ function checkSpamRule(content, rule) {
     if (count > 5) {
       return {
         matched: `"${word}" repeated ${count} times`,
-        type: 'spam'
+        type: 'spam',
       };
     }
   }
@@ -176,7 +176,7 @@ function checkSpamRule(content, rule) {
   if (lettersCount > 10 && capsCount / lettersCount > 0.5) {
     return {
       matched: 'Excessive caps usage',
-      type: 'spam'
+      type: 'spam',
     };
   }
 
@@ -196,7 +196,7 @@ export const moderatePost = async (postId, userId, content) => {
       message: 'Content moderation violation detected',
       postId,
       userId,
-      violations: result.violations
+      violations: result.violations,
     });
 
     // Log the violation
@@ -208,21 +208,21 @@ export const moderatePost = async (postId, userId, content) => {
       return {
         approved: false,
         action: 'removed',
-        reason: result.violations[0].ruleName
+        reason: result.violations[0].ruleName,
       };
     } else if (result.action === 'flag') {
       await flagPost(postId, result.violations[0].ruleName);
       return {
         approved: true,
         action: 'flagged',
-        reason: result.violations[0].ruleName
+        reason: result.violations[0].ruleName,
       };
     } else if (result.action === 'warn_user') {
       await warnUser(userId, result.violations[0].ruleName);
       return {
         approved: true,
         action: 'warned',
-        reason: result.violations[0].ruleName
+        reason: result.violations[0].ruleName,
       };
     }
   }
@@ -230,7 +230,7 @@ export const moderatePost = async (postId, userId, content) => {
   return {
     approved: true,
     action: 'approved',
-    violations: []
+    violations: [],
   };
 };
 
@@ -245,7 +245,7 @@ export const moderateComment = async (commentId, userId, content) => {
       message: 'Comment moderation violation detected',
       commentId,
       userId,
-      violations: result.violations
+      violations: result.violations,
     });
 
     await logModerationAction(userId, 'comment', commentId, result.action, result.violations);
@@ -255,20 +255,20 @@ export const moderateComment = async (commentId, userId, content) => {
       return {
         approved: false,
         action: 'removed',
-        reason: result.violations[0].ruleName
+        reason: result.violations[0].ruleName,
       };
     } else if (result.action === 'flag') {
       await flagComment(commentId, result.violations[0].ruleName);
       return {
         approved: true,
-        action: 'flagged'
+        action: 'flagged',
       };
     }
   }
 
   return {
     approved: true,
-    action: 'approved'
+    action: 'approved',
   };
 };
 
@@ -280,10 +280,7 @@ export const moderateComment = async (commentId, userId, content) => {
 async function removePost(postId, reason) {
   const db = await getPool();
 
-  await db.request()
-    .input('postId', sql.Int, postId)
-    .input('reason', sql.NVarChar, reason)
-    .query(`
+  await db.request().input('postId', sql.Int, postId).input('reason', sql.NVarChar, reason).query(`
       UPDATE posts
       SET content = '[Removed by moderation]',
           media = NULL
@@ -293,7 +290,7 @@ async function removePost(postId, reason) {
   logger.warn({
     message: 'Post removed by auto-moderation',
     postId,
-    reason
+    reason,
   });
 }
 
@@ -303,9 +300,7 @@ async function removePost(postId, reason) {
 async function removeComment(commentId, reason) {
   const db = await getPool();
 
-  await db.request()
-    .input('commentId', sql.Int, commentId)
-    .query(`
+  await db.request().input('commentId', sql.Int, commentId).query(`
       UPDATE comments
       SET content = '[Removed by moderation]'
       WHERE id = @commentId
@@ -314,7 +309,7 @@ async function removeComment(commentId, reason) {
   logger.warn({
     message: 'Comment removed by auto-moderation',
     commentId,
-    reason
+    reason,
   });
 }
 
@@ -325,10 +320,7 @@ async function flagPost(postId, reason) {
   const db = await getPool();
 
   // Create a report
-  await db.request()
-    .input('postId', sql.Int, postId)
-    .input('reason', sql.NVarChar, reason)
-    .query(`
+  await db.request().input('postId', sql.Int, postId).input('reason', sql.NVarChar, reason).query(`
       INSERT INTO reports (reporter_id, target_type, target_id, reason, status)
       VALUES (NULL, 'post', @postId, @reason, 'pending')
     `);
@@ -336,7 +328,7 @@ async function flagPost(postId, reason) {
   logger.info({
     message: 'Post flagged for review',
     postId,
-    reason
+    reason,
   });
 }
 
@@ -346,9 +338,7 @@ async function flagPost(postId, reason) {
 async function flagComment(commentId, reason) {
   const db = await getPool();
 
-  await db.request()
-    .input('commentId', sql.Int, commentId)
-    .input('reason', sql.NVarChar, reason)
+  await db.request().input('commentId', sql.Int, commentId).input('reason', sql.NVarChar, reason)
     .query(`
       INSERT INTO reports (reporter_id, target_type, target_id, reason, status)
       VALUES (NULL, 'comment', @commentId, @reason, 'pending')
@@ -357,7 +347,7 @@ async function flagComment(commentId, reason) {
   logger.info({
     message: 'Comment flagged for review',
     commentId,
-    reason
+    reason,
   });
 }
 
@@ -368,10 +358,10 @@ async function warnUser(userId, reason) {
   const db = await getPool();
 
   // Send notification to user
-  await db.request()
+  await db
+    .request()
     .input('userId', sql.Int, userId)
-    .input('content', sql.NVarChar, `Your content was flagged: ${reason}`)
-    .query(`
+    .input('content', sql.NVarChar, `Your content was flagged: ${reason}`).query(`
       INSERT INTO notifications (user_id, content, type, status)
       VALUES (@userId, @content, 'other', 'unread')
     `);
@@ -379,7 +369,7 @@ async function warnUser(userId, reason) {
   logger.info({
     message: 'User warned',
     userId,
-    reason
+    reason,
   });
 }
 
@@ -391,13 +381,13 @@ async function logModerationAction(userId, targetType, targetId, action, violati
 
   const notes = JSON.stringify(violations);
 
-  await db.request()
+  await db
+    .request()
     .input('userId', sql.Int, userId)
     .input('targetType', sql.NVarChar, targetType)
     .input('targetId', sql.Int, targetId)
     .input('action', sql.NVarChar, action)
-    .input('notes', sql.NVarChar, notes)
-    .query(`
+    .input('notes', sql.NVarChar, notes).query(`
       INSERT INTO moderation_actions (moderator_id, target_type, target_id, action, reason, notes)
       VALUES (NULL, @targetType, @targetId, @action, 'auto', @notes)
     `);
@@ -408,15 +398,20 @@ async function logModerationAction(userId, targetType, targetId, action, violati
 /**
  * Detect if user is spamming
  */
-export const detectSpam = async (userId, contentType = 'post', timeWindowMinutes = 5, threshold = 5) => {
+export const detectSpam = async (
+  userId,
+  contentType = 'post',
+  timeWindowMinutes = 5,
+  threshold = 5
+) => {
   const db = await getPool();
 
   const table = contentType === 'post' ? 'posts' : 'comments';
 
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('userId', sql.Int, userId)
-    .input('minutes', sql.Int, timeWindowMinutes)
-    .query(`
+    .input('minutes', sql.Int, timeWindowMinutes).query(`
       SELECT COUNT(*) as count
       FROM ${table}
       WHERE user_id = @userId
@@ -431,20 +426,20 @@ export const detectSpam = async (userId, contentType = 'post', timeWindowMinutes
       userId,
       contentType,
       count,
-      threshold
+      threshold,
     });
 
     return {
       isSpam: true,
       count,
-      threshold
+      threshold,
     };
   }
 
   return {
     isSpam: false,
     count,
-    threshold
+    threshold,
   };
 };
 
@@ -456,9 +451,7 @@ export const detectSpam = async (userId, contentType = 'post', timeWindowMinutes
 export const getFlaggedContent = async (limit = 50, offset = 0) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('limit', sql.Int, limit)
-    .input('offset', sql.Int, offset)
+  const result = await db.request().input('limit', sql.Int, limit).input('offset', sql.Int, offset)
     .query(`
       SELECT
         r.id,
@@ -486,7 +479,8 @@ export const reviewFlaggedContent = async (reportId, reviewerId, action, notes =
   const db = await getPool();
 
   // Get report details
-  const reportResult = await db.request()
+  const reportResult = await db
+    .request()
     .input('reportId', sql.Int, reportId)
     .query(`SELECT * FROM reports WHERE id = @reportId`);
 
@@ -506,12 +500,12 @@ export const reviewFlaggedContent = async (reportId, reviewerId, action, notes =
   }
 
   // Update report status
-  await db.request()
+  await db
+    .request()
     .input('reportId', sql.Int, reportId)
     .input('reviewerId', sql.Int, reviewerId)
     .input('action', sql.NVarChar, action)
-    .input('notes', sql.NVarChar, notes)
-    .query(`
+    .input('notes', sql.NVarChar, notes).query(`
       UPDATE reports
       SET status = 'reviewed',
           reviewed_at = GETDATE(),
@@ -522,13 +516,13 @@ export const reviewFlaggedContent = async (reportId, reviewerId, action, notes =
     `);
 
   // Log moderation action
-  await db.request()
+  await db
+    .request()
     .input('reviewerId', sql.Int, reviewerId)
     .input('targetType', sql.NVarChar, report.target_type)
     .input('targetId', sql.Int, report.target_id)
     .input('action', sql.NVarChar, action)
-    .input('notes', sql.NVarChar, notes || report.reason)
-    .query(`
+    .input('notes', sql.NVarChar, notes || report.reason).query(`
       INSERT INTO moderation_actions (moderator_id, target_type, target_id, action, reason, notes)
       VALUES (@reviewerId, @targetType, @targetId, @action, 'manual_review', @notes)
     `);
@@ -537,12 +531,12 @@ export const reviewFlaggedContent = async (reportId, reviewerId, action, notes =
     message: 'Content reviewed',
     reportId,
     reviewerId,
-    action
+    action,
   });
 
   return {
     success: true,
-    action
+    action,
   };
 };
 
@@ -553,5 +547,5 @@ export const contentModerationService = {
   moderateComment,
   detectSpam,
   getFlaggedContent,
-  reviewFlaggedContent
+  reviewFlaggedContent,
 };

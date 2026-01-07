@@ -1,6 +1,6 @@
 // models/postModel.js
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const PostModel = {
   // FEED POSTS
@@ -8,10 +8,11 @@ export const PostModel = {
     const offset = (page - 1) * limit;
     const db = await pool;
 
-    const result = await db.request()
-      .input("offset", sql.Int, offset)
-      .input("limit", sql.Int, limit)
-      .input("viewerId", sql.Int, viewerId) // Người đang xem feed
+    const result = await db
+      .request()
+      .input('offset', sql.Int, offset)
+      .input('limit', sql.Int, limit)
+      .input('viewerId', sql.Int, viewerId) // Người đang xem feed
       .query(`
       SELECT
         p.id,
@@ -58,15 +59,14 @@ export const PostModel = {
     return result.recordset;
   },
 
-
-
   //  POSTS BY USER (PROFILE)
   async getPostsByUser(userId, viewerId) {
     const db = await pool;
 
-    const result = await db.request()
-      .input("userId", sql.Int, userId) // Chủ profile
-      .input("viewerId", sql.Int, viewerId)           // Người đang xem
+    const result = await db
+      .request()
+      .input('userId', sql.Int, userId) // Chủ profile
+      .input('viewerId', sql.Int, viewerId) // Người đang xem
       .query(`
       SELECT
         p.id,
@@ -110,7 +110,5 @@ export const PostModel = {
     `);
 
     return result.recordset;
-  }
-
+  },
 };
-

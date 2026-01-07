@@ -35,22 +35,22 @@ Authorization: Bearer <your-jwt-token>
       `,
       contact: {
         name: 'HVTSocial Team',
-        email: 'support@hvtsocial.com'
+        email: 'support@hvtsocial.com',
       },
       license: {
         name: 'MIT',
-        url: 'https://opensource.org/licenses/MIT'
-      }
+        url: 'https://opensource.org/licenses/MIT',
+      },
     },
     servers: [
       {
         url: 'http://localhost:5000',
-        description: 'Development server'
+        description: 'Development server',
       },
       {
         url: 'https://api.hvtsocial.com',
-        description: 'Production server'
-      }
+        description: 'Production server',
+      },
     ],
     components: {
       securitySchemes: {
@@ -58,8 +58,8 @@ Authorization: Bearer <your-jwt-token>
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Enter your JWT token'
-        }
+          description: 'Enter your JWT token',
+        },
       },
       schemas: {
         User: {
@@ -71,8 +71,8 @@ Authorization: Bearer <your-jwt-token>
             full_name: { type: 'string', example: 'John Doe' },
             avatar: { type: 'string', example: 'https://cloudinary.com/avatar.jpg' },
             bio: { type: 'string', example: 'Software Developer' },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Post: {
           type: 'object',
@@ -85,8 +85,8 @@ Authorization: Bearer <your-jwt-token>
             likes_count: { type: 'integer', example: 10 },
             comments_count: { type: 'integer', example: 5 },
             shares_count: { type: 'integer', example: 2 },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Comment: {
           type: 'object',
@@ -96,8 +96,8 @@ Authorization: Bearer <your-jwt-token>
             user_id: { type: 'integer', example: 2 },
             content: { type: 'string', example: 'Great post!' },
             parent_id: { type: 'integer', nullable: true },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Notification: {
           type: 'object',
@@ -105,15 +105,23 @@ Authorization: Bearer <your-jwt-token>
             id: { type: 'integer', example: 1 },
             type: {
               type: 'string',
-              enum: ['like', 'comment', 'reply', 'share', 'friend_request', 'friend_accept', 'message'],
-              example: 'like'
+              enum: [
+                'like',
+                'comment',
+                'reply',
+                'share',
+                'friend_request',
+                'friend_accept',
+                'message',
+              ],
+              example: 'like',
             },
             sender_id: { type: 'integer', example: 2 },
             receiver_id: { type: 'integer', example: 1 },
             post_id: { type: 'integer', nullable: true },
             status: { type: 'string', enum: ['read', 'unread'], example: 'unread' },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Message: {
           type: 'object',
@@ -122,20 +130,24 @@ Authorization: Bearer <your-jwt-token>
             chat_id: { type: 'integer', example: 1 },
             sender_id: { type: 'integer', example: 1 },
             content: { type: 'string', example: 'Hello!' },
-            message_type: { type: 'string', enum: ['text', 'image', 'voice', 'video'], example: 'text' },
+            message_type: {
+              type: 'string',
+              enum: ['text', 'image', 'voice', 'video'],
+              example: 'text',
+            },
             media_url: { type: 'string', nullable: true },
             status: { type: 'string', enum: ['sent', 'delivered', 'read'], example: 'sent' },
-            created_at: { type: 'string', format: 'date-time' }
-          }
+            created_at: { type: 'string', format: 'date-time' },
+          },
         },
         Error: {
           type: 'object',
           properties: {
             success: { type: 'boolean', example: false },
             message: { type: 'string', example: 'Error message' },
-            error: { type: 'string', example: 'error_code' }
-          }
-        }
+            error: { type: 'string', example: 'error_code' },
+          },
+        },
       },
       responses: {
         UnauthorizedError: {
@@ -145,10 +157,10 @@ Authorization: Bearer <your-jwt-token>
               schema: { $ref: '#/components/schemas/Error' },
               example: {
                 success: false,
-                message: 'Unauthorized - Token không hợp lệ'
-              }
-            }
-          }
+                message: 'Unauthorized - Token không hợp lệ',
+              },
+            },
+          },
         },
         ForbiddenError: {
           description: 'Không có quyền truy cập',
@@ -157,10 +169,10 @@ Authorization: Bearer <your-jwt-token>
               schema: { $ref: '#/components/schemas/Error' },
               example: {
                 success: false,
-                message: 'Forbidden - Bạn không có quyền thực hiện hành động này'
-              }
-            }
-          }
+                message: 'Forbidden - Bạn không có quyền thực hiện hành động này',
+              },
+            },
+          },
         },
         NotFoundError: {
           description: 'Không tìm thấy tài nguyên',
@@ -169,10 +181,10 @@ Authorization: Bearer <your-jwt-token>
               schema: { $ref: '#/components/schemas/Error' },
               example: {
                 success: false,
-                message: 'Not Found'
-              }
-            }
-          }
+                message: 'Not Found',
+              },
+            },
+          },
         },
         ValidationError: {
           description: 'Dữ liệu đầu vào không hợp lệ',
@@ -182,10 +194,10 @@ Authorization: Bearer <your-jwt-token>
               example: {
                 success: false,
                 message: 'Validation Error',
-                errors: ['Email không hợp lệ', 'Mật khẩu phải có ít nhất 6 ký tự']
-              }
-            }
-          }
+                errors: ['Email không hợp lệ', 'Mật khẩu phải có ít nhất 6 ký tự'],
+              },
+            },
+          },
         },
         RateLimitError: {
           description: 'Vượt quá giới hạn request',
@@ -194,17 +206,17 @@ Authorization: Bearer <your-jwt-token>
               schema: { $ref: '#/components/schemas/Error' },
               example: {
                 success: false,
-                message: 'Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút'
-              }
-            }
-          }
-        }
-      }
+                message: 'Quá nhiều yêu cầu từ IP này, vui lòng thử lại sau 15 phút',
+              },
+            },
+          },
+        },
+      },
     },
     security: [
       {
-        bearerAuth: []
-      }
+        bearerAuth: [],
+      },
     ],
     tags: [
       { name: 'Authentication', description: 'Xác thực người dùng' },
@@ -215,8 +227,8 @@ Authorization: Bearer <your-jwt-token>
       { name: 'Chat', description: 'Tin nhắn và chat' },
       { name: 'Notifications', description: 'Thông báo' },
       { name: 'Stories', description: 'Câu chuyện 24h' },
-      { name: 'Upload', description: 'Upload media' }
-    ]
+      { name: 'Upload', description: 'Upload media' },
+    ],
   },
   apis: ['./routes/*.js', './controllers/*.js'], // Đường dẫn đến files chứa JSDoc annotations
 };

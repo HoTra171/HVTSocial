@@ -12,11 +12,14 @@ dotenv.config();
 // PostgreSQL Pool Configuration
 const poolConfig = {
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false // Required for Railway/Render
-  } : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? {
+          rejectUnauthorized: false, // Required for Railway/Render
+        }
+      : false,
   max: 20, // Maximum connections in pool
-  min: 2,  // Minimum connections
+  min: 2, // Minimum connections
   idleTimeoutMillis: 30000, // Close idle connections after 30s
   connectionTimeoutMillis: 10000, // Timeout after 10s
 };
@@ -108,5 +111,5 @@ export default {
   testConnection,
   closePool,
   query,
-  transaction
+  transaction,
 };

@@ -1,6 +1,6 @@
-import express from "express";
-import { getStories, viewStory, createStory  } from "../controllers/storyController.js";
-import authMiddleware  from "../middlewares/authMiddleware.js";
+import express from 'express';
+import { getStories, viewStory, createStory } from '../controllers/storyController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/", authMiddleware, getStories);
+router.get('/', authMiddleware, getStories);
 
 /**
  * @swagger
@@ -45,7 +45,7 @@ router.get("/", authMiddleware, getStories);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/", authMiddleware, createStory);
+router.post('/', authMiddleware, createStory);
 
 /**
  * @swagger
@@ -67,6 +67,6 @@ router.post("/", authMiddleware, createStory);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post("/:id/view", authMiddleware, viewStory);
+router.post('/:id/view', authMiddleware, viewStory);
 
 export default router;

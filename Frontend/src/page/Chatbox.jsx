@@ -348,6 +348,21 @@ const Chatbox = () => {
       typingSentRef.current = false;
     }
 
+    // LISTENER: Typing
+    socket.on("user_typing", ({ userId, isTyping }) => {
+      if (Number(userId) === Number(partnerIdRef.current)) {
+        setIsPartnerTyping(isTyping);
+      }
+    });
+
+    // LISTENER: Mesages Read
+    socket.on("messages_read", ({ chatId: readChatId, readBy }) => {
+      if (Number(readChatId) === Number(chatId) && Number(readBy) !== Number(myId)) {
+        setMessages(prev => prev.map(m => m.sender_id === myId ? { ...m, status: 'read' } : m));
+        setAllMessages(prev => prev.map(m => m.sender_id === myId ? { ...m, status: 'read' } : m));
+      }
+    });
+
 
     return () => {
       socket.emit("leave_chat", Number(chatId));

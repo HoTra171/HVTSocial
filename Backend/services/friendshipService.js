@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const FriendshipService = {
   /**
@@ -12,9 +12,8 @@ export const FriendshipService = {
     // Kiểm tra đã có request chưa
     const checkResult = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
         SELECT id, status FROM friendships
         WHERE (user_id = @userId AND friend_id = @friendId)
            OR (user_id = @friendId AND friend_id = @userId)
@@ -22,23 +21,22 @@ export const FriendshipService = {
 
     if (checkResult.recordset.length > 0) {
       const existing = checkResult.recordset[0];
-      if (existing.status === "accepted") {
-        throw new Error("Đã là bạn bè");
+      if (existing.status === 'accepted') {
+        throw new Error('Đã là bạn bè');
       }
-      if (existing.status === "pending") {
-        throw new Error("Lời mời đã tồn tại");
+      if (existing.status === 'pending') {
+        throw new Error('Lời mời đã tồn tại');
       }
-      if (existing.status === "blocked") {
-        throw new Error("Không thể gửi lời mời");
+      if (existing.status === 'blocked') {
+        throw new Error('Không thể gửi lời mời');
       }
     }
 
     // Tạo friendship mới
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
         INSERT INTO friendships (user_id, friend_id, status, created_at)
         OUTPUT INSERTED.*
         VALUES (@userId, @friendId, 'pending', GETDATE())
@@ -53,9 +51,8 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
       UPDATE friendships
       SET status = 'accepted',
           updated_at = GETDATE()
@@ -70,12 +67,11 @@ export const FriendshipService = {
     `);
 
     if (result.recordset.length === 0) {
-      throw new Error("Không tìm thấy lời mời kết bạn");
+      throw new Error('Không tìm thấy lời mời kết bạn');
     }
 
     return result.recordset[0];
   },
-
 
   /**
    * 3. TỪ CHỐI LỜI MỜI KẾT BẠN
@@ -86,9 +82,8 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
         DELETE FROM friendships
         OUTPUT DELETED.*
         WHERE user_id = @friendId 
@@ -97,10 +92,10 @@ export const FriendshipService = {
       `);
 
     if (result.recordset.length === 0) {
-      throw new Error("Không tìm thấy lời mời kết bạn");
+      throw new Error('Không tìm thấy lời mời kết bạn');
     }
 
-    return { success: true, message: "Đã từ chối lời mời" };
+    return { success: true, message: 'Đã từ chối lời mời' };
   },
 
   /**
@@ -112,9 +107,8 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
         DELETE FROM friendships
         WHERE ((user_id = @userId AND friend_id = @friendId)
              OR (user_id = @friendId AND friend_id = @userId))
@@ -122,10 +116,10 @@ export const FriendshipService = {
       `);
 
     if (result.rowsAffected[0] === 0) {
-      throw new Error("Không tìm thấy mối quan hệ bạn bè");
+      throw new Error('Không tìm thấy mối quan hệ bạn bè');
     }
 
-    return { success: true, message: "Đã hủy kết bạn" };
+    return { success: true, message: 'Đã hủy kết bạn' };
   },
 
   /**
@@ -137,9 +131,8 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
         DELETE FROM friendships
         OUTPUT DELETED.*
         WHERE user_id = @userId 
@@ -148,10 +141,10 @@ export const FriendshipService = {
       `);
 
     if (result.recordset.length === 0) {
-      throw new Error("Không tìm thấy lời mời");
+      throw new Error('Không tìm thấy lời mời');
     }
 
-    return { success: true, message: "Đã hủy lời mời" };
+    return { success: true, message: 'Đã hủy lời mời' };
   },
 
   /**
@@ -163,9 +156,8 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("friendId", sql.Int, friendId)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('friendId', sql.Int, friendId).query(`
         SELECT user_id, friend_id, status
         FROM friendships
         WHERE (user_id = @userId AND friend_id = @friendId)
@@ -178,21 +170,21 @@ export const FriendshipService = {
 
     const record = result.recordset[0];
 
-    if (record.status === "accepted") {
-      return { status: "friends", isFriend: true };
+    if (record.status === 'accepted') {
+      return { status: 'friends', isFriend: true };
     }
 
-    if (record.status === "blocked") {
-      return { status: "blocked", canSendRequest: false };
+    if (record.status === 'blocked') {
+      return { status: 'blocked', canSendRequest: false };
     }
 
-    if (record.status === "pending") {
+    if (record.status === 'pending') {
       if (record.user_id === userId) {
         // Mình đã gửi request
-        return { status: "pending_sent", canCancel: true };
+        return { status: 'pending_sent', canCancel: true };
       } else {
         // Người kia gửi request cho mình
-        return { status: "pending_received", canAccept: true, canReject: true };
+        return { status: 'pending_received', canAccept: true, canReject: true };
       }
     }
 
@@ -244,10 +236,11 @@ export const FriendshipService = {
     OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
   `;
 
-    const rs = await db.request()
-      .input("userId", sql.Int, userId)
-      .input("offset", sql.Int, offset)
-      .input("limit", sql.Int, limit)
+    const rs = await db
+      .request()
+      .input('userId', sql.Int, userId)
+      .input('offset', sql.Int, offset)
+      .input('limit', sql.Int, limit)
       .query(sqlText);
 
     return rs.recordset;
@@ -262,10 +255,9 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("offset", sql.Int, offset)
-      .input("limit", sql.Int, limit)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('offset', sql.Int, offset)
+      .input('limit', sql.Int, limit).query(`
         SELECT 
           u.id,
           u.full_name,
@@ -294,10 +286,9 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("offset", sql.Int, offset)
-      .input("limit", sql.Int, limit)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('offset', sql.Int, offset)
+      .input('limit', sql.Int, limit).query(`
         SELECT 
           u.id,
           u.full_name,
@@ -325,9 +316,8 @@ export const FriendshipService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("limit", sql.Int, limit)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('limit', sql.Int, limit).query(`
       WITH accepted_edges AS (
         SELECT user_id AS a, friend_id AS b
         FROM friendships

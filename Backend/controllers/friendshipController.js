@@ -1,4 +1,4 @@
-import { FriendshipService } from "../services/friendshipService.js";
+import { FriendshipService } from '../services/friendshipService.js';
 import { emitNotification } from '../helpers/notificationHelper.js';
 
 // Send friend request
@@ -11,9 +11,9 @@ export const sendFriendRequest = async (req, res) => {
 
     // Emit notification (luôn tạo record; nếu có socket thì emit realtime)
     await emitNotification(req.app.get('io') || null, {
-        userId: friendId,
-        senderId: userId,
-        type: 'friend_request',
+      userId: friendId,
+      senderId: userId,
+      type: 'friend_request',
     });
 
     res.status(201).json({
@@ -30,29 +30,35 @@ export const sendFriendRequest = async (req, res) => {
 // Accept friend request
 export const acceptFriendRequest = async (req, res) => {
   try {
-    const userId = req.user.id;      
-    const { friendId } = req.body;   
+    const userId = req.user.id;
+    const { friendId } = req.body;
 
     const result = await FriendshipService.acceptFriendRequest(userId, friendId);
 
     // Lấy đúng người đã gửi request (sender) từ DB/Service
-    const senderId = result?.requester_id || result?.sender_id || friendId; 
+    const senderId = result?.requester_id || result?.sender_id || friendId;
 
-    console.log("[ACCEPT] senderId =", senderId, "receiver(userId) =", userId, "type =", "friend_accept");
+    console.log(
+      '[ACCEPT] senderId =',
+      senderId,
+      'receiver(userId) =',
+      userId,
+      'type =',
+      'friend_accept'
+    );
 
-    await emitNotification(req.app.get("io") || null, {
-      userId: senderId,    
-      senderId: userId,    
-      type: "friend_accept",
+    await emitNotification(req.app.get('io') || null, {
+      userId: senderId,
+      senderId: userId,
+      type: 'friend_accept',
     });
 
-    res.json({ success: true, message: "Đã chấp nhận lời mời kết bạn", data: result });
+    res.json({ success: true, message: 'Đã chấp nhận lời mời kết bạn', data: result });
   } catch (err) {
-    console.error("acceptFriendRequest error:", err);
+    console.error('acceptFriendRequest error:', err);
     res.status(400).json({ message: err.message });
   }
 };
-
 
 // POST /api/friendships/reject
 export const rejectFriendRequest = async (req, res) => {
@@ -61,14 +67,14 @@ export const rejectFriendRequest = async (req, res) => {
     const { friendId } = req.body;
 
     if (!friendId) {
-      return res.status(400).json({ message: "friendId is required" });
+      return res.status(400).json({ message: 'friendId is required' });
     }
 
     const result = await FriendshipService.rejectFriendRequest(userId, friendId);
 
     res.json(result);
   } catch (err) {
-    console.error("rejectFriendRequest error:", err);
+    console.error('rejectFriendRequest error:', err);
     res.status(400).json({
       success: false,
       message: err.message,
@@ -83,14 +89,14 @@ export const unfriend = async (req, res) => {
     const { friendId } = req.body;
 
     if (!friendId) {
-      return res.status(400).json({ message: "friendId is required" });
+      return res.status(400).json({ message: 'friendId is required' });
     }
 
     const result = await FriendshipService.unfriend(userId, friendId);
 
     res.json(result);
   } catch (err) {
-    console.error("unfriend error:", err);
+    console.error('unfriend error:', err);
     res.status(400).json({
       success: false,
       message: err.message,
@@ -105,14 +111,14 @@ export const cancelFriendRequest = async (req, res) => {
     const { friendId } = req.body;
 
     if (!friendId) {
-      return res.status(400).json({ message: "friendId is required" });
+      return res.status(400).json({ message: 'friendId is required' });
     }
 
     const result = await FriendshipService.cancelFriendRequest(userId, friendId);
 
     res.json(result);
   } catch (err) {
-    console.error("cancelFriendRequest error:", err);
+    console.error('cancelFriendRequest error:', err);
     res.status(400).json({
       success: false,
       message: err.message,
@@ -127,17 +133,17 @@ export const getFriendshipStatus = async (req, res) => {
     const friendId = Number(req.params.friendId);
 
     if (!friendId) {
-      return res.status(400).json({ message: "Invalid friendId" });
+      return res.status(400).json({ message: 'Invalid friendId' });
     }
 
     const result = await FriendshipService.getFriendshipStatus(userId, friendId);
 
     res.json(result);
   } catch (err) {
-    console.error("getFriendshipStatus error:", err);
+    console.error('getFriendshipStatus error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -158,10 +164,10 @@ export const getFriends = async (req, res) => {
       limit,
     });
   } catch (err) {
-    console.error("getFriends error:", err);
+    console.error('getFriends error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -182,10 +188,10 @@ export const getPendingRequests = async (req, res) => {
       limit,
     });
   } catch (err) {
-    console.error("getPendingRequests error:", err);
+    console.error('getPendingRequests error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -206,10 +212,10 @@ export const getSentRequests = async (req, res) => {
       limit,
     });
   } catch (err) {
-    console.error("getSentRequests error:", err);
+    console.error('getSentRequests error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };
@@ -217,10 +223,9 @@ export const getSentRequests = async (req, res) => {
 // GET /api/friendships/suggestions
 export const getSuggestedFriends = async (req, res) => {
   try {
-
     const userId = req.user.id;
-    
-    // lấy giới hạn nếu từ 1 đến 50 nếu không dùng hoặc truyền sai thì là 10 
+
+    // lấy giới hạn nếu từ 1 đến 50 nếu không dùng hoặc truyền sai thì là 10
     const limitRaw = parseInt(req.query.limit, 10);
     const limit = Math.max(1, Math.min(Number.isFinite(limitRaw) ? limitRaw : 10, 50));
 
@@ -231,10 +236,10 @@ export const getSuggestedFriends = async (req, res) => {
       data: suggestions,
     });
   } catch (err) {
-    console.error("getSuggestedFriends error:", err);
+    console.error('getSuggestedFriends error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
+      message: 'Server error',
     });
   }
 };

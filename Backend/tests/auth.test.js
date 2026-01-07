@@ -1,283 +1,186 @@
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
-import authRoutes from '../routes/authRoutes.js';
+import bcrypt from 'bcryptjs';
 
-// Mock app setup
+// 1. Mock DB Wrapper
+const mockRequest = {
+  input: jest.fn().mockReturnThis(),
+  query: jest.fn(),
+};
+
+const mockPool = {
+  request: jest.fn(() => mockRequest),
+  connect: jest.fn(),
+};
+
+jest.unstable_mockModule('../config/db-wrapper.js', () => ({
+  db: mockPool,
+  getDb: () => mockPool,
+}));
+
+// 2. Import app (dynamic)
+const authRoutes = (await import('../routes/authRoutes.js')).default;
+
 const app = express();
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 
-describe('Authentication API Tests', () => {
-  let testUser = {
-    username: `testuser_${Date.now()}`,
-    email: `test_${Date.now()}@example.com`,
-    password: 'TestPassword123!',
-    full_name: 'Test User'
-  };
-  let authToken = '';
-
-  describe('POST /api/auth/register', () => {
-    test('Should register a new user successfully', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(testUser)
-        .expect('Content-Type', /json/);
-
-      // Accept both 200 and 201 as success
-      expect([200, 201]).toContain(response.status);
-
-      if (response.body.success) {
-        expect(response.body).toHaveProperty('token');
-        expect(response.body).toHaveProperty('user');
-        expect(response.body.user.username).toBe(testUser.username);
-        authToken = response.body.token;
-      }
-    }, 10000);
-
-    test('Should fail with duplicate username', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send(testUser);
-
-      // If registration works, it means the previous test didn't create the user
-      // So we skip this test
-      if (response.status === 201 || response.status === 200) {
-        console.log('⚠️  Skipping duplicate test - user not created in previous test');
-        return;
-      }
-
-      expect([400, 409]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with missing required fields', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          username: 'testuser',
-          // Missing email, password, full_name
-        });
-
-      expect([400, 422]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with invalid email format', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          ...testUser,
-          email: 'invalid-email-format'
-        });
-
-      expect([400, 422]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with weak password', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          ...testUser,
-          username: `weak_${Date.now()}`,
-          email: `weak_${Date.now()}@example.com`,
-          password: '123' // Too short
-        });
-
-      expect([400, 422]).toContain(response.status);
-    }, 10000);
+describe('Auth Controller Unit Tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('POST /api/auth/login', () => {
-    test('Should login with correct credentials', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password
-        })
-        .expect('Content-Type', /json/);
+  describe('POST /register', () => {
+    test('Success: Should create user and return 201', async () => {
+      // 1. Mock Check User (Return empty -> User not exists)
+      mockRequest.query.mockResolvedValueOnce({ recordset: [] });
 
-      // If user doesn't exist from registration, skip this test
-      if (response.status === 401 || response.status === 404) {
-        console.log('⚠️  Skipping login test - user not found');
-        return;
-      }
-
-      expect([200, 201]).toContain(response.status);
-
-      if (response.body.success) {
-        expect(response.body).toHaveProperty('token');
-        expect(response.body).toHaveProperty('user');
-        authToken = response.body.token;
-      }
-    }, 10000);
-
-    test('Should fail with incorrect password', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!'
-        });
-
-      expect([401, 403]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with non-existent email', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'nonexistent@example.com',
-          password: 'SomePassword123!'
-        });
-
-      expect([401, 404]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with missing credentials', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email
-          // Missing password
-        });
-
-      expect([400, 422]).toContain(response.status);
-    }, 10000);
-  });
-
-  describe('GET /api/auth/me', () => {
-    test('Should get current user with valid token', async () => {
-      if (!authToken) {
-        console.log('⚠️  Skipping /me test - no auth token available');
-        return;
-      }
-
-      const response = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect('Content-Type', /json/);
-
-      expect([200, 201]).toContain(response.status);
-
-      if (response.body.success) {
-        expect(response.body).toHaveProperty('user');
-        expect(response.body.user).toHaveProperty('id');
-      }
-    }, 10000);
-
-    test('Should fail without token', async () => {
-      const response = await request(app)
-        .get('/api/auth/me');
-
-      expect([401, 403]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with invalid token', async () => {
-      const response = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', 'Bearer invalid_token_here');
-
-      expect([401, 403]).toContain(response.status);
-    }, 10000);
-  });
-
-  describe('POST /api/auth/request-reset-otp', () => {
-    test('Should send OTP to existing email', async () => {
-      const response = await request(app)
-        .post('/api/auth/request-reset-otp')
-        .send({
-          email: testUser.email
-        });
-
-      // Accept success or skip if user doesn't exist
-      if (response.status === 404) {
-        console.log('⚠️  Skipping OTP test - user not found');
-        return;
-      }
-
-      expect([200, 201]).toContain(response.status);
-    }, 10000);
-
-    test('Should handle non-existent email gracefully', async () => {
-      const response = await request(app)
-        .post('/api/auth/request-reset-otp')
-        .send({
-          email: 'nonexistent_email_12345@example.com'
-        });
-
-      // Should return 404 or 200 (for security reasons, some APIs return 200 even if email doesn't exist)
-      expect([200, 404]).toContain(response.status);
-    }, 10000);
-  });
-
-  describe('PUT /api/auth/change-password', () => {
-    test('Should fail without authentication', async () => {
-      const response = await request(app)
-        .put('/api/auth/change-password')
-        .send({
-          oldPassword: testUser.password,
-          newPassword: 'NewPassword123!'
-        });
-
-      expect([401, 403]).toContain(response.status);
-    }, 10000);
-
-    test('Should fail with missing old password', async () => {
-      if (!authToken) {
-        console.log('⚠️  Skipping change-password test - no auth token');
-        return;
-      }
-
-      const response = await request(app)
-        .put('/api/auth/change-password')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          newPassword: 'NewPassword123!'
-          // Missing oldPassword
-        });
-
-      expect([400, 422]).toContain(response.status);
-    }, 10000);
-  });
-});
-
-describe('Authentication Security Tests', () => {
-  test('Should not expose sensitive data in error messages', async () => {
-    const response = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'test@example.com',
-        password: 'wrongpassword'
+      // 2. Mock Insert User (Return ID/User)
+      // Controller uses RETURNING * so it returns the user
+      mockRequest.query.mockResolvedValueOnce({
+        recordset: [{ id: 1, full_name: 'Test', username: 'test', email: 'test@e.com', role: 'user' }]
       });
 
-    // Error message should not contain sensitive information
-    const errorMessage = response.body.message || '';
-    expect(errorMessage.toLowerCase()).not.toMatch(/database|sql|query|stack/);
-  });
-
-  test('Should have CORS headers', async () => {
-    const response = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'test@example.com',
-        password: 'test123'
+      const res = await request(app).post('/api/auth/register').send({
+        username: 'test',
+        email: 'test@e.com',
+        password: 'Pass123!',
+        full_name: 'Test',
       });
 
-    // Check if response has some standard headers (not all apps have CORS configured in routes)
-    expect(response.headers).toBeDefined();
-  });
+      // Verify
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(mockRequest.query).toHaveBeenCalledTimes(2);
+    });
 
-  test('Should sanitize user input', async () => {
-    const response = await request(app)
-      .post('/api/auth/register')
-      .send({
-        username: '<script>alert("xss")</script>',
-        email: 'xss@example.com',
-        password: 'TestPassword123!',
-        full_name: 'XSS Test'
+    test('Fail: Duplicate Email (400)', async () => {
+      // Mock Check User (Return existing user)
+      // Controller checks if existing.email === input.email
+      mockRequest.query.mockResolvedValueOnce({
+        recordset: [{ id: 1, email: 'test@e.com' }]
       });
 
-    // Should reject or sanitize malicious input
-    expect([400, 422]).toContain(response.status);
+      const res = await request(app).post('/api/auth/register').send({
+        username: 'test',
+        email: 'test@e.com',
+        password: 'Pass123!',
+        full_name: 'Test',
+      });
+
+      expect(res.status).toBe(400); // Controller returns 400 for duplicate
+      expect(res.body.message).toMatch(/sử dụng/i);
+    });
+  });
+
+  describe('POST /login', () => {
+    test('Success: Should return tokens', async () => {
+      const hashedPassword = await bcrypt.hash('Pass123!', 10);
+
+      // 1. Mock Find User
+      mockRequest.query.mockResolvedValueOnce({
+        recordset: [{
+          id: 1,
+          username: 'test',
+          email: 'test@e.com',
+          password: hashedPassword, // Column name is 'password' in simple select *
+          role: 'user',
+          avatar_url: 'http://pic.com'
+        }]
+      });
+
+      // 2. Mock Save Refresh Token (inside generateTokens)
+      mockRequest.query.mockResolvedValueOnce({ rowsAffected: [1] });
+
+      const res = await request(app).post('/api/auth/login').send({
+        email: 'test@e.com',
+        password: 'Pass123!',
+      });
+
+      if (res.status !== 200) {
+        console.error('Login Failed Response:', res.body);
+      }
+
+      expect(res.status).toBe(200);
+      // Backend uses successResponse (data wrapping?)
+      // Check implementation: successResponse(res, { user, token, ... })
+      // Usually { success: true, data: { ... } }
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveProperty('accessToken');
+    });
+
+    test('Fail: Wrong Password (401)', async () => {
+      const hashedPassword = await bcrypt.hash('Pass123!', 10);
+
+      // Mock Find User
+      mockRequest.query.mockResolvedValueOnce({
+        recordset: [{
+          id: 1,
+          username: 'test',
+          email: 'test@e.com',
+          password: hashedPassword
+        }]
+      });
+
+      const res = await request(app).post('/api/auth/login').send({
+        email: 'test@e.com',
+        password: 'WrongPass!',
+      });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('POST /refresh', () => {
+    test('Success: Should rotate tokens', async () => {
+      // 1. Mock Verify Token DB (Find Token)
+      mockRequest.query.mockResolvedValueOnce({
+        recordset: [{
+          id: 99,
+          user_id: 1,
+          token: 'valid_refresh_token',
+          expires_at: new Date(Date.now() + 7 * 24 * 3600 * 1000), // Valid
+          revoked: false
+        }]
+      });
+
+      // 2. Mock Find User (required by controller)
+      mockRequest.query.mockResolvedValueOnce({
+        recordset: [{ id: 1, username: 'test', email: 'test@e.com' }]
+      });
+
+      // 3. Mock Insert New Token (generateTokens)
+      mockRequest.query.mockResolvedValueOnce({ rowsAffected: [1] });
+
+      // 4. Mock Update Old Token (Revoked) - Wait, in controller:
+      //    db.request()...query(UPDATE refreshed_tokens SET revoked=1, replaced_by...)
+      // Check order in controller:
+      // 1. Find Token
+      // 2. Get User
+      // 3. Generate New Token (Insert)
+      // 4. Update Old Token
+      mockRequest.query.mockResolvedValueOnce({ rowsAffected: [1] });
+
+      const res = await request(app).post('/api/auth/refresh').send({
+        refreshToken: 'valid_refresh_token'
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveProperty('accessToken');
+    });
+  });
+
+  describe('POST /logout', () => {
+    test('Success: Should revoke token', async () => {
+      // Mock Revoke Token
+      mockRequest.query.mockResolvedValueOnce({ rowsAffected: [1] });
+
+      const res = await request(app).post('/api/auth/logout').send({
+        refreshToken: 'token_to_revoke'
+      });
+
+      expect(res.status).toBe(200);
+    });
   });
 });

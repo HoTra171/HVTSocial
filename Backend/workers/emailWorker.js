@@ -18,7 +18,7 @@ emailQueue.process(async (job) => {
     message: 'Processing email job',
     jobId: job.id,
     type,
-    to: data.to || data.user?.email
+    to: data.to || data.user?.email,
   });
 
   try {
@@ -36,19 +36,11 @@ emailQueue.process(async (job) => {
         break;
 
       case 'account_suspended':
-        await emailService.sendAccountSuspendedEmail(
-          data.user,
-          data.reason,
-          data.suspendedUntil
-        );
+        await emailService.sendAccountSuspendedEmail(data.user, data.reason, data.suspendedUntil);
         break;
 
       case 'security_alert':
-        await emailService.sendSecurityAlertEmail(
-          data.user,
-          data.alertMessage,
-          data.ipAddress
-        );
+        await emailService.sendSecurityAlertEmail(data.user, data.alertMessage, data.ipAddress);
         break;
 
       case 'new_login':
@@ -73,18 +65,11 @@ emailQueue.process(async (job) => {
         break;
 
       case 'friend_request':
-        await emailService.sendFriendRequestEmail(
-          data.recipient,
-          data.sender
-        );
+        await emailService.sendFriendRequestEmail(data.recipient, data.sender);
         break;
 
       case 'templated':
-        await emailService.sendTemplatedEmail(
-          data.to,
-          data.templateName,
-          data.variables
-        );
+        await emailService.sendTemplatedEmail(data.to, data.templateName, data.variables);
         break;
 
       case 'custom':
@@ -92,7 +77,7 @@ emailQueue.process(async (job) => {
           to: data.to,
           subject: data.subject,
           html: data.html || data.body,
-          text: data.text
+          text: data.text,
         });
         break;
 
@@ -103,14 +88,14 @@ emailQueue.process(async (job) => {
     return {
       success: true,
       type,
-      to: data.to || data.user?.email
+      to: data.to || data.user?.email,
     };
   } catch (error) {
     logger.error({
       message: 'Email job failed',
       jobId: job.id,
       type,
-      error: error.message
+      error: error.message,
     });
 
     throw error; // Will trigger retry
@@ -124,77 +109,77 @@ emailQueue.process(async (job) => {
 export const queueWelcomeEmail = async (user) => {
   return await emailQueue.add({
     type: 'welcome',
-    data: { user }
+    data: { user },
   });
 };
 
 export const queueEmailVerification = async (user, verificationLink) => {
   return await emailQueue.add({
     type: 'email_verification',
-    data: { user, verificationLink }
+    data: { user, verificationLink },
   });
 };
 
 export const queuePasswordResetEmail = async (user, otp) => {
   return await emailQueue.add({
     type: 'password_reset',
-    data: { user, otp }
+    data: { user, otp },
   });
 };
 
 export const queueAccountSuspendedEmail = async (user, reason, suspendedUntil) => {
   return await emailQueue.add({
     type: 'account_suspended',
-    data: { user, reason, suspendedUntil }
+    data: { user, reason, suspendedUntil },
   });
 };
 
 export const queueSecurityAlertEmail = async (user, alertMessage, ipAddress) => {
   return await emailQueue.add({
     type: 'security_alert',
-    data: { user, alertMessage, ipAddress }
+    data: { user, alertMessage, ipAddress },
   });
 };
 
 export const queueNewLoginEmail = async (user, ipAddress, userAgent, location) => {
   return await emailQueue.add({
     type: 'new_login',
-    data: { user, ipAddress, userAgent, location }
+    data: { user, ipAddress, userAgent, location },
   });
 };
 
 export const queuePasswordChangedEmail = async (user) => {
   return await emailQueue.add({
     type: 'password_changed',
-    data: { user }
+    data: { user },
   });
 };
 
 export const queueCommentNotification = async (postOwner, commenter, postId) => {
   return await emailQueue.add({
     type: 'comment_notification',
-    data: { postOwner, commenter, postId }
+    data: { postOwner, commenter, postId },
   });
 };
 
 export const queueFriendRequestEmail = async (recipient, sender) => {
   return await emailQueue.add({
     type: 'friend_request',
-    data: { recipient, sender }
+    data: { recipient, sender },
   });
 };
 
 export const queueTemplatedEmail = async (to, templateName, variables) => {
   return await emailQueue.add({
     type: 'templated',
-    data: { to, templateName, variables }
+    data: { to, templateName, variables },
   });
 };
 
 export const queueCustomEmail = async (to, subject, html, text = null) => {
   return await emailQueue.add({
     type: 'custom',
-    data: { to, subject, html, text }
+    data: { to, subject, html, text },
   });
 };
 
@@ -211,5 +196,5 @@ export default {
   queueCommentNotification,
   queueFriendRequestEmail,
   queueTemplatedEmail,
-  queueCustomEmail
+  queueCustomEmail,
 };

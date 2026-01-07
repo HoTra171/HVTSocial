@@ -27,18 +27,19 @@ const config = {
 // Create connection pool
 const pool = new sql.ConnectionPool(config);
 
-await pool.connect()
+await pool
+  .connect()
   .then(() => {
-    console.log("✅ Connected to SQL Server");
-    console.log(">>> Using Database:", pool.config.database);
+    console.log('✅ Connected to SQL Server');
+    console.log('>>> Using Database:', pool.config.database);
   })
   .catch((err) => {
-    console.error("❌ SQL Server connection FAILED:", err.message);
-    console.error("Please check:");
-    console.error("  - SQL Server is running");
-    console.error("  - Database exists:", config.database);
-    console.error("  - Credentials - User:", config.user);
-    console.error("  - Server:", config.server);
+    console.error('❌ SQL Server connection FAILED:', err.message);
+    console.error('Please check:');
+    console.error('  - SQL Server is running');
+    console.error('  - Database exists:', config.database);
+    console.error('  - Credentials - User:', config.user);
+    console.error('  - Server:', config.server);
     process.exit(1);
   });
 
@@ -50,12 +51,12 @@ await pool.connect()
 async function query(sqlQuery, params = {}) {
   try {
     const request = pool.request();
-    
+
     // Add parameters
     for (const [key, value] of Object.entries(params)) {
       request.input(key, value);
     }
-    
+
     const result = await request.query(sqlQuery);
     return {
       rows: result.recordset,

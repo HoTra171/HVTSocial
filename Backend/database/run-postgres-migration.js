@@ -18,9 +18,12 @@ const __dirname = path.dirname(__filename);
 // PostgreSQL connection config
 const config = {
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false // Railway/Render requires this
-  } : false
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? {
+          rejectUnauthorized: false, // Railway/Render requires this
+        }
+      : false,
 };
 
 async function runMigration() {
@@ -36,7 +39,7 @@ async function runMigration() {
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
     console.log('\n📝 Running migration...');
-    console.log('=' .repeat(50));
+    console.log('='.repeat(50));
 
     // Execute the entire SQL file at once instead of splitting
     // PostgreSQL can handle multiple statements in one query
@@ -48,7 +51,7 @@ async function runMigration() {
       throw error;
     }
 
-    console.log('=' .repeat(50));
+    console.log('='.repeat(50));
 
     // Verify tables created
     const result = await client.query(`
@@ -59,12 +62,11 @@ async function runMigration() {
     `);
 
     console.log(`\n📋 Tables created (${result.rows.length}):`);
-    result.rows.forEach(row => {
+    result.rows.forEach((row) => {
       console.log(`   - ${row.table_name}`);
     });
 
     console.log('\n🎉 Migration completed successfully!\n');
-
   } catch (error) {
     console.error('\n❌ Migration failed:', error);
     process.exit(1);

@@ -8,27 +8,11 @@ import logger from '../utils/logger.js';
  */
 
 // Allowed MIME types
-const ALLOWED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-];
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
-const ALLOWED_VIDEO_TYPES = [
-  'video/mp4',
-  'video/mpeg',
-  'video/quicktime',
-  'video/webm',
-];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm'];
 
-const ALLOWED_AUDIO_TYPES = [
-  'audio/mpeg',
-  'audio/mp3',
-  'audio/wav',
-  'audio/ogg',
-];
+const ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg'];
 
 const ALLOWED_DOCUMENT_TYPES = [
   'application/pdf',
@@ -75,10 +59,7 @@ const createFileFilter = (allowedTypes) => {
         mimetype: file.mimetype,
       });
 
-      return cb(
-        new Error('File type not allowed for security reasons'),
-        false
-      );
+      return cb(new Error('File type not allowed for security reasons'), false);
     }
 
     // Check MIME type
@@ -90,12 +71,7 @@ const createFileFilter = (allowedTypes) => {
         mimetype: file.mimetype,
       });
 
-      return cb(
-        new Error(
-          `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`
-        ),
-        false
-      );
+      return cb(new Error(`Invalid file type. Allowed types: ${allowedTypes.join(', ')}`), false);
     }
 
     // Check filename for suspicious patterns
@@ -305,20 +281,20 @@ export const validateFileBuffer = (req, res, next) => {
     // Check magic numbers (file signatures)
     const signatures = {
       // Images
-      'ffd8ffe0': 'image/jpeg',
-      'ffd8ffe1': 'image/jpeg',
-      'ffd8ffe2': 'image/jpeg',
+      ffd8ffe0: 'image/jpeg',
+      ffd8ffe1: 'image/jpeg',
+      ffd8ffe2: 'image/jpeg',
       '89504e47': 'image/png',
-      '47494638': 'image/gif',
-      '52494646': 'image/webp', // Partial match
+      47494638: 'image/gif',
+      52494646: 'image/webp', // Partial match
       // Videos
       '00000018': 'video/mp4',
       '00000020': 'video/mp4',
       '1a45dfa3': 'video/webm',
       // Audio
-      'fffb': 'audio/mp3',
-      'fff3': 'audio/mp3',
-      '494433': 'audio/mp3',
+      fffb: 'audio/mp3',
+      fff3: 'audio/mp3',
+      494433: 'audio/mp3',
     };
 
     let validSignature = false;

@@ -3,7 +3,7 @@
 /**
  * Environment Variables Checker
  * Run: node check-env.js
- * 
+ *
  * Checks if all required environment variables are set
  */
 
@@ -40,131 +40,131 @@ console.log('━'.repeat(80));
 // Required variables
 const requiredVars = {
   // Server
-  'NODE_ENV': {
+  NODE_ENV: {
     value: process.env.NODE_ENV,
     required: false,
     default: 'development',
-    description: 'Node environment'
+    description: 'Node environment',
   },
-  'PORT': {
+  PORT: {
     value: process.env.PORT,
     required: false,
     default: '5000',
-    description: 'Server port'
+    description: 'Server port',
   },
 
   // Database
-  'DB_DRIVER': {
+  DB_DRIVER: {
     value: process.env.DB_DRIVER,
     required: false,
     default: process.env.DATABASE_URL ? 'postgres' : 'mssql',
-    description: 'Database driver (postgres OR mssql)'
+    description: 'Database driver (postgres OR mssql)',
   },
 
   // Database - SQL Server (cho local)
-  'SQL_SERVER': {
+  SQL_SERVER: {
     value: process.env.SQL_SERVER,
     required: !process.env.DATABASE_URL,
-    description: 'SQL Server host (local)'
+    description: 'SQL Server host (local)',
   },
-  'SQL_DATABASE': {
+  SQL_DATABASE: {
     value: process.env.SQL_DATABASE,
     required: !process.env.DATABASE_URL,
-    description: 'SQL Server database name'
+    description: 'SQL Server database name',
   },
-  'SQL_USER': {
+  SQL_USER: {
     value: process.env.SQL_USER,
     required: !process.env.DATABASE_URL,
-    description: 'SQL Server username'
+    description: 'SQL Server username',
   },
-  'SQL_PASSWORD': {
+  SQL_PASSWORD: {
     value: process.env.SQL_PASSWORD,
     required: !process.env.DATABASE_URL,
     description: 'SQL Server password',
-    sensitive: true
+    sensitive: true,
   },
 
   // Database - PostgreSQL (cho production)
-  'DATABASE_URL': {
+  DATABASE_URL: {
     value: process.env.DATABASE_URL,
     required: !process.env.SQL_SERVER,
     description: 'PostgreSQL connection URL (production)',
-    sensitive: true
+    sensitive: true,
   },
 
   // Redis
-  'REDIS_HOST': {
+  REDIS_HOST: {
     value: process.env.REDIS_HOST,
     required: !process.env.REDIS_URL,
     default: 'localhost',
-    description: 'Redis host (local)'
+    description: 'Redis host (local)',
   },
-  'REDIS_URL': {
+  REDIS_URL: {
     value: process.env.REDIS_URL,
     required: !process.env.REDIS_HOST,
     description: 'Redis URL (cloud)',
-    sensitive: true
+    sensitive: true,
   },
 
   // JWT
-  'JWT_SECRET': {
+  JWT_SECRET: {
     value: process.env.JWT_SECRET,
     required: true,
     description: 'JWT secret key (min 32 chars)',
     sensitive: true,
-    validator: (val) => val && val.length >= 32
+    validator: (val) => val && val.length >= 32,
   },
-  'JWT_EXPIRES_IN': {
+  JWT_EXPIRES_IN: {
     value: process.env.JWT_EXPIRES_IN,
     required: false,
     default: '7d',
-    description: 'JWT expiration time'
+    description: 'JWT expiration time',
   },
 
   // Cloudinary
-  'CLOUDINARY_CLOUD_NAME': {
+  CLOUDINARY_CLOUD_NAME: {
     value: process.env.CLOUDINARY_CLOUD_NAME,
     required: true,
-    description: 'Cloudinary cloud name'
+    description: 'Cloudinary cloud name',
   },
-  'CLOUDINARY_API_KEY': {
+  CLOUDINARY_API_KEY: {
     value: process.env.CLOUDINARY_API_KEY,
     required: true,
     description: 'Cloudinary API key',
-    sensitive: true
+    sensitive: true,
   },
-  'CLOUDINARY_API_SECRET': {
+  CLOUDINARY_API_SECRET: {
     value: process.env.CLOUDINARY_API_SECRET,
     required: true,
     description: 'Cloudinary API secret',
-    sensitive: true
+    sensitive: true,
   },
 
   // CORS
-  'CORS_ORIGINS': {
+  CORS_ORIGINS: {
     value: process.env.CORS_ORIGINS,
     required: false,
     default: 'http://localhost:3000',
-    description: 'Allowed CORS origins'
+    description: 'Allowed CORS origins',
   },
-  'CLIENT_URL': {
+  CLIENT_URL: {
     value: process.env.CLIENT_URL,
     required: false,
     default: 'http://localhost:3000',
-    description: 'Frontend URL'
+    description: 'Frontend URL',
   },
 
   // Email (optional for testing)
-  'EMAIL_HOST': {
+  EMAIL_HOST: {
     value: process.env.EMAIL_HOST,
     required: false,
-    description: 'Email server host (optional)'
+    description: 'Email server host (optional)',
   },
-  'EMAIL_USER': {
+  EMAIL_USER: {
     value: process.env.EMAIL_USER,
     required: false,
-    description: 'Email username (optional)'
-  }
+    description: 'Email username (optional)',
+  },
 };
 
 let hasErrors = false;
@@ -173,7 +173,7 @@ let hasWarnings = false;
 // Check each variable
 for (const [key, config] of Object.entries(requiredVars)) {
   const value = config.value || config.default;
-  const status = value ? '✅' : (config.required ? '❌' : '⚠️');
+  const status = value ? '✅' : config.required ? '❌' : '⚠️';
 
   // Display value (mask sensitive data)
   let displayValue;

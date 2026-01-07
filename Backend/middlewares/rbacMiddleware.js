@@ -17,7 +17,7 @@ export const requirePermission = (permissionName) => {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: 'Unauthorized - User not authenticated'
+          message: 'Unauthorized - User not authenticated',
         });
       }
 
@@ -28,13 +28,13 @@ export const requirePermission = (permissionName) => {
           message: 'Permission denied',
           userId,
           permission: permissionName,
-          path: req.path
+          path: req.path,
         });
 
         return res.status(403).json({
           success: false,
           message: 'Forbidden - Insufficient permissions',
-          required: permissionName
+          required: permissionName,
         });
       }
 
@@ -43,7 +43,7 @@ export const requirePermission = (permissionName) => {
       logger.error({
         message: 'Error in requirePermission middleware',
         error: error.message,
-        permission: permissionName
+        permission: permissionName,
       });
       next(error);
     }
@@ -62,7 +62,7 @@ export const requireRole = (roleName) => {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: 'Unauthorized - User not authenticated'
+          message: 'Unauthorized - User not authenticated',
         });
       }
 
@@ -73,13 +73,13 @@ export const requireRole = (roleName) => {
           message: 'Role check failed',
           userId,
           role: roleName,
-          path: req.path
+          path: req.path,
         });
 
         return res.status(403).json({
           success: false,
           message: 'Forbidden - Insufficient role',
-          required: roleName
+          required: roleName,
         });
       }
 
@@ -88,7 +88,7 @@ export const requireRole = (roleName) => {
       logger.error({
         message: 'Error in requireRole middleware',
         error: error.message,
-        role: roleName
+        role: roleName,
       });
       next(error);
     }
@@ -107,7 +107,7 @@ export const requireAnyRole = (roleNames) => {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: 'Unauthorized - User not authenticated'
+          message: 'Unauthorized - User not authenticated',
         });
       }
 
@@ -123,19 +123,19 @@ export const requireAnyRole = (roleNames) => {
         message: 'Role check failed - none of required roles',
         userId,
         roles: roleNames,
-        path: req.path
+        path: req.path,
       });
 
       return res.status(403).json({
         success: false,
         message: 'Forbidden - Insufficient role',
-        requiredAny: roleNames
+        requiredAny: roleNames,
       });
     } catch (error) {
       logger.error({
         message: 'Error in requireAnyRole middleware',
         error: error.message,
-        roles: roleNames
+        roles: roleNames,
       });
       next(error);
     }
@@ -156,7 +156,7 @@ export const checkResourceAction = (resource, action) => {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: 'Unauthorized - User not authenticated'
+          message: 'Unauthorized - User not authenticated',
         });
       }
 
@@ -172,13 +172,13 @@ export const checkResourceAction = (resource, action) => {
           resource,
           action,
           resourceId,
-          path: req.path
+          path: req.path,
         });
 
         return res.status(403).json({
           success: false,
           message: `Forbidden - Cannot ${action} ${resource}`,
-          required: `${resource}.${action}`
+          required: `${resource}.${action}`,
         });
       }
 
@@ -188,7 +188,7 @@ export const checkResourceAction = (resource, action) => {
         message: 'Error in checkResourceAction middleware',
         error: error.message,
         resource,
-        action
+        action,
       });
       next(error);
     }
@@ -205,7 +205,7 @@ export const requireActiveAccount = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'Unauthorized - User not authenticated'
+        message: 'Unauthorized - User not authenticated',
       });
     }
 
@@ -214,14 +214,14 @@ export const requireActiveAccount = async (req, res, next) => {
       logger.warn({
         message: 'Inactive account access attempt',
         userId: user.id,
-        status: user.account_status
+        status: user.account_status,
       });
 
       return res.status(403).json({
         success: false,
         message: 'Account is not active',
         status: user.account_status,
-        reason: user.suspension_reason || undefined
+        reason: user.suspension_reason || undefined,
       });
     }
 
@@ -229,7 +229,7 @@ export const requireActiveAccount = async (req, res, next) => {
   } catch (error) {
     logger.error({
       message: 'Error in requireActiveAccount middleware',
-      error: error.message
+      error: error.message,
     });
     next(error);
   }
@@ -258,5 +258,5 @@ export default {
   requireActiveAccount,
   adminOnly,
   moderatorOrAdmin,
-  supportStaff
+  supportStaff,
 };

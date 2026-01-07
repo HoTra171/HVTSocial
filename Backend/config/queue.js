@@ -10,11 +10,11 @@ import logger from '../utils/logger.js';
 const redisConfig = process.env.REDIS_URL
   ? process.env.REDIS_URL
   : {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || undefined,
-    db: parseInt(process.env.REDIS_DB || '0')
-  };
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD || undefined,
+      db: parseInt(process.env.REDIS_DB || '0'),
+    };
 
 /**
  * Email Queue
@@ -26,11 +26,11 @@ export const emailQueue = new Bull('email', {
     attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 2000 // Start with 2 seconds, then 4, 8, etc.
+      delay: 2000, // Start with 2 seconds, then 4, 8, etc.
     },
     removeOnComplete: true,
-    removeOnFail: false
-  }
+    removeOnFail: false,
+  },
 });
 
 /**
@@ -43,8 +43,8 @@ export const dataExportQueue = new Bull('data-export', {
     attempts: 2,
     timeout: 300000, // 5 minutes
     removeOnComplete: 100, // Keep last 100 completed jobs
-    removeOnFail: false
-  }
+    removeOnFail: false,
+  },
 });
 
 /**
@@ -57,8 +57,8 @@ export const moderationQueue = new Bull('moderation', {
     attempts: 2,
     timeout: 60000, // 1 minute
     removeOnComplete: true,
-    removeOnFail: false
-  }
+    removeOnFail: false,
+  },
 });
 
 /**
@@ -71,11 +71,11 @@ export const notificationQueue = new Bull('notification', {
     attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 1000
+      delay: 1000,
     },
     removeOnComplete: true,
-    removeOnFail: false
-  }
+    removeOnFail: false,
+  },
 });
 
 /**
@@ -87,8 +87,8 @@ export const cleanupQueue = new Bull('cleanup', {
   defaultJobOptions: {
     attempts: 1,
     removeOnComplete: true,
-    removeOnFail: false
-  }
+    removeOnFail: false,
+  },
 });
 
 /* ================= QUEUE EVENT HANDLERS ================= */
@@ -98,7 +98,7 @@ emailQueue.on('completed', (job, result) => {
   logger.info({
     message: 'Email job completed',
     jobId: job.id,
-    to: job.data.to
+    to: job.data.to,
   });
 });
 
@@ -107,7 +107,7 @@ emailQueue.on('failed', (job, err) => {
     message: 'Email job failed',
     jobId: job.id,
     error: err.message,
-    attempts: job.attemptsMade
+    attempts: job.attemptsMade,
   });
 });
 
@@ -116,7 +116,7 @@ dataExportQueue.on('completed', (job, result) => {
   logger.info({
     message: 'Data export job completed',
     jobId: job.id,
-    userId: job.data.userId
+    userId: job.data.userId,
   });
 });
 
@@ -124,7 +124,7 @@ dataExportQueue.on('failed', (job, err) => {
   logger.error({
     message: 'Data export job failed',
     jobId: job.id,
-    error: err.message
+    error: err.message,
   });
 });
 
@@ -134,7 +134,7 @@ moderationQueue.on('completed', (job, result) => {
     message: 'Moderation job completed',
     jobId: job.id,
     contentType: job.data.contentType,
-    action: result.action
+    action: result.action,
   });
 });
 
@@ -142,7 +142,7 @@ moderationQueue.on('failed', (job, err) => {
   logger.error({
     message: 'Moderation job failed',
     jobId: job.id,
-    error: err.message
+    error: err.message,
   });
 });
 
@@ -157,7 +157,7 @@ export const getQueueStatus = async (queue) => {
     queue.getActiveCount(),
     queue.getCompletedCount(),
     queue.getFailedCount(),
-    queue.getDelayedCount()
+    queue.getDelayedCount(),
   ]);
 
   return {
@@ -167,7 +167,7 @@ export const getQueueStatus = async (queue) => {
     completed,
     failed,
     delayed,
-    total: waiting + active + completed + failed + delayed
+    total: waiting + active + completed + failed + delayed,
   };
 };
 
@@ -175,17 +175,9 @@ export const getQueueStatus = async (queue) => {
  * Get all queues status
  */
 export const getAllQueuesStatus = async () => {
-  const queues = [
-    emailQueue,
-    dataExportQueue,
-    moderationQueue,
-    notificationQueue,
-    cleanupQueue
-  ];
+  const queues = [emailQueue, dataExportQueue, moderationQueue, notificationQueue, cleanupQueue];
 
-  const statuses = await Promise.all(
-    queues.map(queue => getQueueStatus(queue))
-  );
+  const statuses = await Promise.all(queues.map((queue) => getQueueStatus(queue)));
 
   return statuses;
 };
@@ -197,7 +189,7 @@ export const cleanCompletedJobs = async (queue) => {
   await queue.clean(0, 'completed');
   logger.info({
     message: 'Cleaned completed jobs',
-    queue: queue.name
+    queue: queue.name,
   });
 };
 
@@ -208,7 +200,7 @@ export const cleanFailedJobs = async (queue) => {
   await queue.clean(0, 'failed');
   logger.info({
     message: 'Cleaned failed jobs',
-    queue: queue.name
+    queue: queue.name,
   });
 };
 
@@ -219,7 +211,7 @@ export const pauseQueue = async (queue) => {
   await queue.pause();
   logger.warn({
     message: 'Queue paused',
-    queue: queue.name
+    queue: queue.name,
   });
 };
 
@@ -230,7 +222,7 @@ export const resumeQueue = async (queue) => {
   await queue.resume();
   logger.info({
     message: 'Queue resumed',
-    queue: queue.name
+    queue: queue.name,
   });
 };
 
@@ -245,7 +237,7 @@ export const closeQueues = async () => {
     dataExportQueue.close(),
     moderationQueue.close(),
     notificationQueue.close(),
-    cleanupQueue.close()
+    cleanupQueue.close(),
   ]);
 
   logger.info('All queues closed');
@@ -270,5 +262,5 @@ export default {
   cleanFailedJobs,
   pauseQueue,
   resumeQueue,
-  closeQueues
+  closeQueues,
 };

@@ -11,7 +11,8 @@ const getPool = async () => {
 
 export const findUserByEmail = async (email) => {
   const db = await getPool();
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('email', sql.VarChar, email)
     .query('SELECT * FROM users WHERE email = @email');
   return result.recordset[0];
@@ -19,7 +20,8 @@ export const findUserByEmail = async (email) => {
 
 export const findUserByUsername = async (username) => {
   const db = await getPool();
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('username', sql.NVarChar, username)
     .query('SELECT * FROM users WHERE username = @username');
   return result.recordset[0];
@@ -27,9 +29,7 @@ export const findUserByUsername = async (username) => {
 
 export const findUserById = async (id) => {
   const db = await getPool();
-  const result = await db.request()
-    .input('id', sql.Int, id)
-    .query(`
+  const result = await db.request().input('id', sql.Int, id).query(`
       SELECT 
         id, email, full_name, username, date_of_birth, gender,
         avatar, cover_photo AS background, bio, location AS address,
@@ -49,14 +49,14 @@ export const createUser = async ({
   gender,
 }) => {
   const db = await getPool();
-  const result = await db.request()
+  const result = await db
+    .request()
     .input('email', sql.VarChar, email)
     .input('password', sql.VarChar, hashedPassword)
     .input('full_name', sql.NVarChar, full_name)
     .input('username', sql.NVarChar, username)
     .input('date_of_birth', sql.Date, date_of_birth || null)
-    .input('gender', sql.VarChar, gender || null)
-    .query(`
+    .input('gender', sql.VarChar, gender || null).query(`
       INSERT INTO users (
         email, password, full_name, username, date_of_birth, gender
       )
@@ -74,10 +74,7 @@ export const UserModel = {
   async getUserProfile(userId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    const result = await db.request().input('userId', sql.Int, userId).query(`
         SELECT
           id,
           email,
@@ -95,12 +92,10 @@ export const UserModel = {
     return result.recordset[0];
   },
 
-
-
   async getConnections(pool, userId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
-    req.input("userId", sql.Int, userId);
+    req.input('userId', sql.Int, userId);
 
     const query = `
       SELECT u.id, u.full_name, u.username, u.avatar, u.bio
@@ -143,8 +138,8 @@ export const UserModel = {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("userId", sql.Int, userId);
-    req.input("search", sql.NVarChar, `%${search}%`);
+    req.input('userId', sql.Int, userId);
+    req.input('search', sql.NVarChar, `%${search}%`);
 
     const query = `
       SELECT
@@ -172,4 +167,3 @@ export const UserModel = {
     return result.recordset;
   },
 };
-

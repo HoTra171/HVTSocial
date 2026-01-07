@@ -1,10 +1,10 @@
-import { ChatService } from "../services/chatService.js";
+import { ChatService } from '../services/chatService.js';
 
 const getAuthUserId = (req) => Number(req.user?.id);
 
-const getIo = (req) => req.app.get("io");
+const getIo = (req) => req.app.get('io');
 
-const forbid = (res) => res.status(403).json({ error: "forbidden" });
+const forbid = (res) => res.status(403).json({ error: 'forbidden' });
 
 const badRequest = (res, msg) => res.status(400).json({ error: msg });
 
@@ -19,8 +19,8 @@ export const getUserChats = async (req, res) => {
     const chats = await ChatService.getUserChats(userId);
     return res.json(chats);
   } catch (e) {
-    console.error("getUserChats error:", e);
-    return res.status(500).json({ error: "getUserChats_failed" });
+    console.error('getUserChats error:', e);
+    return res.status(500).json({ error: 'getUserChats_failed' });
   }
 };
 
@@ -29,7 +29,7 @@ export const getMessages = async (req, res) => {
     const authId = getAuthUserId(req);
     const chatId = Number(req.params.chatId);
     if (!authId) return forbid(res);
-    if (!chatId) return badRequest(res, "invalid_chatId");
+    if (!chatId) return badRequest(res, 'invalid_chatId');
 
     // check user có thuộc chat không (tạm dùng getUserChats để check)
     const chats = await ChatService.getUserChats(authId);
@@ -39,8 +39,8 @@ export const getMessages = async (req, res) => {
     const result = await ChatService.getMessagesByChat(chatId);
     return res.json(result.recordset);
   } catch (e) {
-    console.error("getMessages error:", e);
-    return res.status(500).json({ error: "getMessages_failed" });
+    console.error('getMessages error:', e);
+    return res.status(500).json({ error: 'getMessages_failed' });
   }
 };
 
@@ -50,14 +50,14 @@ export const sendMessage = async (req, res) => {
     if (!authId) return forbid(res);
 
     const chatId = Number(req.body?.chatId);
-    if (!chatId) return badRequest(res, "invalid_chatId");
+    if (!chatId) return badRequest(res, 'invalid_chatId');
 
     // senderId lấy từ token, không lấy từ body
     const payload = {
       chatId,
       senderId: authId,
-      content: req.body?.content || "",
-      message_type: req.body?.message_type || "text", 
+      content: req.body?.content || '',
+      message_type: req.body?.message_type || 'text',
       media_url: req.body?.media_url ?? null,
       duration: req.body?.duration ?? null,
       reply_to_id: req.body?.reply_to_id ?? null,
@@ -71,12 +71,12 @@ export const sendMessage = async (req, res) => {
 
     // bắn realtime vào room của chat
     const io = getIo(req);
-    if (io && row?.chat_id) io.to(`chat_${row.chat_id}`).emit("receive_message", row);
+    if (io && row?.chat_id) io.to(`chat_${row.chat_id}`).emit('receive_message', row);
 
     return res.json(row);
   } catch (e) {
-    console.error("sendMessage error:", e);
-    return res.status(500).json({ error: "sendMessage_failed" });
+    console.error('sendMessage error:', e);
+    return res.status(500).json({ error: 'sendMessage_failed' });
   }
 };
 
@@ -85,18 +85,18 @@ export const markRead = async (req, res) => {
     const authId = getAuthUserId(req);
     const chatId = Number(req.body?.chatId);
     if (!authId) return forbid(res);
-    if (!chatId) return badRequest(res, "invalid_chatId");
+    if (!chatId) return badRequest(res, 'invalid_chatId');
 
     await ChatService.markMessagesRead(chatId, authId);
 
     // bắn realtime đúng room chat
     const io = getIo(req);
-    if (io) io.to(`chat_${chatId}`).emit("messages_read", { chatId, readBy: authId });
+    if (io) io.to(`chat_${chatId}`).emit('messages_read', { chatId, readBy: authId });
 
     return res.json({ success: true });
   } catch (e) {
-    console.error("markRead error:", e);
-    return res.status(500).json({ error: "markRead_failed" });
+    console.error('markRead error:', e);
+    return res.status(500).json({ error: 'markRead_failed' });
   }
 };
 
@@ -105,22 +105,22 @@ export const deleteMessage = async (req, res) => {
     const authId = getAuthUserId(req);
     const messageId = Number(req.params.id);
     if (!authId) return forbid(res);
-    if (!messageId) return badRequest(res, "invalid_messageId");
+    if (!messageId) return badRequest(res, 'invalid_messageId');
 
     // cần get meta để check chủ tin nhắn và lấy chat_id bắn realtime
     const meta = await ChatService.getMessageMeta(messageId);
-    if (!meta) return res.status(404).json({ error: "message_not_found" });
+    if (!meta) return res.status(404).json({ error: 'message_not_found' });
     if (Number(meta.sender_id) !== authId) return forbid(res);
 
     await ChatService.recallMessage(messageId);
 
     const io = getIo(req);
-    if (io) io.to(`chat_${meta.chat_id}`).emit("message_recalled", { messageId });
+    if (io) io.to(`chat_${meta.chat_id}`).emit('message_recalled', { messageId });
 
     return res.json({ success: true });
   } catch (e) {
-    console.error("deleteMessage error:", e);
-    return res.status(500).json({ error: "Cannot recall message" });
+    console.error('deleteMessage error:', e);
+    return res.status(500).json({ error: 'Cannot recall message' });
   }
 };
 
@@ -130,22 +130,22 @@ export const editMessage = async (req, res) => {
     const messageId = Number(req.params.id);
     const newContent = req.body?.newContent;
     if (!authId) return forbid(res);
-    if (!messageId) return badRequest(res, "invalid_messageId");
-    if (typeof newContent !== "string") return badRequest(res, "invalid_newContent");
+    if (!messageId) return badRequest(res, 'invalid_messageId');
+    if (typeof newContent !== 'string') return badRequest(res, 'invalid_newContent');
 
     const meta = await ChatService.getMessageMeta(messageId);
-    if (!meta) return res.status(404).json({ error: "message_not_found" });
+    if (!meta) return res.status(404).json({ error: 'message_not_found' });
     if (Number(meta.sender_id) !== authId) return forbid(res);
 
     await ChatService.editMessage(messageId, newContent);
 
     const io = getIo(req);
-    if (io) io.to(`chat_${meta.chat_id}`).emit("message_edited", { messageId, newContent });
+    if (io) io.to(`chat_${meta.chat_id}`).emit('message_edited', { messageId, newContent });
 
     return res.json({ success: true });
   } catch (e) {
-    console.error("editMessage error:", e);
-    return res.status(500).json({ error: "Cannot edit message" });
+    console.error('editMessage error:', e);
+    return res.status(500).json({ error: 'Cannot edit message' });
   }
 };
 
@@ -158,25 +158,24 @@ export const getUnreadCount = async (req, res) => {
     const count = await ChatService.getUnreadCount(authId);
     return res.json({ count });
   } catch (e) {
-    console.error("getUnreadCount error:", e);
-    return res.status(500).json({ error: "Cannot get unread count" });
+    console.error('getUnreadCount error:', e);
+    return res.status(500).json({ error: 'Cannot get unread count' });
   }
 };
-
 
 export const getOrCreateDm = async (req, res) => {
   try {
     const authId = Number(req.user?.id);
-    if (!authId) return res.status(403).json({ error: "forbidden" });
+    if (!authId) return res.status(403).json({ error: 'forbidden' });
 
     const receiverId = Number(req.body?.receiverId);
-    if (!receiverId) return res.status(400).json({ error: "invalid_receiverId" });
-    if (receiverId === authId) return res.status(400).json({ error: "cannot_dm_self" });
+    if (!receiverId) return res.status(400).json({ error: 'invalid_receiverId' });
+    if (receiverId === authId) return res.status(400).json({ error: 'cannot_dm_self' });
 
     const chatId = await ChatService.getOrCreateDm(authId, receiverId);
     return res.json({ chatId });
   } catch (e) {
-    console.error("getOrCreateDm error:", e);
-    return res.status(500).json({ error: "getOrCreateDm_failed" });
+    console.error('getOrCreateDm error:', e);
+    return res.status(500).json({ error: 'getOrCreateDm_failed' });
   }
 };

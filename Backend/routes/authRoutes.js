@@ -1,6 +1,24 @@
 import express from 'express';
-import { register, login, requestResetOtp, resetPasswordWithOtp, changePassword, refreshToken, logout } from '../controllers/authController.js';
+import {
+  register,
+  login,
+  requestResetOtp,
+  resetPasswordWithOtp,
+  changePassword,
+  refreshToken,
+  logout,
+} from '../controllers/authController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
+import rateLimit from 'express-rate-limit';
+
+// Rate limiter: 10 requests per 15 mins for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10, // max 10
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Quá nhiều lần thử, vui lòng quay lại sau 15 phút.' }
+});
 
 const router = express.Router();
 
@@ -62,7 +80,7 @@ const router = express.Router();
  *       429:
  *         $ref: '#/components/responses/RateLimitError'
  */
-router.post('/register', register);
+router.post('/register', authLimiter, register);
 
 /**
  * @swagger
@@ -112,7 +130,7 @@ router.post('/register', register);
  *       429:
  *         $ref: '#/components/responses/RateLimitError'
  */
-router.post('/login', login);
+router.post('/login', authLimiter, login);
 
 /**
  * @swagger
@@ -139,7 +157,7 @@ router.post('/login', login);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.post("/request-reset-otp", requestResetOtp);
+router.post('/request-reset-otp', authLimiter, requestResetOtp);
 
 /**
  * @swagger
@@ -171,7 +189,7 @@ router.post("/request-reset-otp", requestResetOtp);
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  */
-router.post("/reset-password-otp", resetPasswordWithOtp);
+router.post('/reset-password-otp', authLimiter, resetPasswordWithOtp);
 
 /**
  * @swagger
@@ -202,7 +220,7 @@ router.post("/reset-password-otp", resetPasswordWithOtp);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.put("/change-password", authMiddleware, changePassword);
+router.put('/change-password', authMiddleware, changePassword);
 
 /**
  * @swagger
@@ -231,7 +249,7 @@ router.put("/change-password", authMiddleware, changePassword);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/me", authMiddleware, (req, res) => {
+router.get('/me', authMiddleware, (req, res) => {
   return res.json({
     success: true,
     user: req.user,

@@ -1,4 +1,4 @@
-﻿import sql from "mssql";
+﻿import sql from 'mssql';
 
 export const ChatModel = {
   // Láº¥y danh sÃ¡ch táº¥t cáº£ chat (1-1 + group) cá»§a 1 user
@@ -8,7 +8,7 @@ export const ChatModel = {
       await pool.connect();
     }
     const req = pool.request();
-    req.input("userId", sql.Int, userId);
+    req.input('userId', sql.Int, userId);
 
     const query = `WITH MyChats AS (
   SELECT chat_id
@@ -90,7 +90,7 @@ SELECT *
 FROM Ranked
 WHERE is_group_chat = 1 OR rn = 1
 ORDER BY last_time DESC, chat_id DESC;
-`
+`;
 
     const result = await req.query(query);
     return result.recordset;
@@ -100,7 +100,7 @@ ORDER BY last_time DESC, chat_id DESC;
   async getUnreadCount(pool, userId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
-    req.input("userId", sql.Int, userId);
+    req.input('userId', sql.Int, userId);
 
     const query = `
       SELECT COUNT(*) AS unread_count
@@ -119,7 +119,7 @@ ORDER BY last_time DESC, chat_id DESC;
   async getMessagesByChat(pool, chatId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
-    req.input("chatId", sql.Int, chatId);
+    req.input('chatId', sql.Int, chatId);
 
     const query = `
       SELECT
@@ -159,24 +159,24 @@ ORDER BY last_time DESC, chat_id DESC;
     const req = pool.request();
 
     // Náº¿u cÃ³ reply, lÆ°u JSON vÃ o content
-    let finalContent = content || "";
+    let finalContent = content || '';
     if (reply_to_id) {
       const replyData = {
         reply_to: reply_to_id,
-        reply_content: reply_content || "",
-        reply_type: reply_type || "text",
-        reply_sender: reply_sender || "",
-        message: finalContent
+        reply_content: reply_content || '',
+        reply_type: reply_type || 'text',
+        reply_sender: reply_sender || '',
+        message: finalContent,
       };
       finalContent = JSON.stringify(replyData);
     }
 
-    req.input("chatId", sql.Int, chatId);
-    req.input("senderId", sql.Int, senderId);
-    req.input("content", sql.NVarChar(sql.MAX), finalContent);
-    req.input("message_type", sql.VarChar(20), message_type || "text");
-    req.input("media_url", sql.NVarChar(sql.MAX), media_url || null);
-    req.input("duration", sql.Int, duration ?? null);
+    req.input('chatId', sql.Int, chatId);
+    req.input('senderId', sql.Int, senderId);
+    req.input('content', sql.NVarChar(sql.MAX), finalContent);
+    req.input('message_type', sql.VarChar(20), message_type || 'text');
+    req.input('media_url', sql.NVarChar(sql.MAX), media_url || null);
+    req.input('duration', sql.Int, duration ?? null);
 
     const query = `
       INSERT INTO messages
@@ -198,8 +198,8 @@ ORDER BY last_time DESC, chat_id DESC;
     if (!pool.connected) await pool.connect();
     const req = pool.request();
 
-    req.input("chatId", sql.Int, chatId);
-    req.input("userId", sql.Int, userId);
+    req.input('chatId', sql.Int, chatId);
+    req.input('userId', sql.Int, userId);
 
     const query = `
       UPDATE messages
@@ -217,7 +217,7 @@ ORDER BY last_time DESC, chat_id DESC;
     if (!pool.connected) await pool.connect();
     const request = pool.request();
 
-    request.input("messageId", sql.Int, messageId);
+    request.input('messageId', sql.Int, messageId);
 
     const query = `
       UPDATE Messages
@@ -236,8 +236,8 @@ ORDER BY last_time DESC, chat_id DESC;
     if (!pool.connected) await pool.connect();
     const request = pool.request();
 
-    request.input("messageId", sql.Int, messageId);
-    request.input("newContent", sql.NVarChar(sql.MAX), newContent);
+    request.input('messageId', sql.Int, messageId);
+    request.input('newContent', sql.NVarChar(sql.MAX), newContent);
 
     const query = `
       UPDATE Messages
@@ -252,7 +252,7 @@ ORDER BY last_time DESC, chat_id DESC;
   async getMessageMeta(pool, messageId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
-    req.input("messageId", sql.Int, messageId);
+    req.input('messageId', sql.Int, messageId);
 
     const query = `
     SELECT id, chat_id, sender_id
@@ -263,12 +263,11 @@ ORDER BY last_time DESC, chat_id DESC;
     return result.recordset[0] || null;
   },
 
-
   // Láº¥y danh sÃ¡ch users trong 1 chat (dÃ¹ng cho notification)
   async getChatUsers(pool, chatId) {
     if (!pool.connected) await pool.connect();
     const req = pool.request();
-    req.input("chatId", sql.Int, chatId);
+    req.input('chatId', sql.Int, chatId);
 
     const query = `
       SELECT cu.user_id
@@ -293,7 +292,7 @@ ORDER BY last_time DESC, chat_id DESC;
     try {
       // lock theo cáº·p user Ä‘á»ƒ khÃ´ng táº¡o trÃ¹ng
       const lockReq = tx.request();
-      lockReq.input("lockKey", sql.NVarChar(100), `dm:${low}:${high}`);
+      lockReq.input('lockKey', sql.NVarChar(100), `dm:${low}:${high}`);
       await lockReq.query(`
       DECLARE @res int;
       EXEC @res = sp_getapplock
@@ -306,8 +305,8 @@ ORDER BY last_time DESC, chat_id DESC;
 
       // tÃ¬m chat 1-1 Ä‘Ã£ tá»“n táº¡i
       const findReq = tx.request();
-      findReq.input("userA", sql.Int, userA);
-      findReq.input("userB", sql.Int, userB);
+      findReq.input('userA', sql.Int, userA);
+      findReq.input('userB', sql.Int, userB);
 
       const existing = await findReq.query(`
       SELECT TOP 1 c.id AS chat_id
@@ -330,7 +329,7 @@ ORDER BY last_time DESC, chat_id DESC;
 
       // táº¡o chat má»›i
       const createReq = tx.request();
-      createReq.input("name", sql.NVarChar(100), `Chat 1-1: U${low} & U${high}`);
+      createReq.input('name', sql.NVarChar(100), `Chat 1-1: U${low} & U${high}`);
 
       const created = await createReq.query(`
       INSERT INTO chats (name, is_group_chat, created_at, updated_at)
@@ -342,9 +341,9 @@ ORDER BY last_time DESC, chat_id DESC;
 
       // add 2 user vÃ o chat_users
       const insReq = tx.request();
-      insReq.input("chatId", sql.Int, chatId);
-      insReq.input("userA", sql.Int, userA);
-      insReq.input("userB", sql.Int, userB);
+      insReq.input('chatId', sql.Int, chatId);
+      insReq.input('userA', sql.Int, userA);
+      insReq.input('userB', sql.Int, userB);
 
       await insReq.query(`
       INSERT INTO chat_users (chat_id, user_id, is_admin) VALUES (@chatId, @userA, 0);
@@ -354,10 +353,10 @@ ORDER BY last_time DESC, chat_id DESC;
       await tx.commit();
       return chatId;
     } catch (e) {
-      try { await tx.rollback(); } catch { }
+      try {
+        await tx.rollback();
+      } catch {}
       throw e;
     }
   },
-
-
 };

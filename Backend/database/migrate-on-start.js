@@ -30,8 +30,8 @@ console.log('🔧 Running schema migration...');
 const client = new pg.Client({
   connectionString: DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 async function migrate() {
@@ -146,7 +146,7 @@ BEGIN
         ALTER INDEX IF EXISTS idx_friendships_receiver RENAME TO idx_friendships_friend;
         RAISE NOTICE 'Renamed requester_id/receiver_id to user_id/friend_id';
     END IF;
-END $$;`
+END $$;`,
     ];
 
     for (const stmt of statements) {
@@ -154,7 +154,6 @@ END $$;`
     }
 
     console.log('✅ Schema migration completed');
-    
   } catch (error) {
     console.error('❌ Migration error:', error.message);
     // Don't fail deployment on migration errors
@@ -164,10 +163,12 @@ END $$;`
   }
 }
 
-migrate().then(() => {
-  console.log('🚀 Starting server...\n');
-  process.exit(0);
-}).catch(err => {
-  console.error('Fatal error:', err);
-  process.exit(0); // Exit 0 to allow server to start anyway
-});
+migrate()
+  .then(() => {
+    console.log('🚀 Starting server...\n');
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error('Fatal error:', err);
+    process.exit(0); // Exit 0 to allow server to start anyway
+  });

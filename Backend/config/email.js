@@ -19,8 +19,8 @@ const createTransporter = () => {
       port: 587,
       auth: {
         user: process.env.ETHEREAL_USER || 'ethereal.user@ethereal.email',
-        pass: process.env.ETHEREAL_PASS || 'ethereal-password'
-      }
+        pass: process.env.ETHEREAL_PASS || 'ethereal-password',
+      },
     });
   }
 
@@ -31,11 +31,11 @@ const createTransporter = () => {
     secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
+      pass: process.env.EMAIL_PASSWORD,
     },
     tls: {
-      rejectUnauthorized: process.env.NODE_ENV === 'production'
-    }
+      rejectUnauthorized: process.env.NODE_ENV === 'production',
+    },
   });
 
   // Verify connection configuration
@@ -43,7 +43,7 @@ const createTransporter = () => {
     if (error) {
       logger.error({
         message: 'Email transporter verification failed',
-        error: error.message
+        error: error.message,
       });
     } else {
       logger.info('Email server is ready to send messages');
@@ -61,7 +61,7 @@ export const transporter = createTransporter();
 export const emailConfig = {
   from: {
     name: process.env.EMAIL_FROM_NAME || 'HVTSocial',
-    address: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'noreply@hvtsocial.com'
+    address: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'noreply@hvtsocial.com',
   },
 
   // Reply-to address
@@ -76,7 +76,7 @@ export const emailConfig = {
       <p>This email was sent by HVTSocial. If you didn't request this, please ignore it.</p>
       <p>&copy; ${new Date().getFullYear()} HVTSocial. All rights reserved.</p>
     </div>
-  `
+  `,
 };
 
 /**
@@ -93,7 +93,7 @@ export const sendEmail = async (options) => {
       replyTo: options.replyTo || emailConfig.replyTo,
       cc: options.cc || null,
       bcc: options.bcc || emailConfig.adminBcc,
-      attachments: options.attachments || []
+      attachments: options.attachments || [],
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -102,7 +102,7 @@ export const sendEmail = async (options) => {
       message: 'Email sent successfully',
       messageId: info.messageId,
       to: options.to,
-      subject: options.subject
+      subject: options.subject,
     });
 
     // Log preview URL in development
@@ -113,14 +113,14 @@ export const sendEmail = async (options) => {
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info)
+      previewUrl: nodemailer.getTestMessageUrl(info),
     };
   } catch (error) {
     logger.error({
       message: 'Failed to send email',
       error: error.message,
       to: options.to,
-      subject: options.subject
+      subject: options.subject,
     });
 
     throw error;
@@ -130,5 +130,5 @@ export const sendEmail = async (options) => {
 export default {
   transporter,
   emailConfig,
-  sendEmail
+  sendEmail,
 };

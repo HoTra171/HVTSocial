@@ -22,9 +22,7 @@ const getPool = async () => {
 export const getEmailTemplate = async (templateName) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('name', sql.NVarChar, templateName)
-    .query(`
+  const result = await db.request().input('name', sql.NVarChar, templateName).query(`
       SELECT * FROM email_templates
       WHERE name = @name AND active = 1
     `);
@@ -70,13 +68,13 @@ export const sendTemplatedEmail = async (to, templateName, variables) => {
     const result = await sendEmail({
       to,
       subject,
-      html: body
+      html: body,
     });
 
     logger.info({
       message: 'Templated email sent',
       template: templateName,
-      to
+      to,
     });
 
     return result;
@@ -85,7 +83,7 @@ export const sendTemplatedEmail = async (to, templateName, variables) => {
       message: 'Failed to send templated email',
       error: error.message,
       template: templateName,
-      to
+      to,
     });
     throw error;
   }
@@ -97,72 +95,54 @@ export const sendTemplatedEmail = async (to, templateName, variables) => {
  * Send welcome email
  */
 export const sendWelcomeEmail = async (user) => {
-  return await sendTemplatedEmail(
-    user.email,
-    'welcome',
-    {
-      full_name: user.full_name,
-      username: user.username
-    }
-  );
+  return await sendTemplatedEmail(user.email, 'welcome', {
+    full_name: user.full_name,
+    username: user.username,
+  });
 };
 
 /**
  * Send email verification
  */
 export const sendEmailVerification = async (user, verificationLink) => {
-  return await sendTemplatedEmail(
-    user.email,
-    'email_verification',
-    {
-      full_name: user.full_name,
-      verification_link: verificationLink
-    }
-  );
+  return await sendTemplatedEmail(user.email, 'email_verification', {
+    full_name: user.full_name,
+    verification_link: verificationLink,
+  });
 };
 
 /**
  * Send password reset email (with OTP)
  */
 export const sendPasswordResetEmail = async (user, otp) => {
-  return await sendTemplatedEmail(
-    user.email,
-    'password_reset',
-    {
-      full_name: user.full_name,
-      otp: otp
-    }
-  );
+  return await sendTemplatedEmail(user.email, 'password_reset', {
+    full_name: user.full_name,
+    otp: otp,
+  });
 };
 
 /**
  * Send account suspension notification
  */
 export const sendAccountSuspendedEmail = async (user, reason, suspendedUntil) => {
-  return await sendTemplatedEmail(
-    user.email,
-    'account_suspended',
-    {
-      full_name: user.full_name,
-      reason: reason,
-      suspended_until: suspendedUntil ? new Date(suspendedUntil).toLocaleDateString() : 'Indefinitely'
-    }
-  );
+  return await sendTemplatedEmail(user.email, 'account_suspended', {
+    full_name: user.full_name,
+    reason: reason,
+    suspended_until: suspendedUntil
+      ? new Date(suspendedUntil).toLocaleDateString()
+      : 'Indefinitely',
+  });
 };
 
 /**
  * Send security alert email
  */
 export const sendSecurityAlertEmail = async (user, alertMessage, ipAddress) => {
-  return await sendTemplatedEmail(
-    user.email,
-    'security_alert',
-    {
-      full_name: user.full_name,
-      alert_message: alertMessage,
-      ip_address: ipAddress
-    }
-  );
+  return await sendTemplatedEmail(user.email, 'security_alert', {
+    full_name: user.full_name,
+    alert_message: alertMessage,
+    ip_address: ipAddress,
+  });
 };
 
 /**
@@ -178,7 +158,8 @@ export const sendNewLoginEmail = async (user, ipAddress, userAgent, location = '
  * Send password changed notification
  */
 export const sendPasswordChangedEmail = async (user) => {
-  const alertMessage = 'Your password was recently changed. If you did not make this change, please contact support immediately.';
+  const alertMessage =
+    'Your password was recently changed. If you did not make this change, please contact support immediately.';
 
   return await sendSecurityAlertEmail(user, alertMessage, 'N/A');
 };
@@ -198,7 +179,7 @@ export const sendCommentNotificationEmail = async (postOwner, commenter, postId)
   return await sendEmail({
     to: postOwner.email,
     subject,
-    html: body + emailConfig.footer
+    html: body + emailConfig.footer,
   });
 };
 
@@ -217,7 +198,7 @@ export const sendFriendRequestEmail = async (recipient, sender) => {
   return await sendEmail({
     to: recipient.email,
     subject,
-    html: body + emailConfig.footer
+    html: body + emailConfig.footer,
   });
 };
 
@@ -230,13 +211,13 @@ export const queueEmail = async (to, subject, body, templateName = null, schedul
   const db = await getPool();
 
   try {
-    const result = await db.request()
+    const result = await db
+      .request()
       .input('to', sql.NVarChar, to)
       .input('subject', sql.NVarChar, subject)
       .input('body', sql.NVarChar, body)
       .input('templateName', sql.NVarChar, templateName)
-      .input('scheduledAt', sql.DateTime, scheduledAt || new Date())
-      .query(`
+      .input('scheduledAt', sql.DateTime, scheduledAt || new Date()).query(`
         INSERT INTO email_queue (to_email, subject, body, template_name, scheduled_at)
         OUTPUT INSERTED.*
         VALUES (@to, @subject, @body, @templateName, @scheduledAt)
@@ -246,7 +227,7 @@ export const queueEmail = async (to, subject, body, templateName = null, schedul
       message: 'Email queued',
       to,
       subject,
-      queueId: result.recordset[0].id
+      queueId: result.recordset[0].id,
     });
 
     return result.recordset[0];
@@ -254,7 +235,7 @@ export const queueEmail = async (to, subject, body, templateName = null, schedul
     logger.error({
       message: 'Failed to queue email',
       error: error.message,
-      to
+      to,
     });
     throw error;
   }
@@ -268,9 +249,7 @@ export const processEmailQueue = async (limit = 10) => {
 
   try {
     // Get pending emails
-    const result = await db.request()
-      .input('limit', sql.Int, limit)
-      .query(`
+    const result = await db.request().input('limit', sql.Int, limit).query(`
         SELECT TOP (@limit) *
         FROM email_queue
         WHERE status = 'pending'
@@ -283,7 +262,7 @@ export const processEmailQueue = async (limit = 10) => {
 
     logger.info({
       message: 'Processing email queue',
-      count: emails.length
+      count: emails.length,
     });
 
     for (const email of emails) {
@@ -292,13 +271,11 @@ export const processEmailQueue = async (limit = 10) => {
         await sendEmail({
           to: email.to_email,
           subject: email.subject,
-          html: email.body
+          html: email.body,
         });
 
         // Mark as sent
-        await db.request()
-          .input('id', sql.Int, email.id)
-          .query(`
+        await db.request().input('id', sql.Int, email.id).query(`
             UPDATE email_queue
             SET status = 'sent',
                 sent_at = GETDATE()
@@ -308,14 +285,14 @@ export const processEmailQueue = async (limit = 10) => {
         logger.info({
           message: 'Queued email sent',
           queueId: email.id,
-          to: email.to_email
+          to: email.to_email,
         });
       } catch (error) {
         // Increment attempts
-        await db.request()
+        await db
+          .request()
           .input('id', sql.Int, email.id)
-          .input('errorMessage', sql.NVarChar, error.message)
-          .query(`
+          .input('errorMessage', sql.NVarChar, error.message).query(`
             UPDATE email_queue
             SET attempts = attempts + 1,
                 error_message = @errorMessage,
@@ -330,18 +307,18 @@ export const processEmailQueue = async (limit = 10) => {
           message: 'Failed to send queued email',
           queueId: email.id,
           attempts: email.attempts + 1,
-          error: error.message
+          error: error.message,
         });
       }
     }
 
     return {
-      processed: emails.length
+      processed: emails.length,
     };
   } catch (error) {
     logger.error({
       message: 'Error processing email queue',
-      error: error.message
+      error: error.message,
     });
     throw error;
   }
@@ -370,9 +347,7 @@ export const getEmailQueueStatus = async () => {
 export const cleanEmailQueue = async (daysOld = 7) => {
   const db = await getPool();
 
-  const result = await db.request()
-    .input('daysOld', sql.Int, daysOld)
-    .query(`
+  const result = await db.request().input('daysOld', sql.Int, daysOld).query(`
       DELETE FROM email_queue
       WHERE status IN ('sent', 'failed')
         AND created_at < DATEADD(day, -@daysOld, GETDATE())
@@ -380,11 +355,11 @@ export const cleanEmailQueue = async (daysOld = 7) => {
 
   logger.info({
     message: 'Email queue cleaned',
-    deletedRows: result.rowsAffected[0]
+    deletedRows: result.rowsAffected[0],
   });
 
   return {
-    deleted: result.rowsAffected[0]
+    deleted: result.rowsAffected[0],
   };
 };
 
@@ -404,5 +379,5 @@ export const emailService = {
   queueEmail,
   processEmailQueue,
   getEmailQueueStatus,
-  cleanEmailQueue
+  cleanEmailQueue,
 };

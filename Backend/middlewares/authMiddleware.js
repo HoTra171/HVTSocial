@@ -13,7 +13,7 @@ const authMiddleware = (req, res, next) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'Không tìm thấy token, vui lòng đăng nhập'
+        message: 'Không tìm thấy token, vui lòng đăng nhập',
       });
     }
 
@@ -26,7 +26,7 @@ const authMiddleware = (req, res, next) => {
       id: userId,
       userId: userId,
       email: decoded.email,
-      username: decoded.username
+      username: decoded.username,
     };
 
     return next();
@@ -36,13 +36,13 @@ const authMiddleware = (req, res, next) => {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
-        message: 'Token đã hết hạn, vui lòng đăng nhập lại'
+        message: 'Token đã hết hạn, vui lòng đăng nhập lại',
       });
     }
 
     return res.status(401).json({
       success: false,
-      message: 'Token không hợp lệ'
+      message: 'Token không hợp lệ',
     });
   }
 };
@@ -53,12 +53,12 @@ export const optionalAuth = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     // Không có token => coi như khách (req.user = null) và cho qua
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       req.user = null;
       return next();
     }
 
-    const token = authHeader.split(" ")[1];
+    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET);
 
     req.user = {

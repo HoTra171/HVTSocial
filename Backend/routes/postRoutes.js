@@ -1,6 +1,13 @@
-import express from "express";
-import { getPosts, createPost, getPostsByUser, getPost, updatePost, deletePost } from "../controllers/postController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+import express from 'express';
+import {
+  getPosts,
+  createPost,
+  getPostsByUser,
+  getPost,
+  updatePost,
+  deletePost,
+} from '../controllers/postController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -29,7 +36,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/", authMiddleware, getPosts);
+router.get('/', authMiddleware, getPosts);
 
 /**
  * @swagger
@@ -75,7 +82,7 @@ router.get("/", authMiddleware, getPosts);
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  */
-router.post("/", authMiddleware, createPost);
+router.post('/', authMiddleware, createPost);
 
 /**
  * @swagger
@@ -109,7 +116,7 @@ router.post("/", authMiddleware, createPost);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/user/:userId", authMiddleware, getPostsByUser);
+router.get('/user/:userId', authMiddleware, getPostsByUser);
 
 /**
  * @swagger
@@ -143,7 +150,7 @@ router.get("/user/:userId", authMiddleware, getPostsByUser);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get("/:id",authMiddleware, getPost);
+router.get('/:id', authMiddleware, getPost);
 
 /**
  * @swagger
@@ -193,7 +200,7 @@ router.get("/:id",authMiddleware, getPost);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.put("/:id", authMiddleware, updatePost);
+router.put('/:id', authMiddleware, updatePost);
 
 /**
  * @swagger
@@ -229,8 +236,6 @@ router.put("/:id", authMiddleware, updatePost);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.delete("/:id", authMiddleware, deletePost);
-
+router.delete('/:id', authMiddleware, deletePost);
 
 export default router;
- 

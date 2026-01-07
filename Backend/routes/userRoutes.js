@@ -37,7 +37,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/discover", authMiddleware, discoverUsers);
+router.get('/discover', authMiddleware, discoverUsers);
 
 /**
  * @swagger
@@ -53,7 +53,7 @@ router.get("/discover", authMiddleware, discoverUsers);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/suggest", authMiddleware, suggestUsers);
+router.get('/suggest', authMiddleware, suggestUsers);
 
 // ========== CONNECTIONS & PROFILE ==========
 
@@ -77,7 +77,7 @@ router.get("/suggest", authMiddleware, suggestUsers);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/:userId/connections", authMiddleware, getUserConnections);
+router.get('/:userId/connections', authMiddleware, getUserConnections);
 
 /**
  * @swagger
@@ -101,8 +101,7 @@ router.get("/:userId/connections", authMiddleware, getUserConnections);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get("/:id", authMiddleware, getUserProfile);
-
+router.get('/:id', authMiddleware, getUserProfile);
 
 /**
  * @swagger
@@ -141,6 +140,14 @@ router.get("/:id", authMiddleware, getUserProfile);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.put("/:id",authMiddleware,upload.fields([{ name: 'avatar', maxCount: 1 },{ name: 'background', maxCount: 1 }]),updateProfile);
+router.put(
+  '/:id',
+  authMiddleware,
+  upload.fields([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'background', maxCount: 1 },
+  ]),
+  updateProfile
+);
 
 export default router;

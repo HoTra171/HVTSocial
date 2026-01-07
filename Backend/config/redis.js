@@ -5,7 +5,7 @@ dotenv.config();
 
 // Redis client cho caching
 // Support both REDIS_URL (Upstash, Railway) and REDIS_HOST/PORT format
-const redisConfig = process.env.REDIS_URL 
+const redisConfig = process.env.REDIS_URL
   ? process.env.REDIS_URL
   : {
       host: process.env.REDIS_HOST || 'localhost',

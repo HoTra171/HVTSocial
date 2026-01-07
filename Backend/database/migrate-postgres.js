@@ -21,9 +21,12 @@ if (!DATABASE_URL) {
 
 const client = new Client({
   connectionString: DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? {
-    rejectUnauthorized: false
-  } : false
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? {
+          rejectUnauthorized: false,
+        }
+      : false,
 });
 
 async function migrate() {
@@ -42,7 +45,7 @@ async function migrate() {
       'ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_picture TEXT',
       'ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp VARCHAR(10)',
       'ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_expires TIMESTAMP',
-      'ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_attempts INTEGER DEFAULT 0'
+      'ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_otp_attempts INTEGER DEFAULT 0',
     ];
 
     for (const sql of migrations) {
@@ -67,7 +70,6 @@ async function migrate() {
 
     console.log('\n✅ Migration completed successfully!');
     console.log('🎉 You can now test registration from your frontend!');
-
   } catch (error) {
     console.error('\n❌ Migration failed:', error.message);
     console.error('\nFull error:', error);

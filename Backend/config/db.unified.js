@@ -1,14 +1,14 @@
-import dotenv from "dotenv";
+import dotenv from 'dotenv';
 dotenv.config();
 
 /**
  * Unified Database Configuration
  * Switch between SQL Server and PostgreSQL based on DB_PROVIDER env variable
- * 
+ *
  * Usage:
  *   DB_PROVIDER=postgres → Use PostgreSQL (production)
  *   DB_PROVIDER=sqlserver → Use SQL Server (local dev)
- *   
+ *
  * Auto-detect: If DATABASE_URL exists → PostgreSQL, else → SQL Server
  */
 

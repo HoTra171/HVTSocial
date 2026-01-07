@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const NotificationService = {
   /**
@@ -8,9 +8,7 @@ export const NotificationService = {
   async updateUnreadCount(userId) {
     const db = await pool;
 
-    await db.request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
        // Column 'notification_unread' does not exist in users table in PostgreSQL schema.
        // Skipping update.
        /*
@@ -34,10 +32,9 @@ export const NotificationService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("senderId", sql.Int, senderId)
-      .input("content", sql.NVarChar, content)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('senderId', sql.Int, senderId)
+      .input('content', sql.NVarChar, content).query(`
         INSERT INTO notifications
           (user_id, sender_id, content, type, is_read, created_at)
         OUTPUT INSERTED.*
@@ -117,11 +114,10 @@ export const NotificationService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, postOwnerId)
-      .input("senderId", sql.Int, likerId)
-      .input("postId", sql.Int, postId)
-      .input("content", sql.NVarChar, "đã thích bài viết của bạn")
-      .query(`
+      .input('userId', sql.Int, postOwnerId)
+      .input('senderId', sql.Int, likerId)
+      .input('postId', sql.Int, postId)
+      .input('content', sql.NVarChar, 'đã thích bài viết của bạn').query(`
         -- Kiểm tra đã có notification chưa (trong 24h)
         IF NOT EXISTS (
           SELECT 1 FROM notifications
@@ -163,11 +159,10 @@ export const NotificationService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, postOwnerId)
-      .input("senderId", sql.Int, commenterId)
-      .input("postId", sql.Int, postId)
-      .input("content", sql.NVarChar, content)
-      .query(`
+      .input('userId', sql.Int, postOwnerId)
+      .input('senderId', sql.Int, commenterId)
+      .input('postId', sql.Int, postId)
+      .input('content', sql.NVarChar, content).query(`
         INSERT INTO notifications
           (user_id, sender_id, post_id, content, type, is_read, created_at)
         OUTPUT INSERTED.*
@@ -196,11 +191,10 @@ export const NotificationService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, parentCommentOwnerId)
-      .input("senderId", sql.Int, replierId)
-      .input("postId", sql.Int, postId)
-      .input("content", sql.NVarChar, content)
-      .query(`
+      .input('userId', sql.Int, parentCommentOwnerId)
+      .input('senderId', sql.Int, replierId)
+      .input('postId', sql.Int, postId)
+      .input('content', sql.NVarChar, content).query(`
         INSERT INTO notifications
           (user_id, sender_id, post_id, content, type, is_read, created_at)
         OUTPUT INSERTED.*
@@ -217,15 +211,14 @@ export const NotificationService = {
   /**
    * 5. TẠO THÔNG BÁO FRIEND REQUEST
    */
-  async createFriendRequestNotification(userId, senderId, content = "đã gửi lời mời kết bạn") {
+  async createFriendRequestNotification(userId, senderId, content = 'đã gửi lời mời kết bạn') {
     const db = await pool;
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("senderId", sql.Int, senderId)
-      .input("content", sql.NVarChar, content)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('senderId', sql.Int, senderId)
+      .input('content', sql.NVarChar, content).query(`
       INSERT INTO notifications
         (user_id, sender_id, content, type, is_read, created_at)
       OUTPUT INSERTED.*
@@ -237,7 +230,6 @@ export const NotificationService = {
     return result.recordset[0];
   },
 
-
   /**
    * 6. TẠO THÔNG BÁO ACCEPT FRIEND REQUEST
    */
@@ -245,14 +237,13 @@ export const NotificationService = {
     return this.createFriendRequestNotification(
       userId,
       senderId,
-      "đã chấp nhận lời mời kết bạn của bạn"
+      'đã chấp nhận lời mời kết bạn của bạn'
     );
   },
 
-
   /**
- * 7B. TẠO THÔNG BÁO LOẠI OTHER (DÙNG CHO SHARE + CÁC LOẠI KHÁC)
- */
+   * 7B. TẠO THÔNG BÁO LOẠI OTHER (DÙNG CHO SHARE + CÁC LOẠI KHÁC)
+   */
   async createOtherNotification(data) {
     const { userId, senderId, content, postId = null } = data;
 
@@ -262,11 +253,10 @@ export const NotificationService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("senderId", sql.Int, senderId)
-      .input("postId", postId ? sql.Int : sql.Int, postId) // NULL nếu không có
-      .input("content", sql.NVarChar, content)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('senderId', sql.Int, senderId)
+      .input('postId', postId ? sql.Int : sql.Int, postId) // NULL nếu không có
+      .input('content', sql.NVarChar, content).query(`
       INSERT INTO notifications
         (user_id, sender_id, post_id, content, type, is_read, created_at)
       OUTPUT INSERTED.*
@@ -286,9 +276,8 @@ export const NotificationService = {
 
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("limit", sql.Int, limit)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('limit', sql.Int, limit).query(`
         SELECT
           n.id,
           n.message AS content,
@@ -317,10 +306,7 @@ export const NotificationService = {
   async getUnreadCount(userId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    const result = await db.request().input('userId', sql.Int, userId).query(`
         SELECT COUNT(*) AS unread_count
         FROM notifications
         WHERE user_id = @userId
@@ -336,10 +322,7 @@ export const NotificationService = {
   async markAllRead(userId) {
     const db = await pool;
 
-    await db
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         UPDATE notifications
         SET is_read = 1
         WHERE user_id = @userId
@@ -360,9 +343,8 @@ export const NotificationService = {
 
     await db
       .request()
-      .input("notificationId", sql.Int, notificationId)
-      .input("userId", sql.Int, userId)
-      .query(`
+      .input('notificationId', sql.Int, notificationId)
+      .input('userId', sql.Int, userId).query(`
         UPDATE notifications
         SET is_read = 1
         WHERE id = @notificationId
@@ -383,19 +365,18 @@ export const NotificationService = {
     const db = await pool;
 
     // Get notification status trước khi xóa
-    const notif = await db.request()
-      .input("notificationId", sql.Int, notificationId)
-      .input("userId", sql.Int, userId)
-      .query(`
+    const notif = await db
+      .request()
+      .input('notificationId', sql.Int, notificationId)
+      .input('userId', sql.Int, userId).query(`
         SELECT is_read AS status FROM notifications
         WHERE id = @notificationId AND user_id = @userId
       `);
 
     await db
       .request()
-      .input("notificationId", sql.Int, notificationId)
-      .input("userId", sql.Int, userId)
-      .query(`
+      .input('notificationId', sql.Int, notificationId)
+      .input('userId', sql.Int, userId).query(`
         DELETE FROM notifications
         WHERE id = @notificationId
           AND user_id = @userId
@@ -415,18 +396,13 @@ export const NotificationService = {
   async deleteAllNotifications(userId) {
     const db = await pool;
 
-    await db
-      .request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         DELETE FROM notifications
         WHERE user_id = @userId
       `);
 
     // Cập nhật unread count về 0
-    await db.request()
-      .input("userId", sql.Int, userId)
-      .query(`
+    await db.request().input('userId', sql.Int, userId).query(`
         -- SET notification_unread = 0
         -- Column does not exist
         SELECT 1

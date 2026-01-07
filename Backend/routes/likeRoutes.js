@@ -1,13 +1,13 @@
 // likeRoutes.js
-import express from "express";
+import express from 'express';
 import {
   togglePostLike,
   toggleCommentLike,
   getPostLikes,
   checkUserLikedPost,
   getLikedPosts,
-} from "../controllers/likeController.js";
-import authMiddleware from "../middlewares/authMiddleware.js";
+} from '../controllers/likeController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -36,7 +36,7 @@ const router = express.Router();
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/posts", authMiddleware, getLikedPosts);
+router.get('/posts', authMiddleware, getLikedPosts);
 
 /**
  * @swagger
@@ -71,7 +71,7 @@ router.get("/posts", authMiddleware, getLikedPosts);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.post("/post/:postId", authMiddleware, togglePostLike);
+router.post('/post/:postId', authMiddleware, togglePostLike);
 
 /**
  * @swagger
@@ -105,7 +105,7 @@ router.post("/post/:postId", authMiddleware, togglePostLike);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.post("/comment/:commentId", authMiddleware, toggleCommentLike);
+router.post('/comment/:commentId', authMiddleware, toggleCommentLike);
 
 /**
  * @swagger
@@ -137,7 +137,7 @@ router.post("/comment/:commentId", authMiddleware, toggleCommentLike);
  *       404:
  *         $ref: '#/components/responses/NotFoundError'
  */
-router.get("/post/:postId", getPostLikes);
+router.get('/post/:postId', getPostLikes);
 
 /**
  * @swagger
@@ -167,6 +167,6 @@ router.get("/post/:postId", getPostLikes);
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get("/check/:postId", authMiddleware, checkUserLikedPost);
+router.get('/check/:postId', authMiddleware, checkUserLikedPost);
 
 export default router;

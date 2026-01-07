@@ -12,10 +12,7 @@ export default {
   },
 
   // Test file patterns
-  testMatch: [
-    '**/__tests__/**/*.test.js',
-    '**/?(*.)+(spec|test).js',
-  ],
+  testMatch: ['**/__tests__/**/*.test.js', '**/?(*.)+(spec|test).js'],
 
   // Coverage settings
   collectCoverageFrom: [
@@ -39,10 +36,7 @@ export default {
   },
 
   // Ignore patterns
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/dist/',
-  ],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/'],
 
   // Verbose output
   verbose: true,

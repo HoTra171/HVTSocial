@@ -120,30 +120,21 @@ export const cacheUserPosts = cacheResponse(
  * Key: post:{postId}
  * TTL: 5 minutes
  */
-export const cachePostDetails = cacheResponse(
-  300,
-  (req) => `post:${req.params.id}`
-);
+export const cachePostDetails = cacheResponse(300, (req) => `post:${req.params.id}`);
 
 /**
  * Cache user's friends list
  * Key: friends:user:{userId}
  * TTL: 10 minutes
  */
-export const cacheFriendsList = cacheResponse(
-  600,
-  (req) => `friends:user:${req.user.id}`
-);
+export const cacheFriendsList = cacheResponse(600, (req) => `friends:user:${req.user.id}`);
 
 /**
  * Cache stories (24h content)
  * Key: stories:user:{userId}
  * TTL: 5 minutes
  */
-export const cacheStories = cacheResponse(
-  300,
-  (req) => `stories:user:${req.user.id}`
-);
+export const cacheStories = cacheResponse(300, (req) => `stories:user:${req.user.id}`);
 
 /**
  * Cache middleware with user-specific invalidation

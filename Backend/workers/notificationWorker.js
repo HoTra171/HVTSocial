@@ -210,7 +210,12 @@ export const queueMessageNotification = async (recipientId, senderId, messageId)
   });
 };
 
-export const queueMentionNotification = async (mentionedUserId, mentionerId, postId, commentId = null) => {
+export const queueMentionNotification = async (
+  mentionedUserId,
+  mentionerId,
+  postId,
+  commentId = null
+) => {
   return await notificationQueue.add({
     type: 'mention',
     data: { mentionedUserId, mentionerId, postId, commentId },

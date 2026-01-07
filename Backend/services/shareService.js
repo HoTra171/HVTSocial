@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 export const ShareService = {
   /**
@@ -9,24 +9,20 @@ export const ShareService = {
     const db = await pool;
 
     // Kiểm tra bài viết gốc có tồn tại không
-    const checkPost = await db
-      .request()
-      .input("postId", sql.Int, postId)
-      .query(`
+    const checkPost = await db.request().input('postId', sql.Int, postId).query(`
         SELECT id FROM posts WHERE id = @postId
       `);
 
     if (checkPost.recordset.length === 0) {
-      throw new Error("Bài viết không tồn tại");
+      throw new Error('Bài viết không tồn tại');
     }
 
     // Tạo bài share mới
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("postId", sql.Int, postId)
-      .input("content", sql.NVarChar(sql.MAX), content)
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('postId', sql.Int, postId)
+      .input('content', sql.NVarChar(sql.MAX), content).query(`
         INSERT INTO shares (user_id, post_id, caption, shared_to)
         OUTPUT INSERTED.*
         VALUES (@userId, @postId, @content, 'timeline')
@@ -41,10 +37,7 @@ export const ShareService = {
   async getSharedPost(shareId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("shareId", sql.Int, shareId)
-      .query(`
+    const result = await db.request().input('shareId', sql.Int, shareId).query(`
         SELECT 
           -- Bài share (bảng shares)
           s.id,
@@ -103,19 +96,17 @@ export const ShareService = {
       },
       originalPost: row.original_post_id
         ? {
-          id: row.original_post_id,
-          content: row.original_content,
-          image_urls: row.original_media
-            ? row.original_media.split(";")
-            : [],
-          createdAt: row.original_created_at,
-          user: {
-            id: row.original_user_id,
-            full_name: row.original_full_name,
-            username: row.original_username,
-            profile_picture: row.original_avatar,
-          },
-        }
+            id: row.original_post_id,
+            content: row.original_content,
+            image_urls: row.original_media ? row.original_media.split(';') : [],
+            createdAt: row.original_created_at,
+            user: {
+              id: row.original_user_id,
+              full_name: row.original_full_name,
+              username: row.original_username,
+              profile_picture: row.original_avatar,
+            },
+          }
         : null,
     };
   },
@@ -126,10 +117,7 @@ export const ShareService = {
   async getPostShares(postId) {
     const db = await pool;
 
-    const result = await db
-      .request()
-      .input("postId", sql.Int, postId)
-      .query(`
+    const result = await db.request().input('postId', sql.Int, postId).query(`
         SELECT 
           s.id AS share_id,
           s.caption AS share_content,
@@ -158,24 +146,20 @@ export const ShareService = {
     // Kiểm tra quyền sở hữu
     const checkOwnership = await db
       .request()
-      .input("shareId", sql.Int, shareId)
-      .input("userId", sql.Int, userId)
-      .query(`
+      .input('shareId', sql.Int, shareId)
+      .input('userId', sql.Int, userId).query(`
         SELECT id FROM shares 
         WHERE id = @shareId AND user_id = @userId
       `);
 
     if (checkOwnership.recordset.length === 0) {
-      throw new Error("Bạn không có quyền xóa bài share này");
+      throw new Error('Bạn không có quyền xóa bài share này');
     }
 
-    await db
-      .request()
-      .input("shareId", sql.Int, shareId)
-      .query(`
+    await db.request().input('shareId', sql.Int, shareId).query(`
         DELETE FROM shares WHERE id = @shareId
       `);
 
-    return { success: true, message: "Đã xóa bài share" };
+    return { success: true, message: 'Đã xóa bài share' };
   },
 };

@@ -1,5 +1,5 @@
-import { pool } from "../config/db.js";
-import sql from "mssql";
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 /* ================= GET STORIES - VỚI PRIVACY ================= */
 export const getStories = async (req, res) => {
@@ -9,9 +9,7 @@ export const getStories = async (req, res) => {
     const db = await pool;
 
     // CHỈ LẤY STORIES MÀ USER CÓ QUYỀN XEM
-    const result = await db.request()
-      .input("userId", sql.Int, currentUserId)
-      .query(`
+    const result = await db.request().input('userId', sql.Int, currentUserId).query(`
         SELECT 
           s.id AS story_id,
           s.media_type,
@@ -73,8 +71,8 @@ export const getStories = async (req, res) => {
 
     res.json(Object.values(map));
   } catch (err) {
-    console.error("getStories error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('getStories error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -86,19 +84,17 @@ export const viewStory = async (req, res) => {
 
     const db = await pool;
 
-    const check = await db.request()
-      .input("storyId", sql.Int, storyId)
-      .input("viewerId", sql.Int, viewerId)
-      .query(`
+    const check = await db
+      .request()
+      .input('storyId', sql.Int, storyId)
+      .input('viewerId', sql.Int, viewerId).query(`
         SELECT 1 AS viewed
         FROM story_views
         WHERE story_id = @storyId AND viewer_id = @viewerId
       `);
 
     if (check.recordset.length === 0) {
-      await db.request()
-        .input("storyId", sql.Int, storyId)
-        .input("viewerId", sql.Int, viewerId)
+      await db.request().input('storyId', sql.Int, storyId).input('viewerId', sql.Int, viewerId)
         .query(`
           INSERT INTO story_views (story_id, viewer_id, viewed_at)
           VALUES (@storyId, @viewerId, GETDATE())
@@ -107,11 +103,11 @@ export const viewStory = async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error("viewStory error:", err);
+    console.error('viewStory error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
-      error: err.message
+      message: 'Server error',
+      error: err.message,
     });
   }
 };
@@ -121,42 +117,42 @@ export const createStory = async (req, res) => {
   try {
     const userId = req.user.id;
     const {
-      media_type = "text",
+      media_type = 'text',
       media_url = null,
       music_url = null,
-      caption = "",
+      caption = '',
       background_color = null,
-      text_color = "#FFFFFF",
+      text_color = '#FFFFFF',
       font_size = 24,
       text_position = null,
       show_frame = true,
       sticker = null,
       sticker_position = null,
-      privacy = "public", // public, friends, custom
+      privacy = 'public', // public, friends, custom
       allowed_viewers = null, // Array of user IDs for custom privacy
       expires_in_hours = 24,
     } = req.body;
 
     // Validate
-    const allowedTypes = ["text", "image", "video"];
+    const allowedTypes = ['text', 'image', 'video'];
     if (!allowedTypes.includes(media_type)) {
       return res.status(400).json({
         success: false,
-        message: "media_type không hợp lệ"
+        message: 'media_type không hợp lệ',
       });
     }
 
-    if (media_type !== "text" && !media_url) {
+    if (media_type !== 'text' && !media_url) {
       return res.status(400).json({
         success: false,
-        message: "Thiếu media_url cho image/video"
+        message: 'Thiếu media_url cho image/video',
       });
     }
 
-    if (media_type === "text" && !caption) {
+    if (media_type === 'text' && !caption) {
       return res.status(400).json({
         success: false,
-        message: "Text story phải có caption"
+        message: 'Text story phải có caption',
       });
     }
 
@@ -165,21 +161,20 @@ export const createStory = async (req, res) => {
     // INSERT STORY
     const result = await db
       .request()
-      .input("userId", sql.Int, userId)
-      .input("mediaType", sql.NVarChar, media_type)
-      .input("mediaUrl", sql.NVarChar, media_url)
-      .input("musicUrl", sql.NVarChar, music_url)
-      .input("caption", sql.NVarChar, caption)
-      .input("bgColor", sql.NVarChar, background_color)
-      .input("textColor", sql.NVarChar, text_color)
-      .input("fontSize", sql.Int, Number(font_size))
-      .input("textPos", sql.NVarChar, text_position)
-      .input("showFrame", sql.Bit, show_frame ? 1 : 0)
-      .input("sticker", sql.NVarChar, sticker)
-      .input("stickerPos", sql.NVarChar, sticker_position)
-      .input("privacy", sql.NVarChar, privacy)
-      .input("hours", sql.Int, Number(expires_in_hours))
-      .query(`
+      .input('userId', sql.Int, userId)
+      .input('mediaType', sql.NVarChar, media_type)
+      .input('mediaUrl', sql.NVarChar, media_url)
+      .input('musicUrl', sql.NVarChar, music_url)
+      .input('caption', sql.NVarChar, caption)
+      .input('bgColor', sql.NVarChar, background_color)
+      .input('textColor', sql.NVarChar, text_color)
+      .input('fontSize', sql.Int, Number(font_size))
+      .input('textPos', sql.NVarChar, text_position)
+      .input('showFrame', sql.Bit, show_frame ? 1 : 0)
+      .input('sticker', sql.NVarChar, sticker)
+      .input('stickerPos', sql.NVarChar, sticker_position)
+      .input('privacy', sql.NVarChar, privacy)
+      .input('hours', sql.Int, Number(expires_in_hours)).query(`
         INSERT INTO stories (
           user_id, media_type, media_url, content,
           background_color, privacy,
@@ -198,10 +193,10 @@ export const createStory = async (req, res) => {
     // CUSTOM PRIVACY - INSERT ALLOWED VIEWERS
     if (privacy === 'custom' && allowed_viewers && Array.isArray(allowed_viewers)) {
       for (const viewerId of allowed_viewers) {
-        await db.request()
-          .input("storyId", sql.Int, story.id)
-          .input("viewerId", sql.Int, Number(viewerId))
-          .query(`
+        await db
+          .request()
+          .input('storyId', sql.Int, story.id)
+          .input('viewerId', sql.Int, Number(viewerId)).query(`
             INSERT INTO story_viewers (story_id, viewer_id)
             VALUES (@storyId, @viewerId)
           `);
@@ -210,14 +205,14 @@ export const createStory = async (req, res) => {
 
     res.json({
       success: true,
-      story
+      story,
     });
   } catch (err) {
-    console.error("createStory error:", err);
+    console.error('createStory error:', err);
     res.status(500).json({
       success: false,
-      message: "Server error",
-      error: err.message
+      message: 'Server error',
+      error: err.message,
     });
   }
 };
@@ -230,10 +225,10 @@ export const deleteStory = async (req, res) => {
 
     const db = await pool;
 
-    const check = await db.request()
-      .input("storyId", sql.Int, storyId)
-      .input("userId", sql.Int, userId)
-      .query(`
+    const check = await db
+      .request()
+      .input('storyId', sql.Int, storyId)
+      .input('userId', sql.Int, userId).query(`
         SELECT id FROM stories
         WHERE id = @storyId AND user_id = @userId
       `);
@@ -241,17 +236,18 @@ export const deleteStory = async (req, res) => {
     if (check.recordset.length === 0) {
       return res.status(403).json({
         success: false,
-        message: "Bạn không có quyền xóa story này"
+        message: 'Bạn không có quyền xóa story này',
       });
     }
 
-    await db.request()
-      .input("storyId", sql.Int, storyId)
+    await db
+      .request()
+      .input('storyId', sql.Int, storyId)
       .query(`DELETE FROM stories WHERE id = @storyId`);
 
     res.json({ success: true });
   } catch (err) {
-    console.error("deleteStory error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error('deleteStory error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };

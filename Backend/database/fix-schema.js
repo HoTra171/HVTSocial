@@ -24,8 +24,8 @@ if (!DATABASE_URL) {
 const client = new pg.Client({
   connectionString: DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 async function fixSchema() {
@@ -38,12 +38,12 @@ async function fixSchema() {
     const sql = fs.readFileSync(sqlPath, 'utf8');
 
     console.log('🔧 Applying schema fixes...\n');
-    
+
     // Split by semicolon and execute each statement
     const statements = sql
       .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && !s.startsWith('--'));
 
     for (const statement of statements) {
       if (statement.includes('SELECT')) {
@@ -51,7 +51,7 @@ async function fixSchema() {
         const result = await client.query(statement);
         if (result.rows.length > 0) {
           console.log('\n📋', result.rows[0].info || '');
-          result.rows.forEach(row => {
+          result.rows.forEach((row) => {
             if (row.table_name) {
               console.log(`   - ${row.table_name}`);
             } else if (row.column_name) {
@@ -73,38 +73,38 @@ async function fixSchema() {
       {
         name: 'stories.privacy column',
         query: `SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'stories' AND column_name = 'privacy'`
+                WHERE table_name = 'stories' AND column_name = 'privacy'`,
       },
       {
         name: 'chat_users table',
         query: `SELECT table_name FROM information_schema.tables 
-                WHERE table_name = 'chat_users'`
+                WHERE table_name = 'chat_users'`,
       },
       {
         name: 'chats.is_group_chat column',
         query: `SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'chats' AND column_name = 'is_group_chat'`
+                WHERE table_name = 'chats' AND column_name = 'is_group_chat'`,
       },
       {
         name: 'chat_users.is_admin column',
         query: `SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'chat_users' AND column_name = 'is_admin'`
+                WHERE table_name = 'chat_users' AND column_name = 'is_admin'`,
       },
       {
         name: 'messages.message_type column',
         query: `SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'messages' AND column_name = 'message_type'`
+                WHERE table_name = 'messages' AND column_name = 'message_type'`,
       },
       {
         name: 'messages.status column',
         query: `SELECT column_name FROM information_schema.columns 
-                WHERE table_name = 'messages' AND column_name = 'status'`
+                WHERE table_name = 'messages' AND column_name = 'status'`,
       },
       {
         name: 'story_viewers table',
         query: `SELECT table_name FROM information_schema.tables 
-                WHERE table_name = 'story_viewers'`
-      }
+                WHERE table_name = 'story_viewers'`,
+      },
     ];
 
     let allPassed = true;
@@ -121,7 +121,6 @@ async function fixSchema() {
     } else {
       console.log('\n⚠️  Some checks failed. Please review the output above.');
     }
-
   } catch (error) {
     console.error('\n❌ Schema fix failed:', error.message);
     if (error.position) {
