@@ -134,7 +134,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
       if (mode === 'text') {
         // Text story
         await axios.post(
-          `${API_URL}/stories',
+          `${API_URL}/stories`,
           {
             media_type: 'text',
             media_url: 'text',
@@ -155,7 +155,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
         formData.append('file', mediaFile);
 
         const uploadRes = await axios.post(
-          `${API_URL}/upload',
+          `${API_URL}/upload`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -169,7 +169,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
           musicFormData.append('file', musicFile);
 
           const musicUploadRes = await axios.post(
-            `${API_URL}/upload',
+            `${API_URL}/upload`,
             musicFormData,
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -179,7 +179,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
 
         // Create story
         await axios.post(
-          `${API_URL}/stories',
+          `${API_URL}/stories`,
           {
             media_type: mediaType,
             media_url: mediaUrl,
