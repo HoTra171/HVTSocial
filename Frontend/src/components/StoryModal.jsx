@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Image, Video, Music, Type, Users, Globe, Lock, Smile } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const StoryModal = ({ setShowModal, fetchStories }) => {
   const [mode, setMode] = useState('select'); // select, text, media
@@ -38,7 +39,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
   React.useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/friendships/friends', {
+        const res = await axios.get(`${API_URL}/friendships/friends', {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
@@ -133,7 +134,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
       if (mode === 'text') {
         // Text story
         await axios.post(
-          'http://localhost:5000/api/stories',
+          `${API_URL}/stories',
           {
             media_type: 'text',
             media_url: 'text',
@@ -154,7 +155,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
         formData.append('file', mediaFile);
 
         const uploadRes = await axios.post(
-          'http://localhost:5000/api/upload',
+          `${API_URL}/upload',
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -168,7 +169,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
           musicFormData.append('file', musicFile);
 
           const musicUploadRes = await axios.post(
-            'http://localhost:5000/api/upload',
+            `${API_URL}/upload',
             musicFormData,
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -178,7 +179,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
 
         // Create story
         await axios.post(
-          'http://localhost:5000/api/stories',
+          `${API_URL}/stories',
           {
             media_type: mediaType,
             media_url: mediaUrl,

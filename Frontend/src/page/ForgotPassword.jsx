@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { assets } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);          // 1: nhập email, 2: nhập OTP + mật khẩu mới
@@ -23,7 +24,7 @@ const ForgotPassword = () => {
  
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/request-reset-otp",
+        `${API_URL}/auth/request-reset-otp",
         { email }
       );
       setMessage(res.data.message || "Mã OTP đã được gửi tới email của bạn.");
@@ -47,7 +48,7 @@ const ForgotPassword = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/reset-password-otp",
+        `${API_URL}/auth/reset-password-otp",
         { email, otp, newPassword }
       );
       setMessage(res.data.message || "Đổi mật khẩu thành công.");

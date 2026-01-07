@@ -9,6 +9,7 @@ import NotificationHeader from '../components/Notification/NotificationHeader';
 import NotificationFilters from '../components/Notification/NotificationFilters';
 import NotificationItem from '../components/Notification/NotificationItem';
 import EmptyNotifications from '../components/Notification/EmptyNotifications';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const NotificationsPage = ({ socket, currentUser }) => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const NotificationsPage = ({ socket, currentUser }) => {
         try {
           const token = localStorage.getItem('token');
           const res = await axios.post(
-            'http://localhost:5000/api/chat/dm',
+            `${API_URL}/chat/dm',
             { receiverId: notif.sender_id },
             { headers: { Authorization: `Bearer ${token}` } }
           );

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MessagesSquare, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const Messages = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Messages = () => {
         }
 
         // 1) Lấy user hiện tại từ backend
-        const meRes = await axios.get("http://localhost:5000/api/auth/me", {
+        const meRes = await axios.get(`${API_URL}/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -32,7 +33,7 @@ const Messages = () => {
 
         // 2) Lấy danh sách chat theo userId
         const res = await axios.get(
-          `http://localhost:5000/api/chat/user/${userId}/chats`,
+          `${API_URL}/chat/user/${userId}/chats`,
           { headers: { Authorization: `Bearer ${token}` } } // nếu backend cần auth
         );
 

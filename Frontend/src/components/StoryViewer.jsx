@@ -17,6 +17,7 @@ import axios from "axios";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
 import toast from "react-hot-toast";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
@@ -32,7 +33,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const audioRef = useRef(null);
   const progressIntervalRef = useRef(null);
 
-  const API_BASE = "http://localhost:5000";
+  const API_BASE = SERVER_ORIGIN;
   const toUrl = (path) => (path?.startsWith("http") ? path : `${API_BASE}${path}`);
   const elapsedRef = useRef(0);
 
@@ -249,7 +250,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
 
       // 1) get or create dm
       const dmRes = await axios.post(
-        "http://localhost:5000/api/chat/dm",
+        `${API_URL}/chat/dm",
         { receiverId: user.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -258,7 +259,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
 
       // 2) send message
       await axios.post(
-        "http://localhost:5000/api/chat/send",
+        `${API_URL}/chat/send",
         {
           chatId,
           content: replyText,

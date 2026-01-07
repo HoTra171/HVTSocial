@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import axios from "axios";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 dayjs.extend(relativeTime);
 
@@ -23,7 +24,7 @@ const RecentMessages = ({ }) => {
                 }
 
                 // 1) Lấy user hiện tại từ backend
-                const meRes = await axios.get("http://localhost:5000/api/auth/me", {
+                const meRes = await axios.get(`${API_URL}/auth/me", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
@@ -36,7 +37,7 @@ const RecentMessages = ({ }) => {
 
                 // 2) Lấy chat list theo userId thật
                 const res = await axios.get(
-                    `http://localhost:5000/api/chat/user/${userId}/chats`,
+                    `${API_URL}/chat/user/${userId}/chats`,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
 

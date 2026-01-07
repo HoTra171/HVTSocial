@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Search, Users } from 'lucide-react';
 import UserCard from '../components/UserCard';
 import Loading from '../components/Loading';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 
 const API_URL = 'http://localhost:5000/api';

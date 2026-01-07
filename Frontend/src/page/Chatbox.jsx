@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import IncomingCallModal from "../components/IncomingCallModal.jsx";
 import toast from "react-hot-toast";
 import MessageBubble from "../components/MessageWithRetry.jsx";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 
 const PAGE = 15;
@@ -274,7 +275,7 @@ const Chatbox = () => {
     if (!chatId || isNaN(Number(chatId)) || Number(chatId) <= 0) return;
     if (!myId) return;
 
-    const socket = io("http://localhost:5000", {
+    const socket = io(SERVER_ORIGIN, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -414,7 +415,7 @@ const Chatbox = () => {
 
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `http://localhost:5000/api/chat/user/${myId}/chats`, {
+        `${API_URL}/chat/user/${myId}/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("📡 Partner response:", res.data);
@@ -476,7 +477,7 @@ const Chatbox = () => {
 
       const token = localStorage.getItem('token');
       const res = await axios.get(
-        `http://localhost:5000/api/chat/messages/${Number(chatId)}`, {
+        `${API_URL}/chat/messages/${Number(chatId)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -643,7 +644,7 @@ const Chatbox = () => {
         form.append("file", img.file);
 
         const uploadRes = await axios.post(
-          "http://localhost:5000/api/upload",
+          `${API_URL}/upload",
           form,
           { headers: { "Content-Type": "multipart/form-data" } }
         );
@@ -707,7 +708,7 @@ const Chatbox = () => {
           form.append("file", file);
 
           const uploadRes = await axios.post(
-            "http://localhost:5000/api/upload",
+            `${API_URL}/upload",
             form,
             { headers: { "Content-Type": "multipart/form-data" } }
           );

@@ -5,6 +5,7 @@ import Loading from '../components/Loading.jsx';
 import PostCard from '../components/PostCard.jsx';
 import RecentMessages from '../components/RecentMessages.jsx';
 import axios from "axios";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const Feed = () => {
   const [feeds, setFeeds] = useState([]);
@@ -33,7 +34,7 @@ const Feed = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/posts", {
+      const res = await axios.get(`${API_URL}/posts", {
         params: { page: pageToLoad, limit: LIMIT },
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import axios from "axios";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const UnreadBadge = ({ userId }) => {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -11,7 +12,7 @@ const UnreadBadge = ({ userId }) => {
     const fetchUnreadCount = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/chat/user/${userId}/unread-count`
+          `${API_URL}/chat/user/${userId}/unread-count`
         );
         setUnreadCount(res.data.count || 0);
       } catch (err) {
@@ -22,7 +23,7 @@ const UnreadBadge = ({ userId }) => {
     fetchUnreadCount();
 
     // Setup socket for realtime updates
-    const socket = io("http://localhost:5000");
+    const socket = io(SERVER_ORIGIN);
     socketRef.current = socket;
 
     socket.emit("register_user", userId);

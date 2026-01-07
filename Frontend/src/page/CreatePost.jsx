@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState('');
@@ -42,7 +43,7 @@ const CreatePost = ({ onPostCreated }) => {
         images.forEach((img) => formData.append("files", img)); 
 
         const uploadRes = await axios.post(
-          "http://localhost:5000/api/upload/multiple", 
+          `${API_URL}/upload/multiple", 
           formData,
           {
             headers: {
@@ -56,7 +57,7 @@ const CreatePost = ({ onPostCreated }) => {
 
       // Tạo post với URLs (nhẹ hơn nhiều)
       const res = await axios.post(
-        'http://localhost:5000/api/posts',
+        `${API_URL}/posts',
         {
           content,
           media: mediaUrls.join(';'), 

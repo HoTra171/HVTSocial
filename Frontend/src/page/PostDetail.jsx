@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { API_URL } from '../constants/api';
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -25,7 +26,7 @@ import ShareModal from "../components/ShareModal";
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
-const API_URL = "http://localhost:5000/api";
+// const API_URL imported from constants/api;
 const api = axios.create({ baseURL: API_URL });
 
 const getAuthHeaders = () => {

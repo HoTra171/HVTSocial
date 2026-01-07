@@ -13,6 +13,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 dayjs.extend(relativeTime);
 dayjs.locale("vi");

@@ -12,6 +12,7 @@ import {
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 
 const API_URL = 'http://localhost:5000/api';
@@ -176,7 +177,7 @@ const Connections = () => {
     try {
       // tạo hoặc lấy phòng 1-1
       const dmRes = await axios.post(
-        "http://localhost:5000/api/chat/dm",
+        `${API_URL}/chat/dm",
         { receiverId: targetUserId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

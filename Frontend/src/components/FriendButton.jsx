@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, UserCheck, UserMinus, Clock, X } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const API_URL = 'http://localhost:5000/api';
 

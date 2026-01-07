@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Pencil, X, Loader } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const ProfileModal = ({ setShowEdit, user, setUser }) => {
   const [editForm, setEditForm] = useState({
@@ -55,7 +56,7 @@ const ProfileModal = ({ setShowEdit, user, setUser }) => {
       }
 
       const token = localStorage.getItem('token');
-      const url = `http://localhost:5000/api/users/${user.id}`;
+      const url = `${API_URL}/users/${user.id}`;
 
       const res = await axios.put(url, formData, {
         headers: {

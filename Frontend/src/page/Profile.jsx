@@ -10,6 +10,7 @@ import ProfileModal from "../components/ProfileModal";
 import "dayjs/locale/vi";
 import relativeTime from "dayjs/plugin/relativeTime";
 import utc from "dayjs/plugin/utc";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 dayjs.extend(relativeTime);
 dayjs.extend(utc);

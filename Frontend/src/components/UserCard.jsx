@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import FriendButton from './FriendButton';
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const UserCard = ({ user, currentUser }) => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const UserCard = ({ user, currentUser }) => {
     try {
       // tạo hoặc lấy phòng 1-1
       const dmRes = await axios.post(
-        "http://localhost:5000/api/chat/dm",
+        `${API_URL}/chat/dm",
         { receiverId: userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

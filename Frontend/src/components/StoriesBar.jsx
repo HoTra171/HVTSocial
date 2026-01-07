@@ -7,6 +7,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import axios from "axios";
 import "dayjs/locale/vi";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
@@ -29,7 +30,7 @@ const StoriesBar = () => {
     if (!token) return;
 
     try {
-      const res = await axios.get("http://localhost:5000/api/stories", {
+      const res = await axios.get(`${API_URL}/stories", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setStories(res.data);

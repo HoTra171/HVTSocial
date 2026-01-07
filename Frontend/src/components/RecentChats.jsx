@@ -5,6 +5,7 @@ import axios from "axios";
 import { assets } from "../assets/assets.js"
 import { io } from "socket.io-client";
 import dayjs from "dayjs";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
   useEffect(() => {
     if (!myId) return;
 
-    const socket = io("http://localhost:5000", {
+    const socket = io(SERVER_ORIGIN, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
@@ -103,7 +104,7 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
         if (!myId) return;
 
         const res = await axios.get(
-          `http://localhost:5000/api/chat/user/${myId}/chats`,
+          `${API_URL}/chat/user/${myId}/chats`,
           token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
         );
 

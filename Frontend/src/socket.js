@@ -1,10 +1,11 @@
 import { io } from "socket.io-client";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 // WebSocket URL từ environment variable
 // In production, use Render backend. In development, use localhost
 const WS_URL = import.meta.env.VITE_WS_URL
   || import.meta.env.VITE_API_URL
-  || (import.meta.env.PROD ? 'https://hvtsocial-backend.onrender.com' : 'http://localhost:5000');
+  || (import.meta.env.PROD ? 'https://hvtsocial-backend.onrender.com' : SERVER_ORIGIN);
 
 console.log('🔌 WebSocket Configuration:', {
   VITE_WS_URL: import.meta.env.VITE_WS_URL,

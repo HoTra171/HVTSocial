@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Send } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const ShareModal = ({ post, onClose, onSuccess }) => {
   const [chatList, setChatList] = useState([]);
@@ -25,7 +26,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
     if (!userId || !token) return;
 
     axios
-      .get(`http://localhost:5000/api/chat/user/${userId}/chats`, {
+      .get(`${API_URL}/chat/user/${userId}/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setChatList(res.data))
@@ -44,7 +45,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
       await Promise.all(
         selected.map((chatId) =>
           axios.post(
-            "http://localhost:5000/api/chat/send",
+            `${API_URL}/chat/send",
             {
               chatId,
               senderId: userId,
@@ -78,7 +79,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
       if (!token) return toast.error("Bạn chưa đăng nhập");
 
       await axios.post(
-        "http://localhost:5000/api/shares",
+        `${API_URL}/shares",
         { postId: post?.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

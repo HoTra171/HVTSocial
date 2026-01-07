@@ -3,6 +3,7 @@ import { Lock, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
 const ChangePassword = () => {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ const ChangePassword = () => {
     setLoading(true);
 
     const promise = axios.put(
-      "http://localhost:5000/api/auth/change-password",
+      `${API_URL}/auth/change-password",
       {
         currentPassword,
         newPassword,
