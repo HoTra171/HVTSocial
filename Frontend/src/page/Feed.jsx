@@ -34,7 +34,7 @@ const Feed = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/posts", {
+      const res = await axios.get(`${API_URL}/posts`, {
         params: { page: pageToLoad, limit: LIMIT },
         headers: { Authorization: `Bearer ${token}` },
       });
