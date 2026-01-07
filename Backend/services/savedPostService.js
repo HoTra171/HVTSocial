@@ -61,7 +61,7 @@ export const SavedPostService = {
         SELECT 
           p.id,
           p.content,
-          p.media,
+          p.media_url AS media,
           p.created_at,
           
           u.id AS user_id,
@@ -73,7 +73,7 @@ export const SavedPostService = {
           
           (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
           (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count,
-          (SELECT COUNT(*) FROM posts WHERE shared_post_id = p.id) AS share_count
+          (SELECT COUNT(*) FROM shares WHERE post_id = p.id) AS share_count
           
         FROM saved_posts sp
         JOIN posts p ON p.id = sp.post_id

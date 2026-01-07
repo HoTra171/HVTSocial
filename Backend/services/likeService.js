@@ -130,9 +130,9 @@ export const LikeService = {
     return result.recordset.length > 0;
   },
 
-   /**
-   * Lấy danh sách bài viết user đã thích
-   */
+  /**
+  * Lấy danh sách bài viết user đã thích
+  */
   async getLikedPosts(userId, page = 1, limit = 10) {
     const offset = (page - 1) * limit;
     const db = await pool;
@@ -146,7 +146,7 @@ export const LikeService = {
         SELECT 
           p.id,
           p.content,
-          p.media,
+          p.media_url AS media,
           p.created_at,
           
           u.id AS user_id,
@@ -158,7 +158,7 @@ export const LikeService = {
           
           (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
           (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count,
-          (SELECT COUNT(*) FROM posts WHERE shared_post_id = p.id) AS share_count
+          (SELECT COUNT(*) FROM shares WHERE post_id = p.id) AS share_count
           
         FROM likes l
         JOIN posts p ON p.id = l.post_id

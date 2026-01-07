@@ -44,7 +44,7 @@ export const PostService = {
           p.media_url,
           p.created_at,
           p.visibility AS status,
-          p.shared_post_id,
+          (SELECT COUNT(*) FROM shares WHERE post_id = p.id) AS share_count,
 
           u.id        AS user_id,
           u.full_name,
@@ -53,7 +53,7 @@ export const PostService = {
 
           (SELECT COUNT(*) FROM likes WHERE post_id = p.id)     AS likes_count,
           (SELECT COUNT(*) FROM comments WHERE post_id = p.id)  AS comments_count,
-          (SELECT COUNT(*) FROM posts sp WHERE sp.shared_post_id = p.id) AS share_count
+
 
         FROM posts p
         JOIN users u ON u.id = p.user_id

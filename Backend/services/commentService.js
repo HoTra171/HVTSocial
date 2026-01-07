@@ -17,18 +17,18 @@ export const CommentService = {
           c.post_id,
           c.user_id,
           c.content,
-          c.comment_parent,
+          c.parent_comment_id AS comment_parent,
           c.created_at,
 
           u.full_name,
           u.username,
           u.avatar,
 
-          (SELECT COUNT(*) FROM comments WHERE comment_parent = c.id) AS replies_count,
+          (SELECT COUNT(*) FROM comments WHERE parent_comment_id = c.id) AS replies_count,
           (SELECT COUNT(*) FROM likes WHERE comment_id = c.id) AS likes_count
         FROM comments c
         JOIN users u ON u.id = c.user_id
-        WHERE c.post_id = @postId AND c.comment_parent IS NULL
+        WHERE c.post_id = @postId AND c.parent_comment_id IS NULL
         ORDER BY c.created_at DESC
       `);
 
@@ -65,7 +65,7 @@ export const CommentService = {
           c.post_id,
           c.user_id,
           c.content,
-          c.comment_parent,
+          c.parent_comment_id AS comment_parent,
           c.created_at,
 
           u.full_name,
@@ -75,7 +75,7 @@ export const CommentService = {
           (SELECT COUNT(*) FROM likes WHERE comment_id = c.id) AS likes_count
         FROM comments c
         JOIN users u ON u.id = c.user_id
-        WHERE c.comment_parent = @commentId
+        WHERE c.parent_comment_id = @commentId
         ORDER BY c.created_at ASC
       `);
 
@@ -110,13 +110,13 @@ export const CommentService = {
       .input("content", sql.NVarChar(sql.MAX), content)
       .input("commentParent", sql.Int, commentParent)
       .query(`
-        INSERT INTO comments (post_id, user_id, content, comment_parent, created_at)
+        INSERT INTO comments (post_id, user_id, content, parent_comment_id, created_at)
         OUTPUT 
           INSERTED.id,
           INSERTED.post_id,
           INSERTED.user_id,
           INSERTED.content,
-          INSERTED.comment_parent,
+          INSERTED.parent_comment_id AS comment_parent,
           INSERTED.created_at
         VALUES (@postId, @userId, @content, @commentParent, GETDATE())
       `);
@@ -140,7 +140,7 @@ export const CommentService = {
       post_id: newComment.post_id,
       user_id: newComment.user_id,
       content: newComment.content,
-      comment_parent: newComment.comment_parent,
+      comment_parent: newComment.comment_parent || newComment.parent_comment_id,
       created_at: newComment.created_at,
       likes_count: 0,
       replies_count: 0,
@@ -223,7 +223,7 @@ export const CommentService = {
           UNION ALL
           SELECT c.id
           FROM comments c
-          JOIN tree t ON c.comment_parent = t.id
+          JOIN tree t ON c.parent_comment_id = t.id
         )
         DELETE FROM likes
         WHERE comment_id IN (SELECT id FROM tree)
@@ -234,7 +234,7 @@ export const CommentService = {
           UNION ALL
           SELECT c.id
           FROM comments c
-          JOIN tree t ON c.comment_parent = t.id
+          JOIN tree t ON c.parent_comment_id = t.id
         )
         DELETE FROM comments
         WHERE id IN (SELECT id FROM tree)
@@ -254,7 +254,7 @@ export const CommentService = {
       .request()
       .input("commentId", sql.Int, commentId)
       .query(`
-        SELECT id, post_id, user_id, comment_parent, content, created_at
+        SELECT id, post_id, user_id, parent_comment_id AS comment_parent, content, created_at
         FROM comments
         WHERE id = @commentId
       `);
