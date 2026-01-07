@@ -471,7 +471,6 @@ const Chatbox = () => {
         is_group_chat: row.is_group_chat,
       });
 
-      console.log("Partner set successfully");
       return true; // Trả về true khi thành công
     } catch (err) {
       console.error("fetchPartner error:", err);
@@ -999,7 +998,7 @@ const Chatbox = () => {
     pcRef.current = null;
     remoteUserIdRef.current = null;
 
-    toast.info('Đã kết thúc cuộc gọi');
+    toast('Đã kết thúc cuộc gọi');
   };
 
   // Show loading hoặc error

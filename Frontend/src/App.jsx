@@ -153,7 +153,7 @@ function App() {
 
     setShowIncomingCall(false);
     setIncomingCallData(null);
-    toast.info("Đã từ chối cuộc gọi");
+    toast("Đã từ chối cuộc gọi");
   };
 
   return (
