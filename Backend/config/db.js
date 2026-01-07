@@ -13,7 +13,7 @@ let pool;
 
 if (usePostgreSQL) {
   // Use PostgreSQL (Railway, Neon, Supabase, etc.)
-  console.log('ðŸ˜ Using PostgreSQL database');
+  console.log('Using PostgreSQL database');
 
   // Import PostgreSQL pool and test connection
   const dbPostgres = await import('./db-postgres.js');
@@ -91,7 +91,11 @@ if (usePostgreSQL) {
 
     return {
       input(name, type, value) {
-        inputs[name] = value;
+        if (value === undefined) {
+          inputs[name] = type;
+        } else {
+          inputs[name] = value;
+        }
         return this;
       },
 
