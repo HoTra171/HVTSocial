@@ -126,7 +126,7 @@ CREATE INDEX idx_friendships_status ON friendships(status);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS chats (
     id SERIAL PRIMARY KEY,
-    is_group BOOLEAN DEFAULT FALSE,
+    is_group_chat BOOLEAN DEFAULT FALSE,
     name VARCHAR(100),
     avatar TEXT,
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -134,23 +134,23 @@ CREATE TABLE IF NOT EXISTS chats (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_chats_is_group ON chats(is_group);
+CREATE INDEX idx_chats_is_group_chat ON chats(is_group_chat);
 CREATE INDEX idx_chats_created_at ON chats(created_at);
 
 -- ============================================================
--- 7. CHAT_PARTICIPANTS TABLE
+-- 7. CHAT_USERS TABLE
 -- ============================================================
-CREATE TABLE IF NOT EXISTS chat_participants (
+CREATE TABLE IF NOT EXISTS chat_users (
     id SERIAL PRIMARY KEY,
     chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+    is_admin BOOLEAN DEFAULT FALSE,
     joined_at TIMESTAMP DEFAULT NOW(),
-    CONSTRAINT unique_participant UNIQUE (chat_id, user_id)
+    CONSTRAINT unique_chat_user UNIQUE (chat_id, user_id)
 );
 
-CREATE INDEX idx_chat_participants_chat ON chat_participants(chat_id);
-CREATE INDEX idx_chat_participants_user ON chat_participants(user_id);
+CREATE INDEX idx_chat_users_chat ON chat_users(chat_id);
+CREATE INDEX idx_chat_users_user ON chat_users(user_id);
 
 -- ============================================================
 -- 8. MESSAGES TABLE
@@ -160,9 +160,10 @@ CREATE TABLE IF NOT EXISTS messages (
     chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
     sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT,
+    message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'voice', 'video', 'file', 'recalled')),
     media_url TEXT,
-    media_type VARCHAR(50),
-    is_deleted BOOLEAN DEFAULT FALSE,
+    duration INTEGER,
+    status VARCHAR(20) DEFAULT 'sent' CHECK (status IN ('sent', 'delivered', 'read')),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -195,6 +196,7 @@ CREATE TABLE IF NOT EXISTS stories (
     media_url TEXT,
     media_type VARCHAR(50),
     background_color VARCHAR(20),
+    privacy VARCHAR(20) DEFAULT 'public' CHECK (privacy IN ('public', 'friends', 'custom')),
     expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '24 hours',
     is_deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
@@ -217,6 +219,20 @@ CREATE TABLE IF NOT EXISTS story_views (
 
 CREATE INDEX idx_story_views_story ON story_views(story_id);
 CREATE INDEX idx_story_views_viewer ON story_views(viewer_id);
+
+-- ============================================================
+-- 11b. STORY_VIEWERS TABLE (for custom privacy)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS story_viewers (
+    id SERIAL PRIMARY KEY,
+    story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+    viewer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    CONSTRAINT unique_story_viewer UNIQUE (story_id, viewer_id)
+);
+
+CREATE INDEX idx_story_viewers_story ON story_viewers(story_id);
+CREATE INDEX idx_story_viewers_viewer ON story_viewers(viewer_id);
 
 -- ============================================================
 -- 12. NOTIFICATIONS TABLE
