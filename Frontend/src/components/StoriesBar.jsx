@@ -30,7 +30,7 @@ const StoriesBar = () => {
     if (!token) return;
 
     try {
-      const res = await axios.get(`${API_URL}/stories", {
+      const res = await axios.get(`${API_URL}/stories`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setStories(res.data);

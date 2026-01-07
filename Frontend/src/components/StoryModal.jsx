@@ -39,7 +39,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
   React.useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const res = await axios.get(`${API_URL}/friendships/friends', {
+        const res = await axios.get(`${API_URL}/friendships/friends`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);

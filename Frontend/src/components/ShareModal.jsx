@@ -45,7 +45,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
       await Promise.all(
         selected.map((chatId) =>
           axios.post(
-            `${API_URL}/chat/send",
+            `${API_URL}/chat/send`,
             {
               chatId,
               senderId: userId,
@@ -79,7 +79,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
       if (!token) return toast.error("Bạn chưa đăng nhập");
 
       await axios.post(
-        `${API_URL}/shares",
+        `${API_URL}/shares`,
         { postId: post?.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

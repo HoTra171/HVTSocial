@@ -20,7 +20,7 @@ const Messages = () => {
         }
 
         // 1) Lấy user hiện tại từ backend
-        const meRes = await axios.get(`${API_URL}/auth/me", {
+        const meRes = await axios.get(`${API_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

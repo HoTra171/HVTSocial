@@ -5,6 +5,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Loading from '../components/Loading.jsx'
 import { Menu, X, ArrowLeft } from 'lucide-react'
 import axios from 'axios'
+import { API_URL } from '../constants/api'
 
 const Layout = () => {
 
@@ -30,7 +31,7 @@ const Layout = () => {
     }
 
     axios
-      .get(`${API_URL}/auth/me', {
+      .get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {

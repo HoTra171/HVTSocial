@@ -34,7 +34,7 @@ const UserCard = ({ user, currentUser }) => {
     try {
       // tạo hoặc lấy phòng 1-1
       const dmRes = await axios.post(
-        `${API_URL}/chat/dm",
+        `${API_URL}/chat/dm`,
         { receiverId: userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

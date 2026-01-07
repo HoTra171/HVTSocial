@@ -51,7 +51,7 @@ const ChangePassword = () => {
     setLoading(true);
 
     const promise = axios.put(
-      `${API_URL}/auth/change-password",
+      `${API_URL}/auth/change-password`,
       {
         currentPassword,
         newPassword,

@@ -48,7 +48,7 @@ const NotificationsPage = ({ socket, currentUser }) => {
         try {
           const token = localStorage.getItem('token');
           const res = await axios.post(
-            `${API_URL}/chat/dm',
+            `${API_URL}/chat/dm`,
             { receiverId: notif.sender_id },
             { headers: { Authorization: `Bearer ${token}` } }
           );

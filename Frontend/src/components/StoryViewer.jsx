@@ -250,7 +250,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
 
       // 1) get or create dm
       const dmRes = await axios.post(
-        `${API_URL}/chat/dm",
+        `${API_URL}/chat/dm`,
         { receiverId: user.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );

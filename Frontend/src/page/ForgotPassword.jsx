@@ -24,7 +24,7 @@ const ForgotPassword = () => {
  
     try {
       const res = await axios.post(
-        `${API_URL}/auth/request-reset-otp",
+        `${API_URL}/auth/request-reset-otp`,
         { email }
       );
       setMessage(res.data.message || "Mã OTP đã được gửi tới email của bạn.");
@@ -48,7 +48,7 @@ const ForgotPassword = () => {
 
     try {
       const res = await axios.post(
-        `${API_URL}/auth/reset-password-otp",
+        `${API_URL}/auth/reset-password-otp`,
         { email, otp, newPassword }
       );
       setMessage(res.data.message || "Đổi mật khẩu thành công.");

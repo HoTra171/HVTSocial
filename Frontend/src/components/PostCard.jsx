@@ -50,8 +50,6 @@ const pickAvatar = (u, fallbackName = "User") =>
   u?.photo ||
   `/default.jpg`;
 
-const SERVER_ORIGIN = API_URL.replace(/\/api\/?$/, "");
-
 const parseImages = (raw) => {
   if (Array.isArray(raw)) return raw.map(String).map((s) => s.trim()).filter(Boolean);
   if (typeof raw === "string") return raw.split(";").map((s) => s.trim()).filter(Boolean);
