@@ -208,32 +208,42 @@ export const CommentService = {
       throw new Error("Unauthorized or comment not found");
     }
 
-    await db
-      .request()
-      .input("commentId", sql.Int, commentId)
-      .query(`
-        ;WITH tree AS (
-          SELECT id FROM comments WHERE id = @commentId
-          UNION ALL
-          SELECT c.id
-          FROM comments c
-          JOIN tree t ON c.parent_comment_id = t.id
-        )
-        DELETE FROM likes
-        WHERE comment_id IN (SELECT id FROM tree)
-        OPTION (MAXRECURSION 1000);
+    if (process.env.DATABASE_URL) {
+      // PostgreSQL: Sử dụng tính năng ON DELETE CASCADE đã được định nghĩa trong schema
+      // Tự động xóa likes và replies (đệ quy)
+      await db
+        .request()
+        .input("commentId", sql.Int, commentId)
+        .query(`DELETE FROM comments WHERE id = @commentId`);
+    } else {
+      // MSSQL: Xử lý xóa thủ công đệ quy (do giới hạn cycles hoặc chưa setup cascade)
+      await db
+        .request()
+        .input("commentId", sql.Int, commentId)
+        .query(`
+          ;WITH tree AS (
+            SELECT id FROM comments WHERE id = @commentId
+            UNION ALL
+            SELECT c.id
+            FROM comments c
+            JOIN tree t ON c.parent_comment_id = t.id
+          )
+          DELETE FROM likes
+          WHERE comment_id IN (SELECT id FROM tree)
+          OPTION (MAXRECURSION 1000);
 
-        ;WITH tree AS (
-          SELECT id FROM comments WHERE id = @commentId
-          UNION ALL
-          SELECT c.id
-          FROM comments c
-          JOIN tree t ON c.parent_comment_id = t.id
-        )
-        DELETE FROM comments
-        WHERE id IN (SELECT id FROM tree)
-        OPTION (MAXRECURSION 1000);
-      `);
+          ;WITH tree AS (
+            SELECT id FROM comments WHERE id = @commentId
+            UNION ALL
+            SELECT c.id
+            FROM comments c
+            JOIN tree t ON c.parent_comment_id = t.id
+          )
+          DELETE FROM comments
+          WHERE id IN (SELECT id FROM tree)
+          OPTION (MAXRECURSION 1000);
+        `);
+    }
 
     return { success: true };
   },
