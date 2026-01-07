@@ -132,7 +132,21 @@ END $$;`,
     CONSTRAINT unique_story_viewer UNIQUE (story_id, viewer_id)
 );`,
       `CREATE INDEX IF NOT EXISTS idx_story_viewers_story ON story_viewers(story_id);`,
-      `CREATE INDEX IF NOT EXISTS idx_story_viewers_viewer ON story_viewers(viewer_id);`
+      `CREATE INDEX IF NOT EXISTS idx_story_viewers_viewer ON story_viewers(viewer_id);`,
+
+      // 9. Rename friendships columns to match code (requester_id/receiver_id -> user_id/friend_id)
+      `DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'friendships' AND column_name = 'requester_id')
+    AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'friendships' AND column_name = 'user_id')
+    THEN
+        ALTER TABLE friendships RENAME COLUMN requester_id TO user_id;
+        ALTER TABLE friendships RENAME COLUMN receiver_id TO friend_id;
+        ALTER INDEX IF EXISTS idx_friendships_requester RENAME TO idx_friendships_user;
+        ALTER INDEX IF EXISTS idx_friendships_receiver RENAME TO idx_friendships_friend;
+        RAISE NOTICE 'Renamed requester_id/receiver_id to user_id/friend_id';
+    END IF;
+END $$;`
     ];
 
     for (const stmt of statements) {
