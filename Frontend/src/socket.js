@@ -1,5 +1,5 @@
 import { io } from "socket.io-client";
-import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { API_URL, SERVER_ORIGIN } from './constants/api';
 
 // WebSocket URL từ environment variable
 // In production, use Render backend. In development, use localhost
