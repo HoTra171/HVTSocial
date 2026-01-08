@@ -98,11 +98,11 @@ const SignUp = () => {
       }
 
       // Lưu token và thông tin user
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
 
       // Thông báo thành công
-      console.log(' Đăng ký thành công:', data.user);
+      console.log(' Đăng ký thành công:', data.data.user);
       alert('Đăng ký thành công! Chào mừng bạn đến với HVTSocial 🎉');
 
       // Chuyển đến trang feed
