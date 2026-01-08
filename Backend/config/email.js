@@ -38,17 +38,21 @@ const createTransporter = () => {
     },
   });
 
-  // Verify connection configuration
-  transporter.verify((error, success) => {
-    if (error) {
-      logger.error({
-        message: 'Email transporter verification failed',
-        error: error.message,
-      });
-    } else {
-      logger.info('Email server is ready to send messages');
-    }
-  });
+  // Verify connection configuration (optional - only verify if explicitly enabled)
+  if (process.env.VERIFY_EMAIL_ON_STARTUP === 'true') {
+    transporter.verify((error, success) => {
+      if (error) {
+        logger.error({
+          message: 'Email transporter verification failed',
+          error: error.message,
+        });
+      } else {
+        logger.info('Email server is ready to send messages');
+      }
+    });
+  } else {
+    logger.info('Email transporter created (verification skipped)');
+  }
 
   return transporter;
 };
