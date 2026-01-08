@@ -22,14 +22,19 @@ const generateTokens = async (user) => {
   // Save to DB (Supports both MSSQL/PG via db-wrapper ideally, but check syntax compatibility)
   // Simple INSERT works on both usually if strict ANSI.
   // Using db.request() pattern from existing code.
-  await db
-    .request()
-    .input('user_id', user.id)
-    .input('token', refreshToken)
-    .input('expires_at', expiresAt).query(`
-       INSERT INTO refresh_tokens (user_id, token, expires_at)
-       VALUES (@user_id, @token, @expires_at)
-    `);
+  try {
+    await db
+      .request()
+      .input('user_id', user.id)
+      .input('token', refreshToken)
+      .input('expires_at', expiresAt).query(`
+         INSERT INTO refresh_tokens (user_id, token, expires_at)
+         VALUES (@user_id, @token, @expires_at)
+      `);
+  } catch (error) {
+    console.error('❌ Error saving refresh token:', error.message);
+    throw new Error('Failed to save refresh token: ' + error.message);
+  }
 
   return { accessToken, refreshToken };
 };
