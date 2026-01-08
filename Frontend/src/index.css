@@ -4,3 +4,57 @@
   font-family: "Outfit", sans-serif;
 }
 
+/* Mobile touch optimizations */
+@media (max-width: 768px) {
+  /* Prevent tap highlight flash on iOS */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Improve touch targets - minimum 44x44px for iOS */
+  button:not(.no-min-size),
+  a:not(.no-min-size) {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Prevent text selection on buttons */
+  button {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scrolling on iOS */
+  body, html {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+  }
+
+  /* Prevent zoom on input focus */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* Fix for iOS Safari bottom bar */
+  body {
+    min-height: -webkit-fill-available;
+  }
+
+  /* Prevent body scroll when modal is open */
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+
+  /* Improve clickable areas */
+  button[class*="p-2"],
+  a[class*="p-2"] {
+    padding: 0.75rem !important; /* p-3 instead of p-2 */
+  }
+}
+

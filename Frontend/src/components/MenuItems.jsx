@@ -4,11 +4,12 @@ import { useUnreadCounts } from '../hooks/useUnreadCounts'
 import NotificationBadge from './NotificationBadge'
 
 const MenuItems = ({setSidebarOpen}) => {
-  const { unreadMessages, unreadNotifications } = useUnreadCounts();
+  const { unreadMessages, unreadNotifications, pendingFriendRequests } = useUnreadCounts();
 
   const getBadgeCount = (to) => {
     if (to === '/messages') return unreadMessages;
     if (to === '/notifications') return unreadNotifications;
+    if (to === '/connections') return pendingFriendRequests;
     return 0;
   };
 

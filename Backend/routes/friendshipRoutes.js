@@ -9,6 +9,7 @@ import {
   getFriendshipStatus,
   getFriends,
   getPendingRequests,
+  getPendingRequestsCount,
   getSentRequests,
   getSuggestedFriends,
 } from '../controllers/friendshipController.js';
@@ -208,6 +209,22 @@ router.get('/friends', authMiddleware, getFriends);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/pending', authMiddleware, getPendingRequests);
+
+/**
+ * @swagger
+ * /api/friendships/pending-count:
+ *   get:
+ *     summary: Đếm số lượng lời mời kết bạn đang chờ
+ *     tags: [Friendships]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Số lượng lời mời chờ
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.get('/pending-count', authMiddleware, getPendingRequestsCount);
 
 /**
  * @swagger

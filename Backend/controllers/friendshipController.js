@@ -53,6 +53,12 @@ export const acceptFriendRequest = async (req, res) => {
       type: 'friend_accept',
     });
 
+    // Emit socket event to update friend request count
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${userId}`).emit('friend_request_updated');
+    }
+
     res.json({ success: true, message: 'Đã chấp nhận lời mời kết bạn', data: result });
   } catch (err) {
     console.error('acceptFriendRequest error:', err);
@@ -71,6 +77,12 @@ export const rejectFriendRequest = async (req, res) => {
     }
 
     const result = await FriendshipService.rejectFriendRequest(userId, friendId);
+
+    // Emit socket event to update friend request count
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user_${userId}`).emit('friend_request_updated');
+    }
 
     res.json(result);
   } catch (err) {
@@ -189,6 +201,25 @@ export const getPendingRequests = async (req, res) => {
     });
   } catch (err) {
     console.error('getPendingRequests error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};
+
+// GET /api/friendships/pending-count
+export const getPendingRequestsCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const count = await FriendshipService.getPendingRequestsCount(userId);
+
+    res.json({
+      success: true,
+      count,
+    });
+  } catch (err) {
+    console.error('getPendingRequestsCount error:', err);
     res.status(500).json({
       success: false,
       message: 'Server error',

@@ -76,13 +76,15 @@ if (usePostgreSQL) {
             pgQuery = pgQuery.replace(regex, `$${index}`);
           });
 
-          // Debug logging
-          console.log('🔍 DB Query Debug:', {
-            originalQuery: sqlQuery.substring(0, 100) + '...',
-            pgQuery: pgQuery.substring(0, 100) + '...',
-            paramValues: paramValues,
-            inputs: inputs,
-          });
+          // Debug logging (disabled in production)
+          if (process.env.DEBUG_SQL === 'true') {
+            console.log('🔍 DB Query Debug:', {
+              originalQuery: sqlQuery.substring(0, 150) + (sqlQuery.length > 150 ? '...' : ''),
+              pgQuery: pgQuery.substring(0, 150) + (pgQuery.length > 150 ? '...' : ''),
+              paramValues: paramValues,
+              inputs: inputs,
+            });
+          }
 
           const result = await pool.query(pgQuery, paramValues);
           return {

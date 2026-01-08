@@ -391,4 +391,22 @@ export const FriendshipService = {
 
     return result.recordset;
   },
+
+  /**
+   * 10. ĐẾM SỐ LƯỢNG LỜI MỜI KẾT BẠN ĐANG CHỜ
+   */
+  async getPendingRequestsCount(userId) {
+    const db = await pool;
+
+    const result = await db
+      .request()
+      .input('userId', sql.Int, userId).query(`
+        SELECT COUNT(*) AS count
+        FROM friendships
+        WHERE friend_id = @userId
+          AND status = 'pending'
+      `);
+
+    return result.recordset[0]?.count || 0;
+  },
 };

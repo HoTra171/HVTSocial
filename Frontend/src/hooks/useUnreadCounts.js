@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_URL } from '../constants/api';
+import axiosInstance from '../utils/axios';
 import { socket } from '../socket';
 
 export const useUnreadCounts = () => {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   // Fetch unread messages count
   const fetchUnreadMessages = async () => {
@@ -18,9 +18,7 @@ export const useUnreadCounts = () => {
 
       if (!userId) return;
 
-      const res = await axios.get(`${API_URL}/chat/user/${userId}/chats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axiosInstance.get(`/chat/user/${userId}/chats`);
 
       // Count total unread messages across all chats
       const totalUnread = res.data.reduce((sum, chat) => {
@@ -29,7 +27,10 @@ export const useUnreadCounts = () => {
 
       setUnreadMessages(totalUnread);
     } catch (error) {
-      console.error('Error fetching unread messages:', error);
+      // Axios interceptor will handle 401 errors
+      if (error.response?.status !== 401) {
+        console.error('Error fetching unread messages:', error);
+      }
     }
   };
 
@@ -39,13 +40,31 @@ export const useUnreadCounts = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await axios.get(`${API_URL}/notifications/unread-count`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axiosInstance.get('/notifications/unread-count');
 
       setUnreadNotifications(res.data.count || 0);
     } catch (error) {
-      console.error('Error fetching unread notifications:', error);
+      // Axios interceptor will handle 401 errors
+      if (error.response?.status !== 401) {
+        console.error('Error fetching unread notifications:', error);
+      }
+    }
+  };
+
+  // Fetch pending friend requests count
+  const fetchPendingFriendRequests = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await axiosInstance.get('/friendships/pending-count');
+
+      setPendingFriendRequests(res.data.count || 0);
+    } catch (error) {
+      // Axios interceptor will handle 401 errors
+      if (error.response?.status !== 401) {
+        console.error('Error fetching pending friend requests:', error);
+      }
     }
   };
 
@@ -53,11 +72,13 @@ export const useUnreadCounts = () => {
   useEffect(() => {
     fetchUnreadMessages();
     fetchUnreadNotifications();
+    fetchPendingFriendRequests();
 
     // Refresh every 30 seconds
     const interval = setInterval(() => {
       fetchUnreadMessages();
       fetchUnreadNotifications();
+      fetchPendingFriendRequests();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -78,8 +99,13 @@ export const useUnreadCounts = () => {
     });
 
     // Update when new notification arrives
-    socket.on('new_notification', () => {
+    socket.on('new_notification', (data) => {
       fetchUnreadNotifications();
+
+      // If it's a friend request notification, update friend requests count
+      if (data?.type === 'friend_request') {
+        fetchPendingFriendRequests();
+      }
     });
 
     // Update notification count
@@ -87,18 +113,26 @@ export const useUnreadCounts = () => {
       setUnreadNotifications(count);
     });
 
+    // Update when friend request is accepted/rejected
+    socket.on('friend_request_updated', () => {
+      fetchPendingFriendRequests();
+    });
+
     return () => {
       socket.off('receive_message');
       socket.off('messages_read');
       socket.off('new_notification');
       socket.off('unread_count');
+      socket.off('friend_request_updated');
     };
   }, []);
 
   return {
     unreadMessages,
     unreadNotifications,
+    pendingFriendRequests,
     refreshUnreadMessages: fetchUnreadMessages,
     refreshUnreadNotifications: fetchUnreadNotifications,
+    refreshPendingFriendRequests: fetchPendingFriendRequests,
   };
 };

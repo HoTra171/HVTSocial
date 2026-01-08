@@ -28,6 +28,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const stickerPos = { x: 50, y: 50 }; // Default center position for sticker
 
   const videoRef = useRef(null);
   const audioRef = useRef(null);
@@ -54,6 +55,21 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const storyContainerRef = useRef(null);
   const viewTimerRef = useRef(null);
   const hasViewedRef = useRef(false);
+
+  // Prevent body scroll when story viewer is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, []);
 
   // 1. Reset state khi đổi story
   useEffect(() => {
@@ -341,7 +357,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
 
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+    <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
       {/* Progress bars */}
       <div className="absolute top-4 left-0 right-0 flex gap-1 px-4 z-20">
         {stories.map((_, idx) => (

@@ -55,7 +55,15 @@ const Layout = () => {
   if (!currentUserId) return <Loading />
 
   return (
-    <div className="w-full min-h-screen flex bg-slate-50 overflow-hidden">
+    <div className="w-full min-h-screen flex bg-slate-50 overflow-hidden touch-pan-y">
+
+      {/* ===== MOBILE BACKDROP ===== */}
+      {sidebarOpen && !isChatPage && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-10 sm:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* ===== SIDEBAR / RECENT CHATS ===== */}
       {isChatPage ? (

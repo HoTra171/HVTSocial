@@ -34,7 +34,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId }) => {
     return (
         <div className={`w-60 xl:w-72 bg-white border-r border-gray-200
   fixed top-0 left-0 bottom-0 z-20 flex flex-col justify-between
-  ${sidebarOpen ? 'translate-x-0' : 'max-sm:-translate-x-full'} transition-all duration-300 ease-in-out`}>
+  ${sidebarOpen ? 'translate-x-0' : 'max-sm:-translate-x-full'} transition-all duration-300 ease-in-out touch-none`}>
 
             <div className='w-full'>
                 <img onClick={() => navigate('/feed')} src={assets.logo} alt="Logo" className='w-26 ml-7 my-2 cursor-pointer' />

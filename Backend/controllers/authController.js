@@ -7,17 +7,17 @@ import crypto from 'crypto';
 
 // Helper: Generate Tokens (Access + Refresh)
 const generateTokens = async (user) => {
-  // Access Token (15m)
+  // Access Token (60 days - like Facebook)
   const accessToken = jwt.sign(
     { userId: user.id, id: user.id, email: user.email, username: user.username },
     process.env.JWT_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: '60d' }
   );
 
-  // Refresh Token (7d)
+  // Refresh Token (90 days)
   const refreshToken = crypto.randomBytes(40).toString('hex');
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
+  expiresAt.setDate(expiresAt.getDate() + 90);
 
   // Save to DB (Supports both MSSQL/PG via db-wrapper ideally, but check syntax compatibility)
   // Simple INSERT works on both usually if strict ANSI.
@@ -123,7 +123,7 @@ export const register = async (req, res) => {
 
     const newUser = result.recordset[0];
 
-    // 7. Tạo JWT token
+    // 7. Tạo JWT token (60 days - like Facebook)
     const token = jwt.sign(
       {
         id: newUser.id,
@@ -132,7 +132,7 @@ export const register = async (req, res) => {
         username: newUser.username,
       },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '60d' }
     );
 
     // 8. Xóa password khỏi response
