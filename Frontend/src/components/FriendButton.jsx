@@ -180,7 +180,7 @@ const FriendButton = ({ userId, currentUserId }) => {
       <div className="flex gap-2">
         <button
           onClick={handleAccept}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg
+          className="px-2 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg
           transition flex items-center gap-2 active:scale-95"
         >
           <UserCheck className="w-4 h-4" />
