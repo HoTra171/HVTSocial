@@ -1050,9 +1050,9 @@ const Chatbox = () => {
   // Show loading hoặc error
   if (!chatId || isNaN(Number(chatId))) {
     return (
-      <div className="w-full h-screen flex items-center justify-center">
+      <div className="fixed inset-0 z-50 flex items-center justify-center h-[100dvh] w-full bg-[#f0f2f5]">
         <div className="text-center">
-          <p className="text-red-500 text-lg font-semibold"> Chat ID không hợp lệ</p>
+          <p className="text-red-500 text-lg font-semibold">Chat ID không hợp lệ</p>
           <p className="text-gray-500 mt-2">Vui lòng chọn một cuộc trò chuyện</p>
         </div>
       </div>
@@ -1061,7 +1061,7 @@ const Chatbox = () => {
 
   if (!partner) {
     return (
-      <div className="w-full h-screen flex items-center justify-center sm:-ml-46">
+      <div className="fixed inset-0 z-50 flex items-center justify-center h-[100dvh] w-full bg-[#f0f2f5]">
         <Loading />
       </div>
     );
@@ -1082,13 +1082,13 @@ const Chatbox = () => {
             <span className="text-xl font-bold text-indigo-600">H</span>
           </button>
 
-          {/* Nav Icons from menuItemsData */}
+          {/* Nav Icons matching sidebar order */}
           {[
             { to: '/feed', Icon: Home, label: 'Bảng tin' },
-            { to: '/discover', Icon: Search, label: 'Khám phá' },
             { to: '/messages', Icon: MessageCircle, label: 'Tin nhắn' },
-            { to: '/notifications', Icon: Bell, label: 'Thông báo' },
             { to: '/connections', Icon: Users, label: 'Kết nối' },
+            { to: '/discover', Icon: Search, label: 'Khám phá' },
+            { to: '/notifications', Icon: Bell, label: 'Thông báo' },
           ].map(({ to, Icon, label }) => (
             <button
               key={to}
