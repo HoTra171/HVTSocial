@@ -39,7 +39,7 @@ function App() {
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
-    if (storedUser) {
+    if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
       try {
         const userData = JSON.parse(storedUser);
         setCurrentUser(userData);
