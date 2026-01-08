@@ -251,3 +251,58 @@ export const deleteStory = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+/* ================= GET STORY VIEWERS ================= */
+export const getStoryViewers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const storyId = Number(req.params.id);
+
+    const db = await pool;
+
+    // Check if user owns this story
+    const storyCheck = await db
+      .request()
+      .input('storyId', sql.Int, storyId)
+      .input('userId', sql.Int, userId).query(`
+        SELECT id FROM stories
+        WHERE id = @storyId AND user_id = @userId
+      `);
+
+    if (storyCheck.recordset.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền xem danh sách người xem story này',
+      });
+    }
+
+    // Get viewers with user info
+    const result = await db
+      .request()
+      .input('storyId', sql.Int, storyId).query(`
+        SELECT
+          sv.viewer_id,
+          sv.viewed_at,
+          u.full_name,
+          u.username,
+          u.avatar
+        FROM story_views sv
+        JOIN users u ON u.id = sv.viewer_id
+        WHERE sv.story_id = @storyId
+        ORDER BY sv.viewed_at DESC
+      `);
+
+    res.json({
+      success: true,
+      viewers: result.recordset,
+      count: result.recordset.length,
+    });
+  } catch (err) {
+    console.error('getStoryViewers error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: err.message,
+    });
+  }
+};

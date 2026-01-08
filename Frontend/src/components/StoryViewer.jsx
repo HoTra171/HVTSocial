@@ -11,6 +11,7 @@ import {
   Globe2,
   Users,
   UserCog,
+  Eye,
 } from "lucide-react";
 import dayjs from "dayjs";
 import axios from "axios";
@@ -18,6 +19,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/vi";
 import toast from "react-hot-toast";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { useNavigate } from 'react-router-dom';
 
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
@@ -28,14 +30,23 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [showViewers, setShowViewers] = useState(false);
+  const [viewers, setViewers] = useState([]);
+  const [loadingViewers, setLoadingViewers] = useState(false);
   const stickerPos = { x: 50, y: 50 }; // Default center position for sticker
+  const navigate = useNavigate();
 
   const videoRef = useRef(null);
   const audioRef = useRef(null);
   const progressIntervalRef = useRef(null);
 
   const API_BASE = SERVER_ORIGIN;
-  const toUrl = (path) => (path?.startsWith("http") ? path : `${API_BASE}${path}`);
+  const toUrl = (path) => {
+    if (!path || path === 'null' || path === 'undefined') {
+      return '/default-avatar.png'; // Fallback image
+    }
+    return path?.startsWith("http") ? path : `${API_BASE}${path}`;
+  };
   const elapsedRef = useRef(0);
 
   const currentUserIndex = allStories?.findIndex(
@@ -80,7 +91,12 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
       clearTimeout(viewTimerRef.current);
       viewTimerRef.current = null;
     }
-  }, [currentStory?.id, currentStory?.media_type]);
+
+    // Fetch viewer count if it's my story
+    if (isMyStory && currentStory?.id) {
+      fetchViewers();
+    }
+  }, [currentStory?.id, currentStory?.media_type, isMyStory]);
 
   // 2. Logic tracking: Loaded + 80% Visible + 1.5s duration
   useEffect(() => {
@@ -336,6 +352,41 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
     }
   };
 
+  // FETCH STORY VIEWERS
+  const fetchViewers = async () => {
+    if (!currentStory?.id || !isMyStory) return;
+
+    setLoadingViewers(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `${API_URL}/stories/${currentStory.id}/viewers`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data?.success) {
+        setViewers(res.data.viewers || []);
+      }
+    } catch (err) {
+      console.error("Fetch viewers error:", err);
+      toast.error("Không thể tải danh sách người xem");
+    } finally {
+      setLoadingViewers(false);
+    }
+  };
+
+  // SHOW VIEWERS MODAL
+  const handleShowViewers = () => {
+    setShowViewers(true);
+    fetchViewers();
+  };
+
+  // GO TO VIEWER PROFILE
+  const goToProfile = (userId) => {
+    setViewStory(null); // Close story viewer
+    navigate(`/profile/${userId}`);
+  };
+
 
   if (!user?.id || !currentStory?.id) return;
 
@@ -400,6 +451,17 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Viewers button (only for my story) */}
+          {isMyStory && (
+            <button
+              onClick={handleShowViewers}
+              className="text-white p-2 hover:bg-white/20 rounded-full flex items-center gap-1"
+            >
+              <Eye size={20} />
+              <span className="text-sm">{viewers.length || ''}</span>
+            </button>
+          )}
+
           {/* Pause/Play */}
           <button
             onClick={togglePause}
@@ -533,6 +595,74 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
             >
               <SendHorizonal className="text-white" size={24} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Viewers Modal */}
+      {showViewers && isMyStory && (
+        <div className="absolute inset-0 z-30 flex items-end sm:items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setShowViewers(false)}
+          />
+
+          {/* Modal Content */}
+          <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[70vh] sm:max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Người xem ({viewers.length})
+              </h3>
+              <button
+                onClick={() => setShowViewers(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              >
+                <X size={20} className="text-gray-600 dark:text-gray-400" />
+              </button>
+            </div>
+
+            {/* Viewers List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingViewers ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : viewers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Eye size={48} className="mx-auto mb-2 opacity-50" />
+                  <p>Chưa có ai xem story này</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {viewers.map((viewer) => (
+                    <div
+                      key={viewer.viewer_id}
+                      onClick={() => goToProfile(viewer.viewer_id)}
+                      className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition"
+                    >
+                      <img
+                        src={toUrl(viewer.avatar)}
+                        alt={viewer.full_name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 dark:text-white truncate">
+                          {viewer.full_name}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          @{viewer.username}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {dayjs(viewer.viewed_at).fromNow()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

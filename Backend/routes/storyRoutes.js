@@ -1,5 +1,5 @@
 import express from 'express';
-import { getStories, viewStory, createStory } from '../controllers/storyController.js';
+import { getStories, viewStory, createStory, getStoryViewers } from '../controllers/storyController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -68,5 +68,29 @@ router.post('/', authMiddleware, createStory);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/:id/view', authMiddleware, viewStory);
+
+/**
+ * @swagger
+ * /api/stories/{id}/viewers:
+ *   get:
+ *     summary: Lấy danh sách người đã xem story (chỉ story của mình)
+ *     tags: [Stories]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Danh sách người xem
+ *       403:
+ *         description: Không có quyền
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.get('/:id/viewers', authMiddleware, getStoryViewers);
 
 export default router;
