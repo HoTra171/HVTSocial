@@ -43,6 +43,12 @@ const NotificationsPage = ({ socket, currentUser }) => {
       case 'friend_accept':
         navigate(`/profile/${notif.sender_id}`);
         break;
+      case 'follow':
+        // Navigate to follower's profile
+        if (notif.sender_id) {
+          navigate(`/profile/${notif.sender_id}`);
+        }
+        break;
       case 'message':
         // Tạo hoặc lấy chat DM với người gửi
         try {
