@@ -805,7 +805,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
     // NHIỀU FILE -> /upload/multiple + field "files"
     if (arr.length > 1) {
       const form = new FormData();
-      arr.forEach((f) => form.append("files", f));    
+      arr.forEach((f) => form.append("files", f));
       const res = await api.post("/upload/multiple", form, {
         headers: { ...getAuthHeaders() },
       });
@@ -817,7 +817,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
 
     // 1 FILE -> /upload + field "file"
     const form = new FormData();
-    form.append("file", arr[0]);                        
+    form.append("file", arr[0]);
     const res = await api.post("/upload", form, {
       headers: { ...getAuthHeaders() },
     });
@@ -1105,37 +1105,58 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
         </div>
       )}
 
-      {/* ACTIONS */}
+      {/* STATS BAR (Like PostDetail) */}
+      <div className="px-1 flex items-center justify-between text-xs sm:text-sm text-gray-500 pt-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px]">
+            <Heart className="w-3 h-3" />
+          </div>
+          <span>{likesCount} lượt thích</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={loadComments} className="hover:underline">
+            {commentsCount} bình luận
+          </button>
+          <button className="hover:underline">
+            {post.share_count || 0} lượt chia sẻ
+          </button>
+        </div>
+      </div>
+
+      {/* ACTIONS BAR */}
       <div className="flex items-center justify-between pt-3 border-t">
-        <div className="flex items-center gap-6 text-gray-600">
+        <div className="flex-1 flex items-center justify-between text-gray-600">
           <button
             onClick={handleLike}
-            className="flex items-center gap-1.5 hover:text-red-500 transition"
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-50 transition"
           >
             <Heart className={`w-5 h-5 ${liked ? "text-red-500 fill-red-500" : ""}`} />
-            <span className="text-sm font-medium">{likesCount}</span>
+            <span className={`text-sm font-medium ${liked ? "text-red-500" : ""}`}>Thích</span>
           </button>
 
-          {/* Nút comment giờ sẽ load/toggle comments */}
           <button
             onClick={loadComments}
-            className="flex items-center gap-1.5 hover:text-blue-500 transition"
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-50 transition"
           >
             <MessageCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">{commentsCount}</span>
+            <span className="text-sm font-medium">Bình luận</span>
           </button>
 
-          <button onClick={() => setShowShareModal(true)} className="hover:text-green-600 transition">
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-50 transition"
+          >
             <Share2 className="w-5 h-5" />
+            <span className="text-sm font-medium">Chia sẻ</span>
           </button>
         </div>
 
         {/* Share Modal */}
         {showShareModal && (
-          <ShareModal post={post} onClose={() => setShowShareModal(false)} />
+          <ShareModal post={post} onClose={() => setShowShareModal(false)} onSuccess={() => window.location.reload()} />
         )}
 
-        <button onClick={handleSave} className="hover:text-yellow-500 transition">
+        <button onClick={handleSave} className="p-2 hover:bg-gray-100 rounded-full transition ml-2">
           <Bookmark className={`w-5 h-5 ${saved ? "fill-yellow-500 text-yellow-500" : ""}`} />
         </button>
       </div>

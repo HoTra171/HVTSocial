@@ -17,6 +17,8 @@ const StoriesBar = () => {
   const [showModal, setShowModal] = useState(false);
   const [viewStory, setViewStory] = useState(null);
 
+  const currentUserIdVal = JSON.parse(localStorage.getItem("user") || "{}")?.id;
+
   const containerRef = useRef(null); // Khung scroll ngang
   const listRef = useRef(null); // Hàng story (để đo kích thước 1 card + gap)
 
@@ -145,6 +147,13 @@ const StoriesBar = () => {
               const previewStory = group.stories[0];
               if (!previewStory) return null;
 
+              const hasUnseenStories = group.stories.some(s => !s.is_viewed && group.user.id !== currentUserIdVal);
+              // Nếu là currentUser thì luôn xám (hoặc xanh nếu muốn), thường thì mình xem story của mình rồi. 
+              // Logic Facebook: Story mình chưa xem (do mình post) = xám. 
+              // Story người khác chưa xem = xanh.
+
+              const isSeenAll = !hasUnseenStories;
+
               return (
                 <div
                   key={group.user.id} // Key ổn định theo user
@@ -158,13 +167,13 @@ const StoriesBar = () => {
                   className="relative rounded-xl min-w-[110px] h-[180px] aspect-[3/5] overflow-hidden cursor-pointer bg-gradient-to-b from-indigo-500 to-purple-600 hover:scale-105 transition-transform"
                 >
                   {/* Avatar người đăng */}
-                  <img
-                    src={group.user.avatar ||
-                      `/default.jpg`
-                    }
-                    alt=""
-                    className="absolute top-2 left-2 w-10 h-10 rounded-full ring-2 ring-white z-10"
-                  />
+                  <div className={`absolute top-2 left-2 p-[2px] rounded-full z-10 ${hasUnseenStories ? "bg-blue-600" : "bg-gray-300"}`}>
+                    <img
+                      src={group.user.avatar || `/default.jpg`}
+                      alt=""
+                      className="w-9 h-9 rounded-full border-2 border-white object-cover"
+                    />
+                  </div>
 
                   {/* Nội dung story preview */}
                   {previewStory.media_type === "text" ? (

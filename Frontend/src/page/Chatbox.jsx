@@ -1023,7 +1023,7 @@ const Chatbox = () => {
 
   return (
     <>
-      <div className="flex flex-col h-screen w-full overflow-hidden bg-[#f0f2f5] sm:-ml-118">
+      <div className="fixed pl-72 inset-0 flex flex-col h-[100dvh] w-full overflow-hidden bg-[#f0f2f5]">
 
         {/* HEADER - Sticky Top */}
         <div className="sticky top-0 shrink-0 flex items-center gap-3 p-3 bg-white shadow z-20">
@@ -1281,9 +1281,9 @@ const Chatbox = () => {
           </div>
         )}
 
-        {/* Reply preview - Above Input */}
+        {/* Reply preview */}
         {replyingTo && (
-          <div className="sticky bottom-[72px] p-3 bg-gray-50 border-t flex items-center justify-between z-10">
+          <div className="p-3 bg-gray-50 border-t flex items-center justify-between">
             <div className="flex-1">
               <p className="text-xs text-gray-500">Đang trả lời</p>
               <p className="text-sm truncate">

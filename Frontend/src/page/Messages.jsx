@@ -86,7 +86,7 @@ const Messages = () => {
               <img
                 src={item.avatar || (item.is_group_chat ? "/group.png" : "/default.jpg")}
                 alt=""
-                className="rounded-full size-12 mx-auto"
+                className="rounded-full size-12 mx-auto "
               />
 
               <div className="flex-1">

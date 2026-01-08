@@ -21,9 +21,11 @@ export const getStories = async (req, res) => {
           u.id AS user_id,
           u.full_name,
           u.username,
-          u.avatar
+          u.avatar,
+          CASE WHEN sv.id IS NOT NULL THEN 1 ELSE 0 END AS is_viewed
         FROM stories s
         JOIN users u ON u.id = s.user_id
+        LEFT JOIN story_views sv ON sv.story_id = s.id AND sv.viewer_id = @userId
         WHERE s.expires_at > GETDATE()
           AND (
             s.privacy = 'public'
@@ -34,8 +36,8 @@ export const getStories = async (req, res) => {
                 OR (f.friend_id = @userId AND f.user_id = s.user_id AND f.status = 'accepted')
             ))
             OR (s.privacy = 'custom' AND EXISTS (
-              SELECT 1 FROM story_viewers sv
-              WHERE sv.story_id = s.id AND sv.viewer_id = @userId
+              SELECT 1 FROM story_viewers custom_sv
+              WHERE custom_sv.story_id = s.id AND custom_sv.viewer_id = @userId
             ))
           )
         ORDER BY s.user_id, s.created_at
@@ -58,6 +60,7 @@ export const getStories = async (req, res) => {
 
       map[row.user_id].stories.push({
         id: row.story_id,
+        is_viewed: row.is_viewed === 1 || row.is_viewed === true,
         media_type: row.media_type,
         media_url: row.media_url,
         caption: row.caption,

@@ -5,8 +5,9 @@ const NotificationBadge = ({ count, showZero = false }) => {
   if (!count && !showZero) return null;
 
   // Show dot for small counts, number for larger
-  const showNumber = count > 0;
-  const displayCount = count > 99 ? '99+' : count;
+  const num = Number(count);
+  const showNumber = num > 0;
+  const displayCount = num > 99 ? '99+' : num;
 
   return (
     <div className="absolute -top-1 -right-1 flex items-center justify-center">

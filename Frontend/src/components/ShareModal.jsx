@@ -104,14 +104,14 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* <div className="p-4 border-b">
+        <div className="p-4 border-b">
           <button
             onClick={handleShareTimeline}
             className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
           >
             Chia sẻ lên trang cá nhân
           </button>
-        </div> */}
+        </div>
 
         <div className="p-4">
           <h4 className="font-semibold mb-3">Gửi qua tin nhắn</h4>
