@@ -1128,7 +1128,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
         <div className="flex-1 flex items-center justify-between text-gray-600">
           <button
             onClick={handleLike}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-50 transition"
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <Heart className={`w-5 h-5 ${liked ? "text-red-500 fill-red-500" : ""}`} />
             <span className={`text-sm font-medium ${liked ? "text-red-500" : ""}`}>Thích</span>
@@ -1136,7 +1136,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
 
           <button
             onClick={loadComments}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-50 transition"
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <MessageCircle className="w-5 h-5" />
             <span className="text-sm font-medium">Bình luận</span>
@@ -1144,7 +1144,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
 
           <button
             onClick={() => setShowShareModal(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-50 transition"
+            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <Share2 className="w-5 h-5" />
             <span className="text-sm font-medium">Chia sẻ</span>
