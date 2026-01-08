@@ -70,16 +70,25 @@ export const useUnreadCounts = () => {
 
   // Initial fetch
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
     fetchUnreadMessages();
     fetchUnreadNotifications();
     fetchPendingFriendRequests();
 
-    // Refresh every 30 seconds
+    // Refresh every 60 seconds (reduced from 30s to avoid rate limiting)
     const interval = setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+      if (!currentToken) {
+        clearInterval(interval);
+        return;
+      }
+
       fetchUnreadMessages();
       fetchUnreadNotifications();
       fetchPendingFriendRequests();
-    }, 30000);
+    }, 60000); // Changed from 30000 to 60000 (1 minute)
 
     return () => clearInterval(interval);
   }, []);

@@ -21,25 +21,28 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor - Handle token expiration
+// Track if we're already redirecting to prevent multiple redirects
+let isRedirecting = false;
+
+// Response interceptor - Handle token expiration and rate limiting
 axiosInstance.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     if (error.response) {
       const { status, data } = error.response;
 
       // Handle 401 Unauthorized (token expired or invalid)
       if (status === 401) {
-        const message = data?.message || 'Phiên đăng nhập đã hết hạn';
+        const message = data?.message || '';
 
-        // Check if it's token expired
-        if (
-          message.includes('hết hạn') ||
-          message.includes('expired') ||
-          data?.message === 'Token đã hết hạn, vui lòng đăng nhập lại'
-        ) {
+        // Prevent multiple redirects
+        if (!isRedirecting) {
+          isRedirecting = true;
+
           // Clear local storage
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -51,8 +54,30 @@ axiosInstance.interceptors.response.use(
           setTimeout(() => {
             window.location.href = '/';
           }, 1500);
+        }
+      }
+
+      // Handle 429 Too Many Requests (Rate Limiting)
+      else if (status === 429) {
+        const retryAfter = error.response.headers['retry-after'];
+        const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 2000; // Default 2 seconds
+
+        // Don't show toast for every 429 error to avoid spam
+        if (!originalRequest._retryCount) {
+          console.warn('Rate limit exceeded. Retrying after', waitTime, 'ms');
+        }
+
+        // Retry the request after waiting
+        if (!originalRequest._retryCount || originalRequest._retryCount < 3) {
+          originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+
+          return axiosInstance(originalRequest);
         } else {
-          toast.error(message);
+          // Max retries reached
+          toast.error('Server đang quá tải. Vui lòng thử lại sau!');
         }
       }
 

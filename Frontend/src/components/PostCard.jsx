@@ -639,7 +639,15 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
         });
         setSaved(!!saveRes.data?.saved);
       } catch (err) {
-        console.error("Check status error:", err);
+        // Silently handle 429 errors (rate limiting)
+        if (err.response?.status === 429) {
+          console.warn("Rate limit exceeded for post", post.id);
+          return;
+        }
+        // Only log other errors
+        if (err.response?.status !== 401) {
+          console.error("Check status error:", err);
+        }
       }
     };
 
