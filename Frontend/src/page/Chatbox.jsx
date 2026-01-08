@@ -1023,10 +1023,10 @@ const Chatbox = () => {
 
   return (
     <>
-      <div className="flex flex-col h-full min-h-0 overflow-hidden bg-[#f0f2f5] sm:-ml-118">
+      <div className="flex flex-col h-screen w-full overflow-hidden bg-[#f0f2f5] sm:-ml-118">
 
-        {/* HEADER */}
-        <div className="shrink-0 flex items-center gap-3 p-3 bg-white shadow z-10">
+        {/* HEADER - Sticky Top */}
+        <div className="sticky top-0 shrink-0 flex items-center gap-3 p-3 bg-white shadow z-20">
           {isMobile && (
             <button onClick={() => window.history.back()} className="p-2 mr-2">
               <ArrowLeft size={18} />
@@ -1254,9 +1254,9 @@ const Chatbox = () => {
           )}
         </div>
 
-        {/* PREVIEW IMAGES */}
+        {/* PREVIEW IMAGES - Above Input */}
         {previewImages.length > 0 && (
-          <div className="p-3 bg-white shadow-md border-t">
+          <div className="sticky bottom-[72px] p-3 bg-white shadow-md border-t z-10">
             <div className="flex overflow-x-auto gap-3 pb-2">
               {previewImages.map((img, idx) => (
                 <div key={idx} className="relative">
@@ -1281,9 +1281,9 @@ const Chatbox = () => {
           </div>
         )}
 
-        {/* Reply preview */}
+        {/* Reply preview - Above Input */}
         {replyingTo && (
-          <div className="p-3 bg-gray-50 border-t flex items-center justify-between">
+          <div className="sticky bottom-[72px] p-3 bg-gray-50 border-t flex items-center justify-between z-10">
             <div className="flex-1">
               <p className="text-xs text-gray-500">Đang trả lời</p>
               <p className="text-sm truncate">
@@ -1297,8 +1297,8 @@ const Chatbox = () => {
           </div>
         )}
 
-        {/* INPUT */}
-        <div className="shrink-0 p-3 bg-white flex items-center gap-3">
+        {/* INPUT - Sticky Bottom */}
+        <div className="sticky bottom-0 shrink-0 p-3 bg-white flex items-center gap-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20">
           <button
             onClick={isRecording ? stopRecording : startRecording}
             className={`p-3 rounded-full ${isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-black"
