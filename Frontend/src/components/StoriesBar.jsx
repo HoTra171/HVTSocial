@@ -142,8 +142,20 @@ const StoriesBar = () => {
               <p className="text-sm font-medium">Tạo Story</p>
             </div>
 
-            {/* Danh sách preview story theo user */}
-            {stories.map((group) => {
+            {/* Danh sách preview story theo user - Current user first, unseen second, seen last */}
+            {[...stories].sort((a, b) => {
+              // Current user's story always first
+              if (a.user.id === currentUserIdVal) return -1;
+              if (b.user.id === currentUserIdVal) return 1;
+
+              // Unseen stories before seen stories
+              const aHasUnseen = a.stories.some(s => !s.is_viewed);
+              const bHasUnseen = b.stories.some(s => !s.is_viewed);
+              if (aHasUnseen && !bHasUnseen) return -1;
+              if (!aHasUnseen && bHasUnseen) return 1;
+
+              return 0;
+            }).map((group) => {
               const previewStory = group.stories[0];
               if (!previewStory) return null;
 

@@ -11,6 +11,12 @@ import {
   Check,
   CheckCheck,
   AlertCircle,
+  Home,
+  MessageCircle,
+  Search,
+  UserIcon,
+  Users,
+  Bell,
 } from "lucide-react";
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -71,6 +77,8 @@ const Chatbox = () => {
   const [replyingTo, setReplyingTo] = useState(null);
   const [text, setText] = useState("");
   const [editingMessage, setEditingMessage] = useState(null);
+  const [chatList, setChatList] = useState([]);
+  const [chatSearch, setChatSearch] = useState("");
 
   const [previewImages, setPreviewImages] = useState([]);
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -477,6 +485,44 @@ const Chatbox = () => {
       return false; // Trả về false khi có lỗi
     }
   };
+
+  // Fetch chat list for sidebar
+  const fetchChatList = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token || !myId) return;
+
+      const res = await axios.get(
+        `${API_URL}/chat/user/${myId}/chats`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const raw = res.data || [];
+      const uniqueChats = Object.values(
+        raw.reduce((acc, chat) => {
+          const id = chat.chat_id;
+          if (!acc[id] || new Date(chat.last_time) > new Date(acc[id].last_time)) {
+            acc[id] = chat;
+          }
+          return acc;
+        }, {})
+      );
+      const sorted = [...uniqueChats].sort((a, b) => {
+        if ((a.unread_count || 0) > 0 && (b.unread_count || 0) === 0) return -1;
+        if ((a.unread_count || 0) === 0 && (b.unread_count || 0) > 0) return 1;
+        return new Date(b.last_time || 0) - new Date(a.last_time || 0);
+      });
+
+      setChatList(sorted);
+    } catch (err) {
+      console.error("fetchChatList error:", err);
+    }
+  };
+
+  // Fetch chat list on mount
+  useEffect(() => {
+    if (myId) fetchChatList();
+  }, [myId]);
 
   // Fetch messages
   const fetchMessages = async () => {
@@ -1023,339 +1069,449 @@ const Chatbox = () => {
 
   return (
     <>
-      <div className="fixed pl-72 inset-0 flex flex-col h-[100dvh] w-full overflow-hidden bg-[#f0f2f5]">
+      <div className="fixed inset-0 z-50 flex h-[100dvh] w-full overflow-hidden bg-[#f0f2f5]">
 
-        {/* HEADER - Sticky Top */}
-        <div className="sticky top-0 shrink-0 flex items-center gap-3 p-3 bg-white shadow z-20">
-          {isMobile && (
-            <button onClick={() => window.history.back()} className="p-2 mr-2">
-              <ArrowLeft size={18} />
-            </button>
-          )}
-
-          <div className="relative">
-            <img
-              src={
-                partner.is_group_chat
-                  ? "/group.png"
-                  : partner.avatar || "/default.jpg"
-              }
-              className="w-10 h-10 rounded-full"
-              alt=""
-            />
-            {!partner.is_group_chat && (
-              <div
-                className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isPartnerOnline ? "bg-green-500" : "bg-gray-400"
-                  }`}
-              />
-            )}
-          </div>
-
-          <div>
-            <p className="font-medium">{partner.name}</p>
-            {!partner.is_group_chat && (
-              <p className="text-xs text-gray-500">
-                {isPartnerOnline ? "Đang hoạt động" : `@${partner.username}`}
-              </p>
-            )}
-          </div>
-
-          <div className="flex-1" />
-
+        {/* MINI SIDEBAR - Icon Only (Instagram Style) */}
+        <div className="hidden sm:flex flex-col items-center w-16 bg-white border-r py-4 gap-2 border-gray-200">
+          {/* Logo */}
           <button
-            onClick={() => startCall(false)}
-            className="p-2 bg-gray-100 rounded-full"
+            onClick={() => navigate('/feed')}
+            className="w-10 h-10 flex items-center justify-center mb-4"
+            title="HVT Social"
           >
-            <Phone size={18} />
+            <span className="text-xl font-bold text-indigo-600">H</span>
           </button>
 
+          {/* Nav Icons from menuItemsData */}
+          {[
+            { to: '/feed', Icon: Home, label: 'Bảng tin' },
+            { to: '/discover', Icon: Search, label: 'Khám phá' },
+            { to: '/messages', Icon: MessageCircle, label: 'Tin nhắn' },
+            { to: '/notifications', Icon: Bell, label: 'Thông báo' },
+            { to: '/connections', Icon: Users, label: 'Kết nối' },
+          ].map(({ to, Icon, label }) => (
+            <button
+              key={to}
+              onClick={() => navigate(to)}
+              className={`w-10 h-10 flex items-center justify-center rounded-lg transition ${to === '/messages' ? 'bg-gray-100' : 'hover:bg-gray-100'}`}
+              title={label}
+            >
+              <Icon className={`w-6 h-6 ${to === '/messages' ? 'text-indigo-600' : 'text-gray-600'}`} />
+            </button>
+          ))}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Profile */}
           <button
-            onClick={() => startCall(true)}
-            className="p-2 bg-gray-100 rounded-full"
+            onClick={() => navigate('/profile')}
+            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
+            title="Hồ sơ"
           >
-            <Video size={18} />
+            <UserIcon className="w-6 h-6 text-gray-600" />
           </button>
         </div>
 
-        {/* BODY */}
-        <div
-          ref={scrollRef}
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-4"
-          onScroll={(e) => {
-            if (e.target.scrollTop === 0) loadMore();
-          }}
-        >
-
-          {messages.length === 0 && (
-            <div className="text-center text-gray-500 mt-10">
-              <p>Chưa có tin nhắn nào</p>
-              <p className="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
+        {/* RECENT CHATS LIST (like RecentMessages) */}
+        <div className="hidden sm:flex flex-col w-80 bg-white border-r overflow-hidden border-gray-200">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="font-semibold text-lg mb-3">Tin nhắn</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm"
+                value={chatSearch}
+                onChange={(e) => setChatSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
+              />
             </div>
-          )}
-
-          {messages.map((msg, idx) => {
-            const isMe = msg.sender_id === myId;
-            const prevMsg = idx > 0 ? messages[idx - 1] : null;
-            const showTime = shouldShowTime(msg, prevMsg);
-            const parsed = parseMessage(msg);
-
-            const storyMeta = parseStoryMeta(msg);
-            const isStoryReply = !!storyMeta?.storyId;
-
-            const keepLegacy =
-              parsed.isReply ||
-              msg.message_type === "shared_post" ||
-              msg.message_type === "image" ||
-              isStoryReply;
-
-
-            const msgForBubble =
-              msg.message_type === "text" ? { ...msg, content: parsed.actualContent } : msg;
-
-            return (
-              <React.Fragment key={`${msg.id}-${msg.created_at}`}>
-                {showTime && (
-                  <div className="text-center text-xs text-gray-400 my-2">
-                    {formatTime(msg.created_at)}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {chatList.filter(item =>
+              !chatSearch || item.target_name?.toLowerCase().includes(chatSearch.toLowerCase())
+            ).map((item) => (
+              <div
+                key={item.chat_id}
+                onClick={() => navigate(`/messages/${item.chat_id}`)}
+                className={`flex items-center gap-3 py-2 px-3 cursor-pointer hover:bg-gray-100 transition ${Number(chatId) === Number(item.chat_id) ? 'bg-gray-100' : ''}`}
+              >
+                <img
+                  src={item.avatar || (item.is_group_chat ? "/group.png" : "/default.jpg")}
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-baseline gap-2">
+                    <p className="font-medium text-sm truncate">{item.target_name}</p>
+                    <p className="text-[10px] text-gray-400 flex-shrink-0">
+                      {item.last_time ? new Date(item.last_time).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' }).split(',')[0] : ''}
+                    </p>
                   </div>
-                )}
-
-                {keepLegacy ? (
-                  <div className={`flex items-start gap-2 mb-2 ${isMe ? "justify-end" : "justify-start"}`}>
-                    {!isMe && (
-                      <img
-                        src={partner.avatar || "/default.jpg"}
-                        className="w-8 h-8 rounded-full"
-                        alt=""
-                      />
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-gray-500 truncate flex-1">
+                      {item.last_message ||
+                        (item.last_message_type === "image"
+                          ? "📷 Ảnh"
+                          : item.last_message_type === "voice"
+                            ? "🎤 Tin nhắn thoại"
+                            : "Chưa có tin nhắn")}
+                    </p>
+                    {item.unread_count > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center flex-shrink-0">
+                        {item.unread_count > 99 ? "99+" : item.unread_count}
+                      </span>
                     )}
-
-                    <div className="relative max-w-[70%]">
-                      {parsed.isReply && (
-                        <div className="mb-1 px-3 py-2 bg-gray-100 rounded-lg text-xs border-l-2 border-blue-500">
-                          <p className="font-semibold text-gray-600">{parsed.replyData.sender}</p>
-                          <p className="text-gray-500 truncate">
-                            {parsed.replyData.type === "text"
-                              ? parsed.replyData.content
-                              : parsed.replyData.type === "image"
-                                ? "📷 Hình ảnh"
-                                : "🎤 Tin nhắn thoại"}
-                          </p>
-                        </div>
-                      )}
-
-                      {msg.recalled ? (
-                        <div className="italic opacity-60 px-3 py-2 bg-gray-200 rounded-2xl text-sm">
-                          Tin nhắn đã thu hồi
-                        </div>
-                      ) : msg.message_type === "image" ? (
-                        <div className="flex flex-col gap-1">
-                          <img
-                            src={msg.media_url}
-                            className="max-w-[220px] rounded-xl cursor-pointer shadow"
-                            onClick={() => setFullImage(msg.media_url)}
-                            alt=""
-                          />
-                          <div className="flex justify-end">{renderMessageStatus(msg)}</div>
-                        </div>
-                      ) : msg.message_type === "shared_post" ? (
-                        <div className="flex flex-col gap-1">
-                          {(() => {
-                            const data = parseShared(msg);
-                            return (
-                              <button
-                                onClick={() => {
-                                  openSharedPost(data?.postId);
-                                  console.log("Open shared post:", data?.postId);
-                                }}
-                                className="text-left w-full"
-                              >
-                                <div className="p-3 rounded-xl border bg-white shadow-sm">
-                                  <p className="font-semibold text-sm">Bài viết được chia sẻ</p>
-                                  <p className="text-xs text-gray-600 line-clamp-2">
-                                    {data?.content || "Nhấn để xem bài viết"}
-                                  </p>
-                                </div>
-                              </button>
-                            );
-                          })()}
-                          <div className="flex justify-end">{renderMessageStatus(msg)}</div>
-                        </div>
-                      ) : (
-                        <div
-                          className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"}`}
-                        >
-                          {isStoryReply && (
-                            <div className={`text-xs mb-1 ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                              Bạn đã trả lời tin của {storyMeta?.storyOwnerName || partner.name}
-                            </div>
-                          )}
-
-
-                          {msg.message_type === "voice" ? (
-                            <audio src={msg.media_url} controls className="max-w-[220px]" />
-                          ) : (
-                            <div>{parsed.actualContent}</div>
-                          )}
-                          <div className="flex justify-end mt-1">{renderMessageStatus(msg)}</div>
-                        </div>
-                      )}
-                    </div>
                   </div>
-                ) : (
-                  <MessageBubble
-                    msg={msgForBubble}
-                    isMe={isMe}
-                    partner={partner}
-                    onRetry={retryMessage}
-                    onReact={sendReaction}
-                    onEdit={(m) => {
-                      setEditingMessage(m);
-                      setText(parseMessage(m).actualContent || "");
-                      setReplyingTo(null);
-                    }}
-                    onRecall={recallMessage}
-                    onImageClick={(url) => setFullImage(url)}
-                    openMenuId={openMenuId}
-                    setOpenMenuId={setOpenMenuId}
-                    reactMenuFor={reactMenuFor}
-                    setReactMenuFor={setReactMenuFor}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })}
+                </div>
+              </div>
+            ))}
+            {chatList.length === 0 && (
+              <p className="text-sm text-gray-500 p-4 text-center">Chưa có cuộc trò chuyện nào</p>
+            )}
+          </div>
+        </div>
 
-          {/* Typing indicator */}
-          {isPartnerTyping && (
-            <div className="flex items-center gap-2 px-3 py-2">
+        {/* CHAT CONTENT */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+
+          {/* HEADER - Sticky Top */}
+          <div className="shrink-0 flex items-center gap-3 p-3 bg-white shadow z-20">
+            {/* Nút quay lại - luôn hiện để thoát fullscreen chat */}
+            <button
+              onClick={() => navigate('/messages')}
+              className="p-2 hover:bg-gray-100 rounded-full transition"
+              title="Quay lại"
+            >
+              <ArrowLeft size={20} />
+            </button>
+
+            <div className="relative">
               <img
-                src={partner.avatar || "/default.jpg"}
-                className="w-8 h-8 rounded-full"
+                src={
+                  partner.is_group_chat
+                    ? "/group.png"
+                    : partner.avatar || "/default.jpg"
+                }
+                className="w-10 h-10 rounded-full"
                 alt=""
               />
-              <div className="bg-gray-200 rounded-2xl px-4 py-2">
-                <div className="flex gap-1">
-                  <div
-                    className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  ></div>
-                  <div
-                    className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  ></div>
+              {!partner.is_group_chat && (
+                <div
+                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isPartnerOnline ? "bg-green-500" : "bg-gray-400"
+                    }`}
+                />
+              )}
+            </div>
+
+            <div>
+              <p className="font-medium">{partner.name}</p>
+              {!partner.is_group_chat && (
+                <p className="text-xs text-gray-500">
+                  {isPartnerOnline ? "Đang hoạt động" : `@${partner.username}`}
+                </p>
+              )}
+            </div>
+
+            <div className="flex-1" />
+
+            <button
+              onClick={() => startCall(false)}
+              className="p-2 bg-gray-100 rounded-full"
+            >
+              <Phone size={18} />
+            </button>
+
+            <button
+              onClick={() => startCall(true)}
+              className="p-2 bg-gray-100 rounded-full"
+            >
+              <Video size={18} />
+            </button>
+          </div>
+
+          {/* BODY */}
+          <div
+            ref={scrollRef}
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-4"
+            onScroll={(e) => {
+              if (e.target.scrollTop === 0) loadMore();
+            }}
+          >
+
+            {messages.length === 0 && (
+              <div className="text-center text-gray-500 mt-10">
+                <p>Chưa có tin nhắn nào</p>
+                <p className="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
+              </div>
+            )}
+
+            {messages.map((msg, idx) => {
+              const isMe = msg.sender_id === myId;
+              const prevMsg = idx > 0 ? messages[idx - 1] : null;
+              const showTime = shouldShowTime(msg, prevMsg);
+              const parsed = parseMessage(msg);
+
+              const storyMeta = parseStoryMeta(msg);
+              const isStoryReply = !!storyMeta?.storyId;
+
+              const keepLegacy =
+                parsed.isReply ||
+                msg.message_type === "shared_post" ||
+                msg.message_type === "image" ||
+                isStoryReply;
+
+
+              const msgForBubble =
+                msg.message_type === "text" ? { ...msg, content: parsed.actualContent } : msg;
+
+              return (
+                <React.Fragment key={`${msg.id}-${msg.created_at}`}>
+                  {showTime && (
+                    <div className="text-center text-xs text-gray-400 my-2">
+                      {formatTime(msg.created_at)}
+                    </div>
+                  )}
+
+                  {keepLegacy ? (
+                    <div className={`flex items-start gap-2 mb-2 ${isMe ? "justify-end" : "justify-start"}`}>
+                      {!isMe && (
+                        <img
+                          src={partner.avatar || "/default.jpg"}
+                          className="w-8 h-8 rounded-full"
+                          alt=""
+                        />
+                      )}
+
+                      <div className="relative max-w-[70%]">
+                        {parsed.isReply && (
+                          <div className="mb-1 px-3 py-2 bg-gray-100 rounded-lg text-xs border-l-2 border-blue-500">
+                            <p className="font-semibold text-gray-600">{parsed.replyData.sender}</p>
+                            <p className="text-gray-500 truncate">
+                              {parsed.replyData.type === "text"
+                                ? parsed.replyData.content
+                                : parsed.replyData.type === "image"
+                                  ? "📷 Hình ảnh"
+                                  : "🎤 Tin nhắn thoại"}
+                            </p>
+                          </div>
+                        )}
+
+                        {msg.recalled ? (
+                          <div className="italic opacity-60 px-3 py-2 bg-gray-200 rounded-2xl text-sm">
+                            Tin nhắn đã thu hồi
+                          </div>
+                        ) : msg.message_type === "image" ? (
+                          <div className="flex flex-col gap-1">
+                            <img
+                              src={msg.media_url}
+                              className="max-w-[220px] rounded-xl cursor-pointer shadow"
+                              onClick={() => setFullImage(msg.media_url)}
+                              alt=""
+                            />
+                            <div className="flex justify-end">{renderMessageStatus(msg)}</div>
+                          </div>
+                        ) : msg.message_type === "shared_post" ? (
+                          <div className="flex flex-col gap-1">
+                            {(() => {
+                              const data = parseShared(msg);
+                              return (
+                                <button
+                                  onClick={() => {
+                                    openSharedPost(data?.postId);
+                                    console.log("Open shared post:", data?.postId);
+                                  }}
+                                  className="text-left w-full"
+                                >
+                                  <div className="p-3 rounded-xl border bg-white shadow-sm">
+                                    <p className="font-semibold text-sm">Bài viết được chia sẻ</p>
+                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                      {data?.content || "Nhấn để xem bài viết"}
+                                    </p>
+                                  </div>
+                                </button>
+                              );
+                            })()}
+                            <div className="flex justify-end">{renderMessageStatus(msg)}</div>
+                          </div>
+                        ) : (
+                          <div
+                            className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"}`}
+                          >
+                            {isStoryReply && (
+                              <div className={`text-xs mb-1 ${isMe ? "text-white/80" : "text-gray-500"}`}>
+                                Bạn đã trả lời tin của {storyMeta?.storyOwnerName || partner.name}
+                              </div>
+                            )}
+
+
+                            {msg.message_type === "voice" ? (
+                              <audio src={msg.media_url} controls className="max-w-[220px]" />
+                            ) : (
+                              <div>{parsed.actualContent}</div>
+                            )}
+                            <div className="flex justify-end mt-1">{renderMessageStatus(msg)}</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <MessageBubble
+                      msg={msgForBubble}
+                      isMe={isMe}
+                      partner={partner}
+                      onRetry={retryMessage}
+                      onReact={sendReaction}
+                      onEdit={(m) => {
+                        setEditingMessage(m);
+                        setText(parseMessage(m).actualContent || "");
+                        setReplyingTo(null);
+                      }}
+                      onRecall={recallMessage}
+                      onImageClick={(url) => setFullImage(url)}
+                      openMenuId={openMenuId}
+                      setOpenMenuId={setOpenMenuId}
+                      reactMenuFor={reactMenuFor}
+                      setReactMenuFor={setReactMenuFor}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+
+            {/* Typing indicator */}
+            {isPartnerTyping && (
+              <div className="flex items-center gap-2 px-3 py-2">
+                <img
+                  src={partner.avatar || "/default.jpg"}
+                  className="w-8 h-8 rounded-full"
+                  alt=""
+                />
+                <div className="bg-gray-200 rounded-2xl px-4 py-2">
+                  <div className="flex gap-1">
+                    <div
+                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    ></div>
+                  </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* PREVIEW IMAGES - Above Input */}
+          {previewImages.length > 0 && (
+            <div className="sticky bottom-[72px] p-3 bg-white shadow-md border-t z-10">
+              <div className="flex overflow-x-auto gap-3 pb-2">
+                {previewImages.map((img, idx) => (
+                  <div key={idx} className="relative">
+                    <img
+                      src={img.url}
+                      className="w-[90px] h-[90px] rounded-xl object-cover border shadow"
+                      alt=""
+                    />
+                    <button
+                      onClick={() =>
+                        setPreviewImages((prev) =>
+                          prev.filter((_, i) => i !== idx)
+                        )
+                      }
+                      className="absolute top-0 -right-2 bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
-        </div>
 
-        {/* PREVIEW IMAGES - Above Input */}
-        {previewImages.length > 0 && (
-          <div className="sticky bottom-[72px] p-3 bg-white shadow-md border-t z-10">
-            <div className="flex overflow-x-auto gap-3 pb-2">
-              {previewImages.map((img, idx) => (
-                <div key={idx} className="relative">
-                  <img
-                    src={img.url}
-                    className="w-[90px] h-[90px] rounded-xl object-cover border shadow"
-                    alt=""
-                  />
-                  <button
-                    onClick={() =>
-                      setPreviewImages((prev) =>
-                        prev.filter((_, i) => i !== idx)
-                      )
-                    }
-                    className="absolute top-0 -right-2 bg-black/70 text-white w-6 h-6 rounded-full flex items-center justify-center"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
+          {/* Reply preview */}
+          {replyingTo && (
+            <div className="p-3 bg-gray-50 border-t flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs text-gray-500">Đang trả lời</p>
+                <p className="text-sm truncate">
+                  {replyingTo.message_type === 'text' ? replyingTo.content :
+                    replyingTo.message_type === 'image' ? '📷 Hình ảnh' : '🎤 Thoại'}
+                </p>
+              </div>
+              <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-gray-200 rounded-full">
+                <X size={16} />
+              </button>
             </div>
-          </div>
-        )}
-
-        {/* Reply preview */}
-        {replyingTo && (
-          <div className="p-3 bg-gray-50 border-t flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-xs text-gray-500">Đang trả lời</p>
-              <p className="text-sm truncate">
-                {replyingTo.message_type === 'text' ? replyingTo.content :
-                  replyingTo.message_type === 'image' ? '📷 Hình ảnh' : '🎤 Thoại'}
-              </p>
-            </div>
-            <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-gray-200 rounded-full">
-              <X size={16} />
-            </button>
-          </div>
-        )}
-
-        {/* INPUT - Sticky Bottom */}
-        <div className="sticky bottom-0 shrink-0 p-3 bg-white flex items-center gap-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20">
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            className={`p-3 rounded-full ${isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-black"
-              }`}
-          >
-            <Mic size={18} />
-          </button>
-
-          {isRecording && (
-            <span className="text-xs text-red-500 min-w-[40px]">
-              {recordingTime}s
-            </span>
           )}
 
-          <label>
-            <ImageIcon className="w-6 h-6 text-gray-700 cursor-pointer" />
+          {/* INPUT - Sticky Bottom */}
+          <div className="sticky bottom-0 shrink-0 p-3 bg-white flex items-center gap-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20">
+            <button
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`p-3 rounded-full ${isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-black"
+                }`}
+            >
+              <Mic size={18} />
+            </button>
+
+            {isRecording && (
+              <span className="text-xs text-red-500 min-w-[40px]">
+                {recordingTime}s
+              </span>
+            )}
+
+            <label>
+              <ImageIcon className="w-6 h-6 text-gray-700 cursor-pointer" />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const previews = files.map((file) => ({
+                    file,
+                    url: URL.createObjectURL(file),
+                  }));
+                  setPreviewImages((prev) => [...prev, ...previews]);
+                }}
+              />
+            </label>
+
             <input
-              type="file"
-              accept="image/*"
-              multiple
-              hidden
+              value={text}
               onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                const previews = files.map((file) => ({
-                  file,
-                  url: URL.createObjectURL(file),
-                }));
-                setPreviewImages((prev) => [...prev, ...previews]);
+                setText(e.target.value);
+                handleTyping();
               }}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder={editingMessage ? "Chỉnh sửa tin nhắn..." : "Aa"}
+              className="flex-1 px-4 py-2 bg-gray-100 rounded-full"
             />
-          </label>
 
-          <input
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              handleTyping();
-            }}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder={editingMessage ? "Chỉnh sửa tin nhắn..." : "Aa"}
-            className="flex-1 px-4 py-2 bg-gray-100 rounded-full"
-          />
-
-          <button
-            onClick={sendMessage}
-            className="p-3 bg-blue-600 rounded-full text-white"
-          >
-            <SendHorizonal size={18} />
-          </button>
+            <button
+              onClick={sendMessage}
+              className="p-3 bg-blue-600 rounded-full text-white"
+            >
+              <SendHorizonal size={18} />
+            </button>
+          </div>
         </div>
-      </div >
+        {/* END CHAT CONTENT */}
+      </div>
 
       {/* FULL IMAGE */}
       {
         fullImage && (
           <div
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60]"
             onClick={() => setFullImage(null)}
           >
             <img

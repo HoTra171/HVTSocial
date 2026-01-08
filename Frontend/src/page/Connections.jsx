@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import Loading from '../components/Loading';
 
 const Connections = () => {
   const navigate = useNavigate();
@@ -211,11 +212,7 @@ const Connections = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">Đang tải...</div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

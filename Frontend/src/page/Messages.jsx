@@ -3,6 +3,7 @@ import { MessagesSquare, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import Loading from '../components/Loading'; 
 
 const Messages = () => {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ const Messages = () => {
     fetchChats();
   }, [navigate]);
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <Loading />;
 
   return (
     <div className="min-h-screen relative sm:-ml-48 bg-slate-50">
@@ -81,15 +82,16 @@ const Messages = () => {
           {chatList.map((item) => (
             <div
               key={item.chat_id}
-              className="max-w-xl flex flex-wrap gap-5 p-6 bg-white shadow rounded-md relative"
+              onClick={() => navigate(`/messages/${item.chat_id}`)}
+              className="max-w-xl flex items-center gap-4 p-4 bg-white shadow rounded-md cursor-pointer hover:bg-gray-50 transition"
             >
               <img
                 src={item.avatar || (item.is_group_chat ? "/group.png" : "/default.jpg")}
                 alt=""
-                className="rounded-full size-12 mx-auto "
+                className="rounded-full w-12 h-12 object-cover flex-shrink-0"
               />
 
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-slate-700">{item.target_name}</p>
 
@@ -100,7 +102,7 @@ const Messages = () => {
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 mt-1 truncate">
                   {item.last_message ||
                     (item.last_message_type === "image"
                       ? "📷 Ảnh"
@@ -110,20 +112,26 @@ const Messages = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2 mt-4">
+              <div className="flex flex-col gap-2 flex-shrink-0">
                 <button
-                  onClick={() => navigate(`/messages/${item.chat_id}`)}
-                  className="size-10 flex items-center justify-center text-sm rounded 
-                    bg-slate-100 hover:bg-slate-200 text-slate-800 active:scale-95 transition cursor-pointer gap-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/messages/${item.chat_id}`);
+                  }}
+                  className="w-10 h-10 flex items-center justify-center text-sm rounded 
+                    bg-slate-100 hover:bg-slate-200 text-slate-800 active:scale-95 transition"
                 >
                   <MessagesSquare className="w-4 h-4" />
                 </button>
 
                 {item.target_id && (
                   <button
-                    onClick={() => navigate(`/profile/${item.target_id}`)}
-                    className="size-10 flex items-center justify-center text-sm rounded
-                      bg-slate-100 hover:bg-slate-200 text-slate-800 active:scale-95 transition cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/profile/${item.target_id}`);
+                    }}
+                    className="w-10 h-10 flex items-center justify-center text-sm rounded
+                      bg-slate-100 hover:bg-slate-200 text-slate-800 active:scale-95 transition"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
