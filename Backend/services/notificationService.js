@@ -28,8 +28,9 @@ export const NotificationService = {
           n.id,
           n.message AS content,
           n.type,
-          CASE WHEN n.is_read = 1 THEN 'read' ELSE 'unread' END AS status,
+          CASE WHEN n.is_read THEN 'read' ELSE 'unread' END AS status,
           n.target_id AS post_id,
+          n.target_type,
           n.created_at,
           u.full_name AS sender_name,
           u.avatar AS sender_avatar,
@@ -53,7 +54,7 @@ export const NotificationService = {
         SELECT COUNT(*) AS unread_count
         FROM notifications
         WHERE user_id = @userId
-          AND is_read = 0
+          AND is_read = false
       `);
 
     return result.recordset[0].unread_count;
@@ -65,9 +66,9 @@ export const NotificationService = {
   async markAllRead(userId) {
     await db.request().input('userId', userId).query(`
         UPDATE notifications
-        SET is_read = 1
+        SET is_read = true
         WHERE user_id = @userId
-          AND is_read = 0
+          AND is_read = false
       `);
 
     // Cập nhật unread count về 0
@@ -85,10 +86,10 @@ export const NotificationService = {
       .input('notificationId', notificationId)
       .input('userId', userId).query(`
         UPDATE notifications
-        SET is_read = 1
+        SET is_read = true
         WHERE id = @notificationId
           AND user_id = @userId
-          AND is_read = 0
+          AND is_read = false
       `);
 
     // Cập nhật unread count
@@ -120,7 +121,7 @@ export const NotificationService = {
       `);
 
     // Nếu xóa notification unread thì update count
-    if (notif.recordset[0]?.status === 0) {
+    if (notif.recordset[0]?.status === false) {
       await this.updateUnreadCount(userId);
     }
 
