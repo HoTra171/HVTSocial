@@ -25,12 +25,29 @@ const MessageBubble = ({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const longPressTimer = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const menuRef = useRef(null);
+  const reactMenuRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setOpenMenuId(null);
+      }
+      if (reactMenuRef.current && !reactMenuRef.current.contains(event.target)) {
+        setReactMenuFor(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [setOpenMenuId, setReactMenuFor]);
 
   const handleTouchStart = (e) => {
     if (!isMobile || msg.recalled || msg.failed) return;
@@ -101,11 +118,11 @@ const MessageBubble = ({
           onTouchEnd={handleTouchEnd}
           onTouchMove={handleTouchMove}
         >
-        {/* Icon bar (emoji + menu) */}
+        {/* Icon bar (emoji + menu) - Desktop only */}
         {!msg.recalled && !msg.failed && (
           <div
-            className={`msg-icon-bar absolute top-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition
-              ${isMe ? "left-[-70px]" : "right-[-70px]"}`}
+            className={`max-sm:hidden msg-icon-bar absolute top-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200
+              ${isMe ? "left-[-80px]" : "right-[-80px]"}`}
           >
             <button
               onClick={(e) => {
@@ -113,9 +130,10 @@ const MessageBubble = ({
                 setReactMenuFor(reactMenuFor === msg.id ? null : msg.id);
                 setOpenMenuId(null);
               }}
-              className="p-1 bg-white shadow rounded-full text-gray-600 hover:text-black"
+              className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-yellow-500 hover:bg-yellow-50 transition-all"
+              title="Thả cảm xúc"
             >
-              <Smile size={20} />
+              <Smile size={18} />
             </button>
 
             {isMe && (
@@ -125,26 +143,32 @@ const MessageBubble = ({
                   setOpenMenuId(openMenuId === msg.id ? null : msg.id);
                   setReactMenuFor(null);
                 }}
-                className="p-1 bg-white shadow rounded-full text-gray-600 hover:text-black"
+                className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                title="Tùy chọn"
               >
-                <MoreVertical size={20} />
+                <MoreVertical size={18} />
               </button>
             )}
           </div>
         )}
 
-        {/* Menu 3 chấm */}
+        {/* Menu 3 chấm - Improved positioning */}
         {openMenuId === msg.id && (
-          <div className="msg-menu absolute left-[-170px] top-0 bg-white shadow-lg rounded-lg w-40 p-2 z-50 border">
+          <div
+            ref={menuRef}
+            className={`msg-menu absolute top-0 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
+              ${isMe ? "left-[-160px]" : "right-[-160px]"}`}
+          >
             {msg.message_type === "text" && (
               <button
-                className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-2 transition-colors"
                 onClick={() => {
                   onEdit(msg);
                   setOpenMenuId(null);
                 }}
               >
-                Chỉnh sửa
+                <span className="text-lg">✏️</span>
+                <span>Chỉnh sửa</span>
               </button>
             )}
             <button
@@ -152,27 +176,32 @@ const MessageBubble = ({
                 onRecall(msg.id);
                 setOpenMenuId(null);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-gray-100 text-red-500"
+              className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-500 text-sm flex items-center gap-2 transition-colors"
             >
-              Thu hồi
+              <span className="text-lg">🗑️</span>
+              <span>Thu hồi</span>
             </button>
           </div>
         )}
 
-        {/* Menu reaction */}
+        {/* Menu reaction - Improved positioning and styling */}
         {reactMenuFor === msg.id && (
-          <div className="msg-react-menu absolute -top-12 left-[-10px] bg-white shadow-xl rounded-full flex gap-2 px-3 py-2 border z-50">
-            {["❤️", "👍", "😂", "😢", "😡"].map((emo) => (
-              <span
+          <div
+            ref={reactMenuRef}
+            className={`msg-react-menu absolute bottom-full mb-2 bg-white shadow-2xl rounded-full flex gap-1 px-3 py-2.5 border-2 border-gray-100 z-[60]
+              ${isMe ? "left-0" : "right-0"}`}
+          >
+            {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
+              <button
                 key={emo}
-                className="text-2xl cursor-pointer hover:scale-125 transition"
+                className="text-2xl cursor-pointer hover:scale-125 active:scale-110 transition-transform p-1 rounded-full hover:bg-gray-100"
                 onClick={() => {
                   onReact(msg.id, emo);
                   setReactMenuFor(null);
                 }}
               >
                 {emo}
-              </span>
+              </button>
             ))}
           </div>
         )}

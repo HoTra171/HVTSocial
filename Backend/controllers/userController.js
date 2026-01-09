@@ -307,35 +307,24 @@ export const suggestUsers = async (req, res) => {
     const db = await pool;
 
     // If no search query, return general suggestions
+    // If no search query, return general suggestions (simplified)
     if (!q) {
       const suggestionQuery = `
         SELECT TOP (@limit)
           u.id, u.full_name, u.username, u.avatar, u.bio, u.address,
-          CASE WHEN f1.status = 'accepted' OR f2.status = 'accepted' THEN 1 ELSE 0 END AS is_friend,
-          (
-            -- Score based on mutual friends, location, etc.
-            CASE WHEN u.address = (SELECT address FROM users WHERE id = @currentUserId) THEN 20 ELSE 0 END
-            + (SELECT COUNT(*) FROM friendships WHERE
-                ((user_id = @currentUserId AND friend_id IN (
-                  SELECT CASE WHEN f.user_id = u.id THEN f.friend_id ELSE f.user_id END
-                  FROM friendships f
-                  WHERE (f.user_id = u.id OR f.friend_id = u.id) AND f.status = 'accepted'
-                )) OR
-                (friend_id = @currentUserId AND user_id IN (
-                  SELECT CASE WHEN f.user_id = u.id THEN f.friend_id ELSE f.user_id END
-                  FROM friendships f
-                  WHERE (f.user_id = u.id OR f.friend_id = u.id) AND f.status = 'accepted'
-                )))
-                AND status = 'accepted'
-              ) * 5
-          ) AS score
+          0 AS is_friend
         FROM users u
-        LEFT JOIN friendships f1 ON f1.user_id = @currentUserId AND f1.friend_id = u.id
-        LEFT JOIN friendships f2 ON f2.friend_id = @currentUserId AND f2.user_id = u.id
         WHERE u.id <> @currentUserId
-          AND (f1.status IS NULL OR f1.status <> 'accepted')
-          AND (f2.status IS NULL OR f2.status <> 'accepted')
-        ORDER BY score DESC, u.created_at DESC;
+          AND NOT EXISTS (
+            SELECT 1 FROM friendships f
+            WHERE (
+              (f.user_id = @currentUserId AND f.friend_id = u.id)
+              OR
+              (f.friend_id = @currentUserId AND f.user_id = u.id)
+            )
+            AND f.status IN ('accepted', 'pending')
+          )
+        ORDER BY u.created_at DESC;
       `;
 
       const result = await db
@@ -351,7 +340,7 @@ export const suggestUsers = async (req, res) => {
         avatar: u.avatar,
         bio: u.bio,
         address: u.address,
-        isFriend: !!u.is_friend,
+        isFriend: false,
         isFollowing: false,
       }));
 

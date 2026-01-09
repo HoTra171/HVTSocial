@@ -62,7 +62,7 @@ const Discover = () => {
 
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API_URL}/users/discover`, {
-        params: { search: keyword, filterType  },
+        params: { search: keyword, filterType },
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -283,31 +283,28 @@ const Discover = () => {
         <div className="mb-6 flex gap-2 bg-white rounded-lg shadow-sm p-1 border border-gray-200 w-fit">
           <button
             onClick={() => setFilterType('all')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-              filterType === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'all'
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-600 hover:bg-gray-50'
+              }`}
           >
             Tất cả ({users.length})
           </button>
           <button
             onClick={() => setFilterType('not-friends')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-              filterType === 'not-friends'
-                ? 'bg-indigo-600 text-white'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'not-friends'
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-600 hover:bg-gray-50'
+              }`}
           >
             Chưa kết bạn ({users.filter((u) => !u.isFriend).length})
           </button>
           <button
             onClick={() => setFilterType('friends')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-              filterType === 'friends'
-                ? 'bg-indigo-600 text-white'
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'friends'
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-600 hover:bg-gray-50'
+              }`}
           >
             Bạn bè ({users.filter((u) => u.isFriend).length})
           </button>
@@ -320,7 +317,7 @@ const Discover = () => {
               <Sparkles className="w-5 h-5 text-indigo-600" />
               <h2 className="text-xl font-semibold text-slate-800">Gợi ý cho bạn</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
               {suggestions.slice(0, 8).map((user) => (
                 <UserCard
                   user={user}
@@ -341,7 +338,7 @@ const Discover = () => {
 
         {/* User List - Search Results */}
         {hasSearched && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {!loading &&
               filteredUsers.map((user) => (
                 <UserCard
@@ -372,7 +369,7 @@ const Discover = () => {
               <UserPlus className="w-5 h-5 text-indigo-600" />
               <h2 className="text-xl font-semibold text-slate-800">Tất cả người dùng</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
               {filteredUsers.map((user) => (
                 <UserCard
                   user={user}
