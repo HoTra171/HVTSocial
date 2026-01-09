@@ -11,6 +11,9 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
+import { searchPosts } from '../controllers/postController.js';
+router.get('/search', authMiddleware, searchPosts);
+
 /**
  * @swagger
  * /api/posts:

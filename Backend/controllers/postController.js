@@ -50,6 +50,94 @@ export const getPostsByUser = async (req, res) => {
   }
 };
 
+// GET /api/posts/search
+export const searchPosts = async (req, res) => {
+  try {
+    const keyword = req.query.q || '';
+    if (!keyword.trim()) {
+      return res.json({ success: true, posts: [] });
+    }
+
+    const { limit, cursor } = req.query;
+    const viewerId = req.user.id;
+
+    // Determine strict limit
+    const take = Math.min(Number(limit) || 10, 20);
+
+    const db = await pool;
+
+    // Use db.request() for compatibility
+    let query = `
+      SELECT TOP (@limit)
+        p.id, p.user_id, p.content, p.media_url, p.privacy, p.created_at, p.updated_at,
+        u.full_name, u.username, u.avatar,
+        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
+        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count,
+        CASE WHEN l.post_id IS NOT NULL THEN 1 ELSE 0 END AS is_liked
+      FROM posts p
+      JOIN users u ON p.user_id = u.id
+      LEFT JOIN likes l ON l.post_id = p.id AND l.user_id = @viewerId
+      WHERE p.content LIKE @keyword
+    `;
+
+    // Access Control Logic:
+    // 1. Private posts: Only owner
+    // 2. Friends posts: Owner + Friends
+    // 3. Public posts: Everyone
+    query += `
+      AND (
+        p.privacy = 'public'
+        OR p.user_id = @viewerId
+        OR (
+          p.privacy = 'friends' 
+          AND EXISTS (
+             SELECT 1 FROM friendships f
+             WHERE (f.user_id = p.user_id AND f.friend_id = @viewerId)
+                OR (f.friend_id = p.user_id AND f.user_id = @viewerId)
+             AND f.status = 'accepted'
+          )
+        )
+      )
+    `;
+
+    // Pagination (cursor based on id or created_at? keeping simple with id for now or standard created_at)
+    // For search, maybe simple order by rank? or just created_at
+    query += ` ORDER BY p.created_at DESC`;
+
+    const request = db.request()
+      .input('limit', sql.Int, take)
+      .input('viewerId', sql.Int, viewerId)
+      .input('keyword', sql.NVarChar, `%${keyword}%`);
+
+    const result = await request.query(query);
+
+    const posts = result.recordset.map(post => ({
+      id: post.id,
+      user_id: post.user_id,
+      content: post.content,
+      media_url: post.media_url,
+      privacy: post.privacy,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      author: {
+        id: post.user_id,
+        full_name: post.full_name,
+        username: post.username,
+        avatar: post.avatar
+      },
+      like_count: post.like_count,
+      comment_count: post.comment_count,
+      is_liked: !!post.is_liked
+    }));
+
+    res.json({ success: true, posts });
+
+  } catch (err) {
+    console.error('searchPosts error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 // POST /api/posts
 export const createPost = async (req, res) => {
   try {

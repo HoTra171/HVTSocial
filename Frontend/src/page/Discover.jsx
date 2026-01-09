@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Search, Users, X, Clock, Trash2, UserPlus, Sparkles } from 'lucide-react';
 import UserCard from '../components/UserCard';
+import PostCard from '../components/PostCard';
 import Loading from '../components/Loading';
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 
@@ -13,6 +14,8 @@ const Discover = () => {
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [filterType, setFilterType] = useState('all'); // all, not-friends, friends
+  const [searchType, setSearchType] = useState('user'); // user, post
+  const [posts, setPosts] = useState([]); // Store search result posts
   const [searchHistory, setSearchHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -54,28 +57,34 @@ const Discover = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch users
+  // Fetch users or posts
   const fetchUsers = async (keyword = '') => {
     try {
       setLoading(true);
       setHasSearched(keyword.trim() !== '');
 
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/users/discover`, {
-        params: { search: keyword, filterType },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
 
-      if (res.data?.success) {
-        setUsers(res.data.data || []);
+      if (searchType === 'user') {
+        const res = await axios.get(`${API_URL}/users/discover`, {
+          params: { search: keyword, filterType },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.data?.success) setUsers(res.data.data || []);
+        else setUsers([]);
       } else {
-        setUsers([]);
+        // Fetch Posts
+        const res = await axios.get(`${API_URL}/posts/search`, {
+          params: { q: keyword },
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.data?.success) setPosts(res.data.posts || []);
+        else setPosts([]);
       }
     } catch (err) {
-      console.error('Discover fetchUsers error:', err);
-      setUsers([]);
+      console.error('Discover fetch error:', err);
+      if (searchType === 'user') setUsers([]);
+      else setPosts([]);
     } finally {
       setLoading(false);
     }
@@ -212,17 +221,35 @@ const Discover = () => {
           <div className="p-6">
             <div className="flex gap-2" ref={searchRef}>
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-6 h-6" />
                 <input
                   type="text"
-                  placeholder="Tìm người dùng theo tên, username, bio, hoặc địa chỉ..."
-                  className="pl-10 pr-4 py-3 w-full border border-gray-300 rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  placeholder={searchType === 'user' ? "Tìm người dùng theo tên, username..." : "Tìm bài viết theo nội dung..."}
+                  className="pl-12 pr-4 py-4 w-full border border-gray-300 rounded-xl text-lg
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                   onChange={(e) => handleInputChange(e.target.value)}
                   value={input}
                   onKeyUp={handleSearch}
                   onFocus={() => setShowHistory(true)}
                 />
+
+                {/* Search Type Toggle (Absolute Right) */}
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setSearchType('user')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${searchType === 'user' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    Mọi người
+                  </button>
+                  <button
+                    onClick={() => setSearchType('post')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${searchType === 'post' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    Bài viết
+                  </button>
+                </div>
 
                 {/* Search History Dropdown */}
                 {showHistory && searchHistory.length > 0 && (
@@ -338,8 +365,12 @@ const Discover = () => {
 
         {/* User List - Search Results */}
         {hasSearched && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {!loading &&
+          <div className={searchType === 'user'
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6"
+            : "flex flex-col gap-6 max-w-2xl mx-auto" // Post layout
+          }>
+
+            {!loading && searchType === 'user' &&
               filteredUsers.map((user) => (
                 <UserCard
                   user={user}
@@ -348,11 +379,22 @@ const Discover = () => {
                 />
               ))}
 
-            {!loading && filteredUsers.length === 0 && (
+            {!loading && searchType === 'post' &&
+              posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUserId={currentUser?.id}
+                  isOwner={post.user_id === currentUser?.id}
+                />
+              ))
+            }
+
+            {!loading && ((searchType === 'user' && filteredUsers.length === 0) || (searchType === 'post' && posts.length === 0)) && (
               <div className="col-span-full text-center py-16 w-full">
                 <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-500 text-lg font-medium mb-2">
-                  Không tìm thấy người dùng nào
+                  Không tìm thấy {searchType === 'user' ? 'người dùng' : 'bài viết'} nào
                 </p>
                 <p className="text-slate-400 text-sm">
                   Thử tìm kiếm với từ khóa khác

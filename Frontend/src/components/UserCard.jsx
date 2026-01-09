@@ -52,7 +52,7 @@ const UserCard = ({ user, currentUser }) => {
 
   return (
     <div className="p-5 pt-6 flex flex-col justify-between w-72 shadow-md hover:shadow-xl 
-    border border-gray-200 rounded-xl transition-all duration-200 bg-white">
+    border border-gray-200 rounded-xl transition-all duration-200 bg-white mx-auto">
       {/* Avatar + Info */}
       <div className="text-center">
         <img
