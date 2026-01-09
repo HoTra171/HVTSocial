@@ -56,6 +56,71 @@ Dự án sử dụng các công nghệ mới nhất để đảm bảo hiệu su
 
 ---
 
+## 🏗️ Kiến Trúc Hệ Thống
+
+Sơ đồ tổng quan về luồng dữ liệu giữa các thành phần trong hệ thống HVTSocial:
+
+```mermaid
+graph TD
+    User[User / Client] -->|HTTPS| CDN[Vercel Edge Network]
+    CDN -->|Cache & Static| Frontend[React Frontend]
+    User -->|API Request| LB[Load Balancer]
+    LB -->|Traffic Distribution| Backend[Node.js Express Server]
+    
+    subgraph "Backend Services"
+        Backend -->|Auth & Validation| Middleware[Security Middlewares]
+        Middleware -->|Business Logic| Controllers
+        Controllers -->|Real-time Events| SocketIO[Socket.IO Server]
+    end
+    
+    subgraph "Data Persistence"
+        Backend -->|Query Data| SQL[SQL Server / PostgreSQL]
+        Backend -->|Cache & Session| Redis[Upstash Redis]
+        Backend -->|Upload Media| Cloudinary[Cloudinary Storage]
+    end
+    
+    SocketIO <-->|WebSocket| User
+```
+
+---
+
+## 🛡️ Security Notes
+
+Hệ thống được bảo mật với các lớp bảo vệ đa tầng:
+
+1.  **CORS (Cross-Origin Resource Sharing)**:
+    *   Chỉ cho phép các domain được định nghĩa trong `ALLOWED_ORIGINS` (ví dụ: `hvt-social.vercel.app`) truy cập API.
+    *   Chặn các request từ nguồn không xác định.
+
+2.  **Helmet Integration**:
+    *   Sử dụng `helmet` để thiết lập các HTTP headers bảo mật quan trọng (Content-Security-Policy, X-Frame-Options, X-XSS-Protection...).
+    *   Bảo vệ khỏi các lỗ hổng phổ biến như XSS, Clickjacking, Sniffing.
+
+3.  **Rate Limiting**:
+    *   **API Limiter**: Giới hạn 1000 requests/15 phút để chống DDoS/Spam.
+    *   **Auth Limiter**: Giới hạn 30 lần đăng nhập sai/15 phút để chống Brute Force.
+    *   **Upload Limiter**: Giới hạn 200 files upload/giờ.
+
+4.  **Input Validation**:
+    *   Sử dụng **Joi** để validate nghiêm ngặt tất cả dữ liệu đầu vào (Body, Params, Query) trước khi xử lý.
+    *   Ngăn chặn SQL Injection và Malformed Data.
+
+5.  **Upload Restrictions**:
+    *   Chỉ chấp nhận file ảnh, video, audio.
+    *   Giới hạn dung lượng file tối đa 50MB.
+    *   Sử dụng `multer` để lọc file (mimetype filtering) và stream trực tiếp lên Cloudinary (không lưu file rác trên server).
+
+---
+
+## 📚 API Documentation
+
+Tài liệu API chi tiết dành cho Developers:
+
+*   **Swagger UI**: Truy cập `/api-docs` trên server đang chạy (ví dụ: `http://localhost:5000/api-docs`) để xem Interactive API Docs.
+*   **Postman Collection**: File collection chuẩn có sẵn tại `docs/HVTSocial.postman_collection.json`. Bạn có thể import vào Postman để test API.
+
+---
+
 ## 📸 Hình Ảnh Demo
 
 | Bảng Tin (Newfeed) | Trang Cá Nhân (Profile) |

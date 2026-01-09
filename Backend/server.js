@@ -65,6 +65,8 @@ app.use(morgan(process.env.NODE_ENV === 'production'
   ? ':id :remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent"'
   : ':id :method :url :status :response-time ms', { stream }));
 
+app.use(helmetConfig);
+
 app.use(
   cors({
     origin: (origin, cb) => {
