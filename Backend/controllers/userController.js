@@ -311,7 +311,7 @@ export const suggestUsers = async (req, res) => {
     if (!q) {
       const suggestionQuery = `
         SELECT TOP (@limit)
-          u.id, u.full_name, u.username, u.avatar, u.bio, u.address,
+          u.id, u.full_name, u.username, u.avatar, u.bio,
           0 AS is_friend
         FROM users u
         WHERE u.id <> @currentUserId
@@ -339,7 +339,7 @@ export const suggestUsers = async (req, res) => {
         username: u.username,
         avatar: u.avatar,
         bio: u.bio,
-        address: u.address,
+        address: null,
         isFriend: false,
         isFollowing: false,
       }));
