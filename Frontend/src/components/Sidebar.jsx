@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import MenuItems from './MenuItems.jsx'
 import { Link } from 'react-router-dom'
 import { CirclePlus } from 'lucide-react'
-import { LogOut } from 'lucide-react'
+import { LogOut, ShieldAlert } from 'lucide-react'
 import { disconnectSocket } from '../socket'
 import toast from 'react-hot-toast'
 import { useState } from 'react'
@@ -45,6 +45,16 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId }) => {
 
                 {/* Menu Items */}
                 <MenuItems setSidebarOpen={setSidebarOpen} currentUserId={currentUserId} />
+
+                {/* Admin Panel Link */}
+                {user?.roles?.includes('admin') && (
+                    <Link to='/admin/dashboard' className='flex items-center gap-4 py-3 px-6 md:px-3 xl:px-6 
+                        hover:bg-indigo-50 transition whitespace-nowrap text-gray-700
+                        md:justify-center xl:justify-start group'>
+                        <ShieldAlert className='w-6 h-6 text-gray-400 group-hover:text-indigo-600 transition' />
+                        <span className='md:hidden xl:inline text-base font-medium group-hover:text-indigo-600 '>Admin Panel</span>
+                    </Link>
+                )}
 
                 <Link to='/create-post' className='flex items-center justify-center gap-2
              py-2.5 mt-6 mx-6 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600

@@ -6,6 +6,8 @@ import {
   getUserProfile,
   updateProfile,
   suggestUsers,
+  getPrivacySettings,
+  updatePrivacySettings,
 } from '../controllers/userController.js';
 import multer from 'multer';
 
@@ -150,5 +152,73 @@ router.put(
   ]),
   updateProfile
 );
+
+// ========== PRIVACY SETTINGS ==========
+
+/**
+ * @swagger
+ * /api/users/privacy-settings:
+ *   get:
+ *     summary: Lấy cài đặt quyền riêng tư
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Privacy settings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile_visibility:
+ *                   type: string
+ *                   enum: [public, friends, private]
+ *                 post_visibility:
+ *                   type: string
+ *                   enum: [public, friends]
+ *                 allow_friend_requests:
+ *                   type: boolean
+ *                 show_online_status:
+ *                   type: boolean
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.get('/privacy-settings', authMiddleware, getPrivacySettings);
+
+/**
+ * @swagger
+ * /api/users/privacy-settings:
+ *   put:
+ *     summary: Cập nhật cài đặt quyền riêng tư
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_visibility:
+ *                 type: string
+ *                 enum: [public, friends, private]
+ *               post_visibility:
+ *                 type: string
+ *                 enum: [public, friends]
+ *               allow_friend_requests:
+ *                 type: boolean
+ *               show_online_status:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       400:
+ *         description: Invalid parameters
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.put('/privacy-settings', authMiddleware, updatePrivacySettings);
 
 export default router;

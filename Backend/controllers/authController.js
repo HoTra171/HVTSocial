@@ -4,12 +4,23 @@ import { db } from '../config/db-wrapper.js';
 import { sendOtpEmail } from '../services/mailService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import crypto from 'crypto';
+import { assignRole, getUserRoles } from '../services/rbacService.js';
 
 // Helper: Generate Tokens (Access + Refresh)
 const generateTokens = async (user) => {
+  // Fetch user roles
+  const rolesData = await getUserRoles(user.id);
+  const roles = rolesData.map(r => r.name);
+
   // Access Token (60 days - like Facebook)
   const accessToken = jwt.sign(
-    { userId: user.id, id: user.id, email: user.email, username: user.username },
+    {
+      userId: user.id,
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      roles: roles
+    },
     process.env.JWT_SECRET,
     { expiresIn: '60d' }
   );
@@ -19,9 +30,7 @@ const generateTokens = async (user) => {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 90);
 
-  // Save to DB (Supports both MSSQL/PG via db-wrapper ideally, but check syntax compatibility)
-  // Simple INSERT works on both usually if strict ANSI.
-  // Using db.request() pattern from existing code.
+  // Save to DB
   try {
     await db
       .request()
@@ -36,7 +45,7 @@ const generateTokens = async (user) => {
     throw new Error('Failed to save refresh token: ' + error.message);
   }
 
-  return { accessToken, refreshToken };
+  return { accessToken, refreshToken, roles };
 };
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -123,26 +132,23 @@ export const register = async (req, res) => {
 
     const newUser = result.recordset[0];
 
+    // Assign default role 'user'
+    await assignRole(newUser.id, 'user');
+
     // 7. Tạo JWT token (60 days - like Facebook)
-    const token = jwt.sign(
-      {
-        id: newUser.id,
-        userId: newUser.id,
-        email: newUser.email,
-        username: newUser.username,
-      },
-      JWT_SECRET,
-      { expiresIn: '60d' }
-    );
+    const { accessToken, refreshToken, roles } = await generateTokens(newUser);
 
     // 8. Xóa password khỏi response
     delete newUser.password;
+    newUser.roles = roles;
 
     // 9. Trả về response
     res.status(201).json({
       success: true,
       message: 'Đăng ký thành công',
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       user: newUser,
     });
   } catch (error) {
@@ -184,10 +190,11 @@ export const login = async (req, res) => {
     }
 
     // 4. Tạo Tokens (Refresh + Access)
-    const { accessToken, refreshToken } = await generateTokens(user);
+    const { accessToken, refreshToken, roles } = await generateTokens(user);
 
     // 5. Xóa password khỏi response
     delete user.password;
+    user.roles = roles;
 
     // 6. Trả về response
     return successResponse(

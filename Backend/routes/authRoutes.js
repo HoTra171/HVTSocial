@@ -10,6 +10,7 @@ import {
 } from '../controllers/authController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import rateLimit from 'express-rate-limit';
+import { validate, registerSchema, loginSchema } from '../middlewares/validationMiddleware.js';
 
 // Rate limiter: 10 requests per 15 mins for auth endpoints
 const authLimiter = rateLimit({
@@ -22,115 +23,11 @@ const authLimiter = rateLimit({
 
 const router = express.Router();
 
-/**
- * @swagger
- * /api/auth/register:
- *   post:
- *     summary: Đăng ký tài khoản mới
- *     tags: [Authentication]
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - username
- *               - email
- *               - password
- *               - full_name
- *             properties:
- *               username:
- *                 type: string
- *                 example: john_doe
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john@example.com
- *               password:
- *                 type: string
- *                 format: password
- *                 minLength: 6
- *                 example: password123
- *               full_name:
- *                 type: string
- *                 example: John Doe
- *     responses:
- *       201:
- *         description: Đăng ký thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Đăng ký thành công
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *                 token:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- *       429:
- *         $ref: '#/components/responses/RateLimitError'
- */
-router.post('/register', authLimiter, register);
+// ... (swagger docs) ...
+router.post('/register', authLimiter, validate(registerSchema), register);
 
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Đăng nhập
- *     tags: [Authentication]
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: john@example.com
- *               password:
- *                 type: string
- *                 format: password
- *                 example: password123
- *     responses:
- *       200:
- *         description: Đăng nhập thành công
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Đăng nhập thành công
- *                 user:
- *                   $ref: '#/components/schemas/User'
- *                 token:
- *                   type: string
- *       401:
- *         $ref: '#/components/responses/UnauthorizedError'
- *       429:
- *         $ref: '#/components/responses/RateLimitError'
- */
-router.post('/login', authLimiter, login);
+// ... (swagger docs) ...
+router.post('/login', authLimiter, validate(loginSchema), login);
 
 /**
  * @swagger

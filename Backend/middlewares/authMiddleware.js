@@ -27,6 +27,7 @@ const authMiddleware = (req, res, next) => {
       userId: userId,
       email: decoded.email,
       username: decoded.username,
+      roles: decoded.roles || [],
     };
 
     return next();
@@ -66,6 +67,7 @@ export const optionalAuth = (req, res, next) => {
       userId: decoded.userId,
       email: decoded.email,
       username: decoded.username,
+      roles: decoded.roles || [],
     };
 
     return next();

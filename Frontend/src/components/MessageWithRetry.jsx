@@ -7,6 +7,7 @@ import {
   Smile,
   MoreVertical
 } from "lucide-react";
+import { getFullImageUrl, handleImageError } from "../utils/imageHelper.js";
 
 const MessageBubble = ({
   msg,
@@ -233,11 +234,12 @@ const MessageBubble = ({
         ) : msg.message_type === "image" ? (
           <div>
             <img
-              src={msg.media_url}
-              onClick={() => onImageClick(msg.media_url)}
+              src={getFullImageUrl(msg.media_url)}
+              onClick={() => onImageClick(getFullImageUrl(msg.media_url))}
               className={`rounded-xl max-w-[260px] max-h-[360px] object-cover shadow cursor-pointer ${msg.failed ? "opacity-60" : ""
                 }`}
               alt=""
+              onError={(e) => handleImageError(e, msg.media_url)}
             />
             <div className="flex items-center justify-end gap-2 mt-1">
               {renderMessageStatus()}

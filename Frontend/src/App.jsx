@@ -21,6 +21,7 @@ import PostDetail from "./page/PostDetail";
 import PrivacySettings from "./page/PrivacySettings";
 import { useNavigate } from 'react-router-dom';
 import DebugEnv from "./debug-env";
+import AdminDashboard from "./page/Admin/AdminDashboard";
 
 // SOCKET
 import { socket, connectSocket, disconnectSocket } from "./socket";
@@ -240,6 +241,7 @@ function App() {
             element={<PrivacySettings socket={socket} currentUser={currentUser} />}
           />
         </Route>
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
       </Routes>
 
       {/* MODAL CUỘC GỌI ĐẾN TOÀN APP */}

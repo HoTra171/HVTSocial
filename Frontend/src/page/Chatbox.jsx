@@ -28,6 +28,7 @@ import toast from "react-hot-toast";
 import MessageBubble from "../components/MessageWithRetry.jsx";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 import { playMessageSound } from '../utils/notificationSound.js';
+import { getFullImageUrl, handleImageError } from '../utils/imageHelper.js';
 
 
 const PAGE = 15;
@@ -1348,10 +1349,11 @@ const Chatbox = () => {
                         ) : msg.message_type === "image" ? (
                           <div className="flex flex-col gap-1">
                             <img
-                              src={msg.media_url}
+                              src={getFullImageUrl(msg.media_url)}
                               className="max-w-[220px] rounded-xl cursor-pointer shadow"
-                              onClick={() => setFullImage(msg.media_url)}
+                              onClick={() => setFullImage(getFullImageUrl(msg.media_url))}
                               alt=""
+                              onError={(e) => handleImageError(e, msg.media_url)}
                             />
                             <div className="flex justify-end">{renderMessageStatus(msg)}</div>
                           </div>

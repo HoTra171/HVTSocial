@@ -404,3 +404,105 @@ export const suggestUsers = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
+
+/* ================= PRIVACY SETTINGS ================= */
+export const getPrivacySettings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const db = await pool;
+
+    const result = await db
+      .request()
+      .input('userId', sql.Int, userId)
+      .query(`
+        SELECT
+          profile_visibility,
+          post_visibility,
+          allow_friend_requests,
+          show_online_status
+        FROM users
+        WHERE id = @userId
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const settings = result.recordset[0];
+
+    // Chuyển đổi BIT thành boolean cho frontend
+    return res.json({
+      profile_visibility: settings.profile_visibility || 'public',
+      post_visibility: settings.post_visibility || 'public',
+      allow_friend_requests: !!settings.allow_friend_requests,
+      show_online_status: !!settings.show_online_status,
+    });
+  } catch (err) {
+    console.error('getPrivacySettings error:', err);
+    return res.status(500).json({ message: 'Failed to fetch privacy settings' });
+  }
+};
+
+export const updatePrivacySettings = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      profile_visibility,
+      post_visibility,
+      allow_friend_requests,
+      show_online_status,
+    } = req.body;
+
+    const db = await pool;
+
+    // Build dynamic update query
+    const updates = [];
+    const request = db.request().input('userId', sql.Int, userId);
+
+    if (profile_visibility !== undefined) {
+      if (!['public', 'friends', 'private'].includes(profile_visibility)) {
+        return res.status(400).json({ message: 'Invalid profile_visibility value' });
+      }
+      updates.push('profile_visibility = @profile_visibility');
+      request.input('profile_visibility', sql.NVarChar, profile_visibility);
+    }
+
+    if (post_visibility !== undefined) {
+      if (!['public', 'friends'].includes(post_visibility)) {
+        return res.status(400).json({ message: 'Invalid post_visibility value' });
+      }
+      updates.push('post_visibility = @post_visibility');
+      request.input('post_visibility', sql.NVarChar, post_visibility);
+    }
+
+    if (allow_friend_requests !== undefined) {
+      updates.push('allow_friend_requests = @allow_friend_requests');
+      request.input('allow_friend_requests', sql.Bit, allow_friend_requests);
+    }
+
+    if (show_online_status !== undefined) {
+      updates.push('show_online_status = @show_online_status');
+      request.input('show_online_status', sql.Bit, show_online_status);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+
+    // Thêm updated_at
+    updates.push('updated_at = GETDATE()');
+
+    const query = `
+      UPDATE users
+      SET ${updates.join(', ')}
+      WHERE id = @userId
+    `;
+
+    await request.query(query);
+
+    return res.json({ message: 'Privacy settings updated successfully' });
+  } catch (err) {
+    console.error('updatePrivacySettings error:', err);
+    return res.status(500).json({ message: 'Failed to update privacy settings' });
+  }
+};
