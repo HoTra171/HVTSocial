@@ -219,37 +219,19 @@ const Discover = () => {
         {/* Search Bar */}
         <div className="mb-6 shadow-md rounded-xl border border-slate-200/60 bg-white/80">
           <div className="p-6">
-            <div className="flex gap-2" ref={searchRef}>
+            <div className="flex flex-col md:flex-row gap-4" ref={searchRef}>
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-6 h-6" />
                 <input
                   type="text"
-                  placeholder={searchType === 'user' ? "Tìm người dùng theo tên, username..." : "Tìm bài viết theo nội dung..."}
-                  className="pl-12 pr-4 py-4 w-full border border-gray-300 rounded-xl text-lg
+                  placeholder={searchType === 'user' ? "Tìm người..." : "Tìm bài viết..."}
+                  className="pl-12 pr-4 py-3 md:py-4 w-full border border-gray-300 rounded-xl text-base md:text-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                   onChange={(e) => handleInputChange(e.target.value)}
                   value={input}
                   onKeyUp={handleSearch}
                   onFocus={() => setShowHistory(true)}
                 />
-
-                {/* Search Type Toggle (Absolute Right) */}
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setSearchType('user')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${searchType === 'user' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    Mọi người
-                  </button>
-                  <button
-                    onClick={() => setSearchType('post')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${searchType === 'post' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    Bài viết
-                  </button>
-                </div>
 
                 {/* Search History Dropdown */}
                 {showHistory && searchHistory.length > 0 && (
@@ -295,13 +277,36 @@ const Discover = () => {
                   </div>
                 )}
               </div>
-              <button
-                onClick={handleSearchClick}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white
-                rounded-lg transition active:scale-95 font-medium"
-              >
-                Tìm kiếm
-              </button>
+
+              {/* Controls: Type Toggle + Search Button */}
+              <div className="flex items-center gap-3">
+                {/* Search Type Toggle */}
+                <div className="flex bg-gray-100 rounded-lg p-1 shrink-0">
+                  <button
+                    onClick={() => setSearchType('user')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${searchType === 'user' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    Mọi người
+                  </button>
+                  <button
+                    onClick={() => setSearchType('post')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${searchType === 'post' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                  >
+                    Bài viết
+                  </button>
+                </div>
+
+                {/* Search Button */}
+                <button
+                  onClick={handleSearchClick}
+                  className="flex-1 md:flex-none px-6 py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white
+                    rounded-xl transition active:scale-95 font-medium whitespace-nowrap shadow-sm"
+                >
+                  Tìm kiếm
+                </button>
+              </div>
             </div>
           </div>
         </div>
