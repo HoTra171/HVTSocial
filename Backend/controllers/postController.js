@@ -23,6 +23,10 @@ export const getPosts = async (req, res) => {
 export const getPost = async (req, res) => {
   try {
     const postId = Number(req.params.id);
+    if (isNaN(postId)) {
+      return res.status(400).json({ success: false, message: 'Invalid Post ID' });
+    }
+
     const viewerId = req.user.id;
     const post = await PostService.getPostById(postId, viewerId);
     res.json(post);
