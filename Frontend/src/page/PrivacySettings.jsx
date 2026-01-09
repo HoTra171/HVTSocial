@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Shield, Eye, EyeOff, Lock, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
-import { API_URL } from '../constants/api';
 
 const PrivacySettings = () => {
   const navigate = useNavigate();
@@ -16,41 +14,39 @@ const PrivacySettings = () => {
   });
 
   useEffect(() => {
-    fetchPrivacySettings();
-  }, []);
-
-  const fetchPrivacySettings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-
-      const res = await axios.get(`${API_URL}/users/privacy-settings`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.data) {
-        setSettings(res.data);
+    // Load settings from localStorage (fallback until backend API is ready)
+    const savedSettings = localStorage.getItem('privacySettings');
+    if (savedSettings) {
+      try {
+        setSettings(JSON.parse(savedSettings));
+      } catch (e) {
+        console.error('Parse privacy settings error:', e);
       }
-    } catch (error) {
-      console.error('Fetch privacy settings error:', error);
-      // Nếu API chưa có, sử dụng giá trị mặc định
     }
-  };
+  }, []);
 
   const updatePrivacySetting = async (key, value) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) return;
 
-      await axios.put(
-        `${API_URL}/users/privacy-settings`,
-        { [key]: value },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // Update state
+      const newSettings = { ...settings, [key]: value };
+      setSettings(newSettings);
 
-      setSettings((prev) => ({ ...prev, [key]: value }));
+      // Save to localStorage (temporary until backend API is ready)
+      localStorage.setItem('privacySettings', JSON.stringify(newSettings));
+
       toast.success('Đã cập nhật cài đặt quyền riêng tư');
+
+      // TODO: Uncomment when backend API is ready
+      // const token = localStorage.getItem('token');
+      // if (token) {
+      //   await axios.put(
+      //     `${API_URL}/users/privacy-settings`,
+      //     { [key]: value },
+      //     { headers: { Authorization: `Bearer ${token}` } }
+      //   );
+      // }
     } catch (error) {
       console.error('Update privacy settings error:', error);
       toast.error('Không thể cập nhật cài đặt');

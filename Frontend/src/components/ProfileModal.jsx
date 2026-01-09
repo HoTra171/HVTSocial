@@ -41,6 +41,16 @@ const ProfileModal = ({ setShowEdit, user, setUser }) => {
       setLoading(true);
       const startTime = Date.now();
 
+      // Get user ID from localStorage to ensure it's valid
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user?.id || storedUser?.id;
+
+      if (!userId || isNaN(userId)) {
+        toast.error('Không tìm thấy thông tin người dùng');
+        setLoading(false);
+        return;
+      }
+
       const formData = new FormData();
       formData.append('full_name', editForm.full_name);
       formData.append('username', editForm.username);
@@ -56,7 +66,9 @@ const ProfileModal = ({ setShowEdit, user, setUser }) => {
       }
 
       const token = localStorage.getItem('token');
-      const url = `${API_URL}/users/${user.id}`;
+      const url = `${API_URL}/users/${userId}`;
+
+      console.log('UPDATE PROFILE (OPTIMIZED):', userId);
 
       const res = await axios.put(url, formData, {
         headers: {

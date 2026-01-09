@@ -662,7 +662,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
                       className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition"
                     >
                       <img
-                        src={toUrl(viewer.avatar)}
+                        src={viewer.avatar || viewer.profile_picture || '/default.jpg'}
                         alt={viewer.full_name}
                         className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
                       />

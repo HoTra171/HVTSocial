@@ -39,13 +39,21 @@ const Connections = () => {
     }
   }, []);
 
-  // Fetch all data
+  // Fetch all data (only once on mount)
   useEffect(() => {
+    console.log('Connections: Fetching data...');
     fetchAllData();
-  }, []);
+  }, []); // Empty dependency array - only run once
 
   const fetchAllData = async () => {
     setLoading(true);
+
+    // Clear existing data to prevent accumulation
+    setFriends([]);
+    setPending([]);
+    setSent([]);
+    setSuggestions([]);
+
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -59,10 +67,33 @@ const Connections = () => {
         axios.get(`${API_URL}/friendships/suggestions?limit=20`, config),
       ]);
 
-      setFriends(friendsRes.data.data || []);
-      setPending(pendingRes.data.data || []);
-      setSent(sentRes.data.data || []);
-      setSuggestions(suggestionsRes.data.data || []);
+      // Deduplicate by user ID to prevent duplicates
+      const deduplicateById = (array) => {
+        const seen = new Set();
+        return array.filter(item => {
+          const id = item.id || item.user_id || item.friend_id;
+          if (seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+      };
+
+      const friendsData = deduplicateById(friendsRes.data.data || []);
+      const pendingData = deduplicateById(pendingRes.data.data || []);
+      const sentData = deduplicateById(sentRes.data.data || []);
+      const suggestionsData = deduplicateById(suggestionsRes.data.data || []);
+
+      console.log('Fetched data:', {
+        friends: friendsData.length,
+        pending: pendingData.length,
+        sent: sentData.length,
+        suggestions: suggestionsData.length
+      });
+
+      setFriends(friendsData);
+      setPending(pendingData);
+      setSent(sentData);
+      setSuggestions(suggestionsData);
     } catch (error) {
       console.error('Fetch data error:', error);
       toast.error('Không thể tải dữ liệu');
@@ -94,10 +125,19 @@ const Connections = () => {
   // CHẤP NHẬN LỜI MỜI
   const handleAcceptRequest = async (friendId) => {
     try {
+      // Validate friendId
+      if (!friendId || isNaN(friendId)) {
+        console.error('Invalid friendId:', friendId);
+        toast.error('ID người dùng không hợp lệ');
+        return;
+      }
+
       const token = localStorage.getItem('token');
+      console.log('Accepting friend request:', { friendId: Number(friendId) });
+
       await axios.post(
         `${API_URL}/friendships/accept`,
-        { friendId },
+        { friendId: Number(friendId) }, // Ensure it's a number
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -107,17 +147,23 @@ const Connections = () => {
       fetchAllData();
     } catch (error) {
       console.error('Accept request error:', error);
-      toast.error('Không thể chấp nhận lời mời');
+      toast.error(error.response?.data?.message || 'Không thể chấp nhận lời mời');
     }
   };
 
   // TỪ CHỐI LỜI MỜI
   const handleRejectRequest = async (friendId) => {
     try {
+      if (!friendId || isNaN(friendId)) {
+        console.error('Invalid friendId:', friendId);
+        toast.error('ID người dùng không hợp lệ');
+        return;
+      }
+
       const token = localStorage.getItem('token');
       await axios.post(
         `${API_URL}/friendships/reject`,
-        { friendId },
+        { friendId: Number(friendId) },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -127,24 +173,30 @@ const Connections = () => {
       fetchAllData();
     } catch (error) {
       console.error('Reject request error:', error);
-      toast.error('Không thể từ chối lời mời');
+      toast.error(error.response?.data?.message || 'Không thể từ chối lời mời');
     }
   };
 
   // HỦY LỜI MỜI ĐÃ GỬI
   const handleCancelRequest = async (friendId) => {
     try {
+      if (!friendId || isNaN(friendId)) {
+        console.error('Invalid friendId:', friendId);
+        toast.error('ID người dùng không hợp lệ');
+        return;
+      }
+
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/friendships/cancel`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { friendId },
+        data: { friendId: Number(friendId) },
       });
 
       toast.success('Đã hủy lời mời');
       fetchAllData();
     } catch (error) {
       console.error('Cancel request error:', error);
-      toast.error('Không thể hủy lời mời');
+      toast.error(error.response?.data?.message || 'Không thể hủy lời mời');
     }
   };
 
@@ -152,18 +204,24 @@ const Connections = () => {
   const handleUnfriend = async (friendId) => {
     if (!window.confirm('Bạn có chắc muốn hủy kết bạn?')) return;
 
+    if (!friendId || isNaN(friendId)) {
+      console.error('Invalid friendId:', friendId);
+      toast.error('ID người dùng không hợp lệ');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/friendships/unfriend`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { friendId },
+        data: { friendId: Number(friendId) },
       });
 
       toast.success('Đã hủy kết bạn');
       fetchAllData();
     } catch (error) {
       console.error('Unfriend error:', error);
-      toast.error('Không thể hủy kết bạn');
+      toast.error(error.response?.data?.message || 'Không thể hủy kết bạn');
     }
   };
 
