@@ -58,27 +58,40 @@ const Discover = () => {
   const fetchUsers = async (keyword = '') => {
     try {
       setLoading(true);
-      setHasSearched(keyword.trim() !== '');
+      const trimmedKeyword = keyword.trim();
+      setHasSearched(trimmedKeyword !== '');
 
       const token = localStorage.getItem('token');
 
       if (searchType === 'user') {
+        console.log('🔍 Searching users:', trimmedKeyword);
         const res = await axios.get(`${API_URL}/users/discover`, {
-          params: { search: keyword, filterType },
+          params: { search: trimmedKeyword, filterType },
           headers: { Authorization: `Bearer ${token}` },
         });
+        console.log('👥 User search results:', res.data);
         if (res.data?.success) setUsers(res.data.data || []);
         else setUsers([]);
       } else {
+        console.log('🔍 Searching posts:', trimmedKeyword);
         const res = await axios.get(`${API_URL}/posts/search`, {
-          params: { q: keyword },
+          params: { q: trimmedKeyword },
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.data?.success) setPosts(res.data.posts || []);
-        else setPosts([]);
+        console.log('📝 Post search results:', res.data);
+
+        // Handle different possible response formats
+        if (res.data?.success) {
+          const postsData = res.data.posts || res.data.data || [];
+          console.log('📊 Posts found:', postsData.length);
+          setPosts(postsData);
+        } else {
+          setPosts([]);
+        }
       }
     } catch (err) {
       console.error('Discover fetch error:', err);
+      console.error('Error response:', err.response?.data);
       if (searchType === 'user') setUsers([]);
       else setPosts([]);
     } finally {
@@ -150,12 +163,20 @@ const Discover = () => {
       clearTimeout(debounceTimer.current);
     }
 
-    if (value.trim()) {
+    const trimmed = value.trim();
+
+    if (trimmed) {
+      // Only search if there's actual content
       debounceTimer.current = setTimeout(() => {
-        fetchUsers(value.trim());
+        console.log('🔄 Triggering search for:', trimmed);
+        fetchUsers(trimmed);
       }, 500);
     } else {
-      fetchUsers('');
+      // Clear search and show default content
+      setHasSearched(false);
+      setPosts([]);
+      setUsers([]);
+      fetchUsers(''); // Fetch all users/default content
     }
   };
 
