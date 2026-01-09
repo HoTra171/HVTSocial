@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from '../../constants/api';
 import toast from 'react-hot-toast';
-import { Search, Lock, Unlock, Users, FileText, MessageSquare, ShieldAlert } from 'lucide-react';
+import { Search, Lock, Unlock, Users, FileText, MessageSquare, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -94,7 +94,16 @@ const AdminDashboard = () => {
     return (
         <div className="min-h-screen bg-gray-100 p-4 sm:p-6 pb-20 sm:pb-6">
             <div className="max-w-7xl mx-auto">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8">Admin Dashboard</h1>
+                <div className="flex items-center gap-4 mb-6 sm:mb-8">
+                    <button
+                        onClick={() => navigate('/feed')}
+                        className="p-2 hover:bg-white rounded-full transition-colors"
+                        title="Quay lại trang chủ"
+                    >
+                        <ArrowLeft size={24} className="text-gray-600" />
+                    </button>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+                </div>
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

@@ -48,11 +48,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId }) => {
 
                 {/* Admin Panel Link */}
                 {user?.roles?.includes('admin') && (
-                    <Link to='/admin/dashboard' className='flex items-center gap-4 py-3 px-6 md:px-3 xl:px-6 
-                        hover:bg-indigo-50 transition whitespace-nowrap text-gray-700
-                        md:justify-center xl:justify-start group'>
-                        <ShieldAlert className='w-6 h-6 text-gray-400 group-hover:text-indigo-600 transition' />
-                        <span className='md:hidden xl:inline text-base font-medium group-hover:text-indigo-600 '>Admin Panel</span>
+                    <Link to='/admin/dashboard' className='px-3.5 py-2 flex items-center gap-3 rounded-xl relative
+                        md:justify-center md:px-6 xl:justify-start xl:px-3.5
+                         hover:bg-indigo-50 transition text-gray-700 group'>
+                        <div className="relative">
+                            <ShieldAlert className='w-5 h-5 group-hover:text-indigo-600 transition' />
+                        </div>
+                        <span className='md:hidden xl:inline font-medium group-hover:text-indigo-600'>Admin Panel</span>
                     </Link>
                 )}
 
