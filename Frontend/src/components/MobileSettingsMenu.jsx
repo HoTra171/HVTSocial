@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogOut, Settings, X, ChevronRight, User, Shield, KeyRound } from 'lucide-react';
+import { LogOut, Settings, X, ChevronRight, User, Shield, KeyRound, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { disconnectSocket } from '../socket';
 import toast from 'react-hot-toast';
@@ -73,6 +73,28 @@ const MobileSettingsMenu = ({ isOpen, onClose }) => {
 
         {/* Menu Items */}
         <div className="py-2">
+          {/* Admin Panel Link */}
+          {user?.roles?.includes('admin') && (
+            <button
+              onClick={() => {
+                navigate('/admin/dashboard');
+                onClose();
+              }}
+              className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center">
+                  <ShieldAlert className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-gray-900">Admin Panel</p>
+                  <p className="text-xs text-gray-500">Quản lý hệ thống</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+          )}
+
           {/* Profile Settings */}
           <button
             onClick={() => {
