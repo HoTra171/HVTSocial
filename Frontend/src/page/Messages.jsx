@@ -70,20 +70,20 @@ const Messages = () => {
 
   return (
     <div className="min-h-screen relative bg-slate-50">
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-4 md:p-6">
         <div className="flex items-center gap-3 mb-2">
-          <MessagesSquare className="w-8 h-8 text-indigo-600" />
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Tin nhắn</h1>
+          <MessagesSquare className="w-7 h-7 md:w-8 md:h-8 text-indigo-600" />
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">Tin nhắn</h1>
         </div>
 
-        <p className="text-slate-600 mb-8">Trò chuyện với bạn bè và người thân của bạn</p>
+        <p className="text-slate-600 mb-6 md:mb-8 text-sm md:text-base">Trò chuyện với bạn bè và người thân của bạn</p>
 
         <div className="flex flex-col gap-3">
           {chatList.map((item) => (
             <div
               key={item.chat_id}
               onClick={() => navigate(`/messages/${item.chat_id}`)}
-              className="max-w-xl flex items-center gap-4 p-4 bg-white shadow rounded-md cursor-pointer hover:bg-gray-50 transition"
+              className="w-full flex items-center gap-4 p-4 bg-white shadow rounded-md cursor-pointer hover:bg-gray-50 transition"
             >
               <img
                 src={item.avatar || (item.is_group_chat ? "/group.png" : "/default.jpg")}

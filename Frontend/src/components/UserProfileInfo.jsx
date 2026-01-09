@@ -57,10 +57,10 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
                   Chỉnh sửa
                 </button>
 
-                {/* Đổi mật khẩu */}
+                {/* Đổi mật khẩu - Hidden on mobile */}
                 <button
                   onClick={() => navigate("/change-password")}
-                  className="flex items-center gap-2 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0"
+                  className="max-sm:hidden flex items-center gap-2 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0"
                 >
                   Đổi mật khẩu
                 </button>

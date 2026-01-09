@@ -18,6 +18,7 @@ import ForgotPassword from "./page/ForgotPassword";
 import ChangePassword from "./page/ChangePassword";
 import NotificationsPage from "./page/NotificationsPage";
 import PostDetail from "./page/PostDetail";
+import PrivacySettings from "./page/PrivacySettings";
 import { useNavigate } from 'react-router-dom';
 import DebugEnv from "./debug-env";
 
@@ -232,6 +233,11 @@ function App() {
           <Route
             path="/create-post"
             element={<CreatePost socket={socket} currentUser={currentUser} />}
+          />
+
+          <Route
+            path="/privacy-settings"
+            element={<PrivacySettings socket={socket} currentUser={currentUser} />}
           />
         </Route>
       </Routes>

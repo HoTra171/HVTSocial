@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Search, Users, X, Clock, Trash2, UserPlus, Sparkles } from 'lucide-react';
+import { Search, Users, X, Clock, UserPlus, Sparkles } from 'lucide-react';
 import UserCard from '../components/UserCard';
 import PostCard from '../components/PostCard';
 import Loading from '../components/Loading';
-import { API_URL, SERVER_ORIGIN } from '../constants/api';
-
-
+import { API_URL } from '../constants/api';
 
 const Discover = () => {
   const [input, setInput] = useState('');
@@ -15,7 +13,7 @@ const Discover = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [filterType, setFilterType] = useState('all'); // all, not-friends, friends
   const [searchType, setSearchType] = useState('user'); // user, post
-  const [posts, setPosts] = useState([]); // Store search result posts
+  const [posts, setPosts] = useState([]);
   const [searchHistory, setSearchHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -34,7 +32,6 @@ const Discover = () => {
       }
     }
 
-    // Load search history from localStorage
     const storedHistory = localStorage.getItem('searchHistory');
     if (storedHistory) {
       try {
@@ -73,7 +70,6 @@ const Discover = () => {
         if (res.data?.success) setUsers(res.data.data || []);
         else setUsers([]);
       } else {
-        // Fetch Posts
         const res = await axios.get(`${API_URL}/posts/search`, {
           params: { q: keyword },
           headers: { Authorization: `Bearer ${token}` },
@@ -90,14 +86,12 @@ const Discover = () => {
     }
   };
 
-  // Fetch suggestions for you
+  // Fetch suggestions
   const fetchSuggestions = async () => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get(`${API_URL}/users/suggestions`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.data?.success) {
@@ -114,17 +108,22 @@ const Discover = () => {
     fetchSuggestions();
   }, []);
 
+  // Re-fetch when search type changes
+  useEffect(() => {
+    if (hasSearched && input.trim()) {
+      fetchUsers(input.trim());
+    }
+  }, [searchType]);
+
   // Save search to history
   const saveToHistory = (keyword) => {
     if (!keyword || keyword.trim() === '') return;
 
     const trimmedKeyword = keyword.trim();
-
-    // Remove duplicate if exists and add to beginning
     const newHistory = [
       trimmedKeyword,
       ...searchHistory.filter(item => item !== trimmedKeyword)
-    ].slice(0, 10); // Keep only 10 most recent searches
+    ].slice(0, 10);
 
     setSearchHistory(newHistory);
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
@@ -147,23 +146,20 @@ const Discover = () => {
   const handleInputChange = (value) => {
     setInput(value);
 
-    // Clear existing timer
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
-    // Set new timer for debounced search
     if (value.trim()) {
       debounceTimer.current = setTimeout(() => {
         fetchUsers(value.trim());
-      }, 500); // Wait 500ms after user stops typing
+      }, 500);
     } else {
-      // If input is empty, fetch all users
       fetchUsers('');
     }
   };
 
-  // Search
+  // Search on Enter
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
       const keyword = input.trim();
@@ -172,15 +168,6 @@ const Discover = () => {
         fetchUsers(keyword);
         setShowHistory(false);
       }
-    }
-  };
-
-  const handleSearchClick = () => {
-    const keyword = input.trim();
-    if (keyword) {
-      saveToHistory(keyword);
-      fetchUsers(keyword);
-      setShowHistory(false);
     }
   };
 
@@ -201,156 +188,158 @@ const Discover = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <div className="max-w-6xl mx-auto p-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Users className="w-8 h-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-slate-900">
-              Khám phá mọi người
-            </h1>
-          </div>
-          <p className="text-slate-600">
-            Kết nối với những người mới và mở rộng mạng lưới của bạn
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            Tìm kiếm
+          </h1>
+          <p className="text-gray-600 text-sm md:text-base">
+            Tìm kiếm người dùng và bài viết trên HVT Social
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6 shadow-md rounded-xl border border-slate-200/60 bg-white/80">
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row gap-4" ref={searchRef}>
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-6 h-6" />
-                <input
-                  type="text"
-                  placeholder={searchType === 'user' ? "Tìm người..." : "Tìm bài viết..."}
-                  className="pl-12 pr-4 py-3 md:py-4 w-full border border-gray-300 rounded-xl text-base md:text-lg
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-                  onChange={(e) => handleInputChange(e.target.value)}
-                  value={input}
-                  onKeyUp={handleSearch}
-                  onFocus={() => setShowHistory(true)}
-                />
+        {/* Search Card - Facebook Style */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setSearchType('user')}
+              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-center font-semibold transition-all relative ${
+                searchType === 'user'
+                  ? 'text-indigo-600'
+                  : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              <Users className="w-5 h-5 inline-block mr-2" />
+              <span className="hidden sm:inline">Mọi người</span>
+              <span className="sm:hidden">Người</span>
+              {searchType === 'user' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setSearchType('post')}
+              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-center font-semibold transition-all relative ${
+                searchType === 'post'
+                  ? 'text-indigo-600'
+                  : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              <Search className="w-5 h-5 inline-block mr-2" />
+              <span className="hidden sm:inline">Bài viết</span>
+              <span className="sm:hidden">Bài</span>
+              {searchType === 'post' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t"></div>
+              )}
+            </button>
+          </div>
 
-                {/* Search History Dropdown */}
-                {showHistory && searchHistory.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[300px] overflow-y-auto">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-                      <span className="text-sm font-semibold text-gray-700">Tìm kiếm gần đây</span>
-                      <button
-                        onClick={clearAllHistory}
-                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                      >
-                        Xóa tất cả
-                      </button>
-                    </div>
+          {/* Search Input */}
+          <div className="p-4" ref={searchRef}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder={searchType === 'user' ? "Tìm kiếm người dùng..." : "Tìm kiếm bài viết..."}
+                className="pl-10 pr-4 py-3 w-full bg-gray-100 rounded-full text-sm
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                onChange={(e) => handleInputChange(e.target.value)}
+                value={input}
+                onKeyUp={handleSearch}
+                onFocus={() => setShowHistory(true)}
+              />
 
-                    {/* History Items */}
-                    <div className="py-1">
-                      {searchHistory.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 group cursor-pointer"
-                        >
-                          <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span
-                            onClick={() => handleHistoryClick(item)}
-                            className="flex-1 text-sm text-gray-700"
-                          >
-                            {item}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFromHistory(item);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded-full"
-                            title="Xóa"
-                          >
-                            <X className="w-4 h-4 text-gray-500" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+              {/* Search History Dropdown */}
+              {showHistory && searchHistory.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[300px] overflow-y-auto">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
+                    <span className="text-sm font-semibold text-gray-700">Tìm kiếm gần đây</span>
+                    <button
+                      onClick={clearAllHistory}
+                      className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                    >
+                      Xóa tất cả
+                    </button>
                   </div>
-                )}
-              </div>
-
-              {/* Controls: Type Toggle + Search Button */}
-              <div className="flex items-center gap-3">
-                {/* Search Type Toggle */}
-                <div className="flex bg-gray-100 rounded-lg p-1 shrink-0">
-                  <button
-                    onClick={() => setSearchType('user')}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${searchType === 'user' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    Mọi người
-                  </button>
-                  <button
-                    onClick={() => setSearchType('post')}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${searchType === 'post' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                  >
-                    Bài viết
-                  </button>
+                  <div className="py-1">
+                    {searchHistory.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 group cursor-pointer"
+                      >
+                        <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span
+                          onClick={() => handleHistoryClick(item)}
+                          className="flex-1 text-sm text-gray-700"
+                        >
+                          {item}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromHistory(item);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-200 rounded-full"
+                          title="Xóa"
+                        >
+                          <X className="w-4 h-4 text-gray-500" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                {/* Search Button */}
-                <button
-                  onClick={handleSearchClick}
-                  className="flex-1 md:flex-none px-6 py-3 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white
-                    rounded-xl transition active:scale-95 font-medium whitespace-nowrap shadow-sm"
-                >
-                  Tìm kiếm
-                </button>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="mb-6 flex gap-2 bg-white rounded-lg shadow-sm p-1 border border-gray-200 w-fit">
-          <button
-            onClick={() => setFilterType('all')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'all'
-              ? 'bg-indigo-600 text-white'
-              : 'text-gray-600 hover:bg-gray-50'
+        {/* Filter Tabs - Only show for user search */}
+        {searchType === 'user' && (
+          <div className="mb-6 flex gap-2 bg-white rounded-lg shadow-sm p-1 border border-gray-200 w-fit">
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                filterType === 'all'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
               }`}
-          >
-            Tất cả ({users.length})
-          </button>
-          <button
-            onClick={() => setFilterType('not-friends')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'not-friends'
-              ? 'bg-indigo-600 text-white'
-              : 'text-gray-600 hover:bg-gray-50'
+            >
+              Tất cả ({users.length})
+            </button>
+            <button
+              onClick={() => setFilterType('not-friends')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                filterType === 'not-friends'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
               }`}
-          >
-            Chưa kết bạn ({users.filter((u) => !u.isFriend).length})
-          </button>
-          <button
-            onClick={() => setFilterType('friends')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'friends'
-              ? 'bg-indigo-600 text-white'
-              : 'text-gray-600 hover:bg-gray-50'
+            >
+              Chưa kết bạn ({users.filter((u) => !u.isFriend).length})
+            </button>
+            <button
+              onClick={() => setFilterType('friends')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                filterType === 'friends'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-50'
               }`}
-          >
-            Bạn bè ({users.filter((u) => u.isFriend).length})
-          </button>
-        </div>
+            >
+              Bạn bè ({users.filter((u) => u.isFriend).length})
+            </button>
+          </div>
+        )}
 
-        {/* Suggestions Section - Show when no search has been made */}
-        {!hasSearched && !loading && suggestions.length > 0 && (
+        {/* Suggestions Section - Show when no search for users */}
+        {!hasSearched && !loading && searchType === 'user' && suggestions.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-5 h-5 text-indigo-600" />
-              <h2 className="text-xl font-semibold text-slate-800">Gợi ý cho bạn</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Gợi ý cho bạn</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-              {suggestions.slice(0, 8).map((user) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {suggestions.slice(0, 6).map((user) => (
                 <UserCard
                   user={user}
                   key={`suggestion-${user._id || user.id}`}
@@ -362,19 +351,22 @@ const Discover = () => {
         )}
 
         {/* Results Count */}
-        {!loading && hasSearched && filteredUsers.length > 0 && (
-          <div className="mb-4 text-sm text-slate-600">
-            Tìm thấy <span className="font-semibold">{filteredUsers.length}</span> người dùng
+        {!loading && hasSearched && (
+          <div className="mb-4 text-sm text-gray-600">
+            {searchType === 'user' ? (
+              <>Tìm thấy <span className="font-semibold">{filteredUsers.length}</span> người dùng</>
+            ) : (
+              <>Tìm thấy <span className="font-semibold">{posts.length}</span> bài viết</>
+            )}
           </div>
         )}
 
-        {/* User List - Search Results */}
+        {/* Search Results */}
         {hasSearched && (
           <div className={searchType === 'user'
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6"
-            : "flex flex-col gap-6 max-w-2xl mx-auto" // Post layout
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            : "flex flex-col gap-4 max-w-2xl mx-auto"
           }>
-
             {!loading && searchType === 'user' &&
               filteredUsers.map((user) => (
                 <UserCard
@@ -392,16 +384,17 @@ const Discover = () => {
                   currentUserId={currentUser?.id}
                   isOwner={post.user_id === currentUser?.id}
                 />
-              ))
-            }
+              ))}
 
             {!loading && ((searchType === 'user' && filteredUsers.length === 0) || (searchType === 'post' && posts.length === 0)) && (
               <div className="col-span-full text-center py-16 w-full">
-                <Users className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 text-lg font-medium mb-2">
+                <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <Search className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-600 text-lg font-medium mb-2">
                   Không tìm thấy {searchType === 'user' ? 'người dùng' : 'bài viết'} nào
                 </p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-gray-500 text-sm">
                   Thử tìm kiếm với từ khóa khác
                 </p>
               </div>
@@ -410,13 +403,13 @@ const Discover = () => {
         )}
 
         {/* All Users Section - Show when no search */}
-        {!hasSearched && !loading && filteredUsers.length > 0 && (
+        {!hasSearched && !loading && searchType === 'user' && filteredUsers.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-4">
               <UserPlus className="w-5 h-5 text-indigo-600" />
-              <h2 className="text-xl font-semibold text-slate-800">Tất cả người dùng</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Tất cả người dùng</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredUsers.map((user) => (
                 <UserCard
                   user={user}

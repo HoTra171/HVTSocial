@@ -107,6 +107,16 @@ export const useUnreadCounts = () => {
       fetchUnreadMessages();
     });
 
+    // Update when chat is read (from chatbox)
+    socket.on('recent_chat_read', () => {
+      fetchUnreadMessages();
+    });
+
+    // Update when recent chat is updated (new message in any chat)
+    socket.on('recent_chat_updated', () => {
+      fetchUnreadMessages();
+    });
+
     // Update when new notification arrives
     socket.on('new_notification', (data) => {
       fetchUnreadNotifications();
@@ -130,6 +140,8 @@ export const useUnreadCounts = () => {
     return () => {
       socket.off('receive_message');
       socket.off('messages_read');
+      socket.off('recent_chat_read');
+      socket.off('recent_chat_updated');
       socket.off('new_notification');
       socket.off('unread_count');
       socket.off('friend_request_updated');

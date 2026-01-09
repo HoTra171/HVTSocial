@@ -27,6 +27,7 @@ import IncomingCallModal from "../components/IncomingCallModal.jsx";
 import toast from "react-hot-toast";
 import MessageBubble from "../components/MessageWithRetry.jsx";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { playMessageSound } from '../utils/notificationSound.js';
 
 
 const PAGE = 15;
@@ -307,6 +308,11 @@ const Chatbox = () => {
 
       setAllMessages((prev) => [...prev, msg]);
       setMessages((prev) => [...prev, msg].slice(-PAGE));
+
+      // Phát âm thanh nếu tin nhắn không phải từ mình
+      if (msg.sender_id !== myId) {
+        playMessageSound();
+      }
 
       // nếu muốn tự mark read khi đang mở phòng
       socket.emit("mark_messages_read", { chatId: Number(chatId), userId: myId });
@@ -1231,10 +1237,10 @@ const Chatbox = () => {
               )}
             </div>
 
-            <div>
-              <p className="font-medium">{partner.name}</p>
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <p className="font-medium truncate" title={partner.name}>{partner.name}</p>
               {!partner.is_group_chat && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 truncate" title={isPartnerOnline ? "Đang hoạt động" : `@${partner.username}`}>
                   {isPartnerOnline ? "Đang hoạt động" : `@${partner.username}`}
                 </p>
               )}
@@ -1310,7 +1316,18 @@ const Chatbox = () => {
                         />
                       )}
 
-                      <div className="relative max-w-[70%]">
+                      <div className="relative max-w-[70%] group">
+                        {/* Menu thu hồi cho tin nhắn của mình */}
+                        {isMe && !msg.recalled && (
+                          <button
+                            onClick={() => recallMessage(msg.id)}
+                            className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white shadow-md rounded-full text-red-500 hover:bg-red-50"
+                            title="Thu hồi"
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+
                         {parsed.isReply && (
                           <div className="mb-1 px-3 py-2 bg-gray-100 rounded-lg text-xs border-l-2 border-blue-500">
                             <p className="font-semibold text-gray-600">{parsed.replyData.sender}</p>
