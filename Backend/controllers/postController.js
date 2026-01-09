@@ -73,7 +73,7 @@ export const searchPosts = async (req, res) => {
     // Use db.request() for compatibility
     let query = `
       SELECT TOP (@limit)
-        p.id, p.user_id, p.content, p.media_url, p.privacy, p.created_at, p.updated_at,
+        p.id, p.user_id, p.content, p.media_url, p.visibility, p.created_at, p.updated_at,
         u.full_name, u.username, u.avatar,
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
         (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comment_count,
@@ -90,10 +90,10 @@ export const searchPosts = async (req, res) => {
     // 3. Public posts: Everyone
     query += `
       AND (
-        p.privacy = 'public'
+        p.visibility = 'public'
         OR p.user_id = @viewerId
         OR (
-          p.privacy = 'friends' 
+          p.visibility = 'friends'
           AND EXISTS (
              SELECT 1 FROM friendships f
              WHERE (f.user_id = p.user_id AND f.friend_id = @viewerId)
@@ -120,7 +120,7 @@ export const searchPosts = async (req, res) => {
       user_id: post.user_id,
       content: post.content,
       media_url: post.media_url,
-      privacy: post.privacy,
+      visibility: post.visibility,
       created_at: post.created_at,
       updated_at: post.updated_at,
       author: {

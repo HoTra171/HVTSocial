@@ -56,14 +56,10 @@ export const FriendshipService = {
       UPDATE friendships
       SET status = 'accepted',
           updated_at = GETDATE()
+      OUTPUT INSERTED.*
       WHERE user_id = @friendId 
         AND friend_id = @userId 
-        AND status = 'pending';
-
-      SELECT TOP 1 *
-      FROM friendships
-      WHERE user_id = @friendId 
-        AND friend_id = @userId;
+        AND status = 'pending'
     `);
 
     if (result.recordset.length === 0) {
