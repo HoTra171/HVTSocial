@@ -1131,7 +1131,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <Heart className={`w-5 h-5 ${liked ? "text-red-500 fill-red-500" : ""}`} />
-            <span className={`text-sm font-medium ${liked ? "text-red-500" : ""}`}>Thích</span>
+            <span className={`text-sm font-medium max-sm:hidden ${liked ? "text-red-500" : ""}`}>Thích</span>
           </button>
 
           <button
@@ -1139,7 +1139,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <MessageCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">Bình luận</span>
+            <span className="text-sm font-medium max-sm:hidden">Bình luận</span>
           </button>
 
           <button
@@ -1147,7 +1147,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <Share2 className="w-5 h-5" />
-            <span className="text-sm font-medium">Chia sẻ</span>
+            <span className="text-sm font-medium max-sm:hidden">Chia sẻ</span>
           </button>
         </div>
 

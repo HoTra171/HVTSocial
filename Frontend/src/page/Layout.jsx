@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import Sidebar from '../components/Sidebar.jsx'
 import RecentChats from '../components/RecentChats.jsx'
+import BottomNav from '../components/BottomNav.jsx'
+import MobileHeader from '../components/MobileHeader.jsx'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Loading from '../components/Loading.jsx'
-import { Menu, X, ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import axios from 'axios'
 import { API_URL } from '../constants/api'
 
@@ -57,15 +59,10 @@ const Layout = () => {
   return (
     <div className="w-full min-h-screen flex bg-slate-50 overflow-hidden touch-pan-y">
 
-      {/* ===== MOBILE BACKDROP ===== */}
-      {sidebarOpen && !isChatPage && isMobile && (
-        <div
-          className="fixed inset-0 bg-black/50 z-10 sm:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* ===== MOBILE HEADER (Mobile only) ===== */}
+      {!isChatPage && <MobileHeader currentUserId={currentUserId} />}
 
-      {/* ===== SIDEBAR / RECENT CHATS ===== */}
+      {/* ===== SIDEBAR / RECENT CHATS (Desktop only) ===== */}
       {isChatPage ? (
         <RecentChats
           currentUserId={currentUserId}
@@ -83,7 +80,7 @@ const Layout = () => {
 
       {/* ===== MAIN CONTENT ===== */}
       <div
-        className={`flex-1 pl-120 max-sm:pl-0 relative ${isChatPage ? "h-screen min-h-0 overflow-hidden" : "min-h-screen overflow-y-auto"
+        className={`flex-1 pl-120 max-sm:pl-0 relative ${isChatPage ? "h-screen min-h-0 overflow-hidden max-sm:pb-14" : "min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16"
           }`}
       >
 
@@ -101,21 +98,8 @@ const Layout = () => {
         <Outlet />
       </div>
 
-      {/* ===== MOBILE MENU BUTTON ===== */}
-      {/*  CHỈ hiển thị Menu/X khi KHÔNG /messages/:id */}
-      {!isChatPage && (
-        sidebarOpen ? (
-          <X
-            className="absolute top-3 right-3 p-2 z-100 bg-white rounded-md shadow w-10 h-10 text-gray-600 sm:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        ) : (
-          <Menu
-            className="absolute top-3 right-3 p-2 z-100 bg-white rounded-md shadow w-10 h-10 text-gray-600 sm:hidden"
-            onClick={() => setSidebarOpen(true)}
-          />
-        )
-      )}
+      {/* ===== BOTTOM NAVIGATION (Mobile only) ===== */}
+      <BottomNav currentUserId={currentUserId} />
 
     </div>
   )
