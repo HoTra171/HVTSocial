@@ -1,0 +1,869 @@
+{
+	"info": {
+		"_postman_id": "hvtsocial-api-2025",
+		"name": "HVTSocial API Collection",
+		"description": "Complete API documentation for HVTSocial - A modern social media platform\n\n**Base URL (Production):** `https://hvtsocial-backend.onrender.com`\n**Base URL (Local):** `http://localhost:5000`\n\n**Authentication:** Bearer Token (JWT)\n\n**Contact:** trabn1712003@gmail.com",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"John Doe\",\n  \"username\": \"johndoe\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "register"]
+						},
+						"description": "Register a new user account"
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.environment.set('accessToken', jsonData.accessToken);",
+									"    pm.environment.set('refreshToken', jsonData.refreshToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "login"]
+						},
+						"description": "Login with email and password. Returns JWT access & refresh tokens."
+					}
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/me",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "me"]
+						},
+						"description": "Get current authenticated user's profile"
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "refresh"]
+						},
+						"description": "Get new access token using refresh token"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "auth", "logout"]
+						},
+						"description": "Logout and invalidate tokens"
+					}
+				}
+			],
+			"description": "User authentication endpoints (register, login, token management)"
+		},
+		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "Get Feed",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts?limit=10&cursor=",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "cursor",
+									"value": ""
+								}
+							]
+						},
+						"description": "Get paginated news feed (posts from friends + public)"
+					}
+				},
+				{
+					"name": "Get Post by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get a single post by ID"
+					}
+				},
+				{
+					"name": "Create Post",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Hello, HVTSocial! 🎉\",\n  \"media\": \"https://res.cloudinary.com/example.jpg\",\n  \"status\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts"]
+						},
+						"description": "Create a new post (text + optional media)\n\nStatus options: public, friends, private"
+					}
+				},
+				{
+					"name": "Update Post",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Updated content!\",\n  \"media\": \"https://res.cloudinary.com/updated.jpg\",\n  \"status\": \"friends\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Update own post"
+					}
+				},
+				{
+					"name": "Delete Post",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete own post"
+					}
+				},
+				{
+					"name": "Search Posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/search?q=hello&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "posts", "search"],
+							"query": [
+								{
+									"key": "q",
+									"value": "hello"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Search posts by keyword"
+					}
+				}
+			],
+			"description": "Post CRUD operations and feed management"
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get user profile by ID"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "full_name",
+									"value": "John Smith",
+									"type": "text"
+								},
+								{
+									"key": "bio",
+									"value": "Full-stack developer",
+									"type": "text"
+								},
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "background",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:userId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{currentUserId}}"
+								}
+							]
+						},
+						"description": "Update user profile (multipart/form-data for file uploads)"
+					}
+				},
+				{
+					"name": "Discover Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/discover?search=john&filterType=all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "users", "discover"],
+							"query": [
+								{
+									"key": "search",
+									"value": "john"
+								},
+								{
+									"key": "filterType",
+									"value": "all"
+								}
+							]
+						},
+						"description": "Search users by name or username\n\nFilter types: all, friends, non-friends"
+					}
+				}
+			],
+			"description": "User profile management"
+		},
+		{
+			"name": "Likes",
+			"item": [
+				{
+					"name": "Like Post",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/likes/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "likes", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Like a post"
+					}
+				},
+				{
+					"name": "Unlike Post",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/likes/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "likes", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Remove like from post"
+					}
+				}
+			],
+			"description": "Post like/unlike operations"
+		},
+		{
+			"name": "Comments",
+			"item": [
+				{
+					"name": "Get Comments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "comments", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get all comments for a post"
+					}
+				},
+				{
+					"name": "Add Comment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Great post! 👍\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/:postId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "comments", ":postId"],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Add a comment to a post"
+					}
+				},
+				{
+					"name": "Delete Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/comments/:commentId",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "comments", ":commentId"],
+							"variable": [
+								{
+									"key": "commentId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Delete own comment"
+					}
+				}
+			],
+			"description": "Comment CRUD operations"
+		},
+		{
+			"name": "Friendships",
+			"item": [
+				{
+					"name": "Get Friends List",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/friendships/friends",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "friendships", "friends"]
+						},
+						"description": "Get current user's friends"
+					}
+				},
+				{
+					"name": "Send Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/friendships/request",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "friendships", "request"]
+						},
+						"description": "Send friend request to user"
+					}
+				},
+				{
+					"name": "Accept Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/friendships/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "friendships", "accept"]
+						},
+						"description": "Accept pending friend request"
+					}
+				},
+				{
+					"name": "Reject Friend Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/friendships/reject",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "friendships", "reject"]
+						},
+						"description": "Reject friend request"
+					}
+				},
+				{
+					"name": "Unfriend",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"friendId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/friendships/unfriend",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "friendships", "unfriend"]
+						},
+						"description": "Remove friend"
+					}
+				}
+			],
+			"description": "Friendship management (send, accept, reject, unfriend)"
+		},
+		{
+			"name": "Chat",
+			"item": [
+				{
+					"name": "Get User Chats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/user/:userId/chats",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "chat", "user", ":userId", "chats"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "{{currentUserId}}"
+								}
+							]
+						},
+						"description": "Get all chat conversations for user"
+					}
+				},
+				{
+					"name": "Get Chat Messages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/:chatId/messages?limit=50&offset=0",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "chat", ":chatId", "messages"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							],
+							"variable": [
+								{
+									"key": "chatId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get messages from a chat (paginated)"
+					}
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "text",
+									"value": "Hello! 👋",
+									"type": "text"
+								},
+								{
+									"key": "receiverId",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chat/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "chat", "send"]
+						},
+						"description": "Send a text or image message\n\nNote: Real-time delivery via Socket.IO"
+					}
+				}
+			],
+			"description": "Chat messaging (REST API + Socket.IO for real-time)"
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get Notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications?limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get user's notifications"
+					}
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/:notificationId/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", ":notificationId", "read"],
+							"variable": [
+								{
+									"key": "notificationId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Mark notification as read"
+					}
+				},
+				{
+					"name": "Mark All as Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/notifications/read-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "notifications", "read-all"]
+						},
+						"description": "Mark all notifications as read"
+					}
+				}
+			],
+			"description": "Notification management"
+		},
+		{
+			"name": "Stories",
+			"item": [
+				{
+					"name": "Get Stories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stories"]
+						},
+						"description": "Get active stories (24h expiry)"
+					}
+				},
+				{
+					"name": "Create Story",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "media",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "type",
+									"value": "image",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/stories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stories"]
+						},
+						"description": "Upload a new story (image/video)\n\nType: image | video"
+					}
+				},
+				{
+					"name": "Mark Story as Viewed",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/stories/:storyId/view",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "stories", ":storyId", "view"],
+							"variable": [
+								{
+									"key": "storyId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Record story view"
+					}
+				}
+			],
+			"description": "Story creation and viewing (24h ephemeral content)"
+		},
+		{
+			"name": "Media Upload",
+			"item": [
+				{
+					"name": "Upload Image/Video",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "upload"]
+						},
+						"description": "Upload media to Cloudinary\n\nReturns: { url: 'https://res.cloudinary.com/...' }\n\nRestrictions:\n- Max size: 10MB (images), 50MB (videos)\n- Allowed types: jpg, png, gif, mp4, webm"
+					}
+				}
+			],
+			"description": "Media file uploads (Cloudinary CDN)"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://hvtsocial-backend.onrender.com",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "currentUserId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
