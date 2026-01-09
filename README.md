@@ -60,11 +60,19 @@ Dự án sử dụng các công nghệ mới nhất để đảm bảo hiệu su
 
 | Bảng Tin (Newfeed) | Trang Cá Nhân (Profile) |
 |:---:|:---:|
-| <img src="docs/screenshots/home.png" alt="Home" width="400"/> | <img src="docs/screenshots/profile.png" alt="Profile" width="400"/> |
+| <img src="docs/screenshots/home.png" alt="Home" width="400"/> | <img src="docs/screenshots/home.png" alt="Profile" width="400"/> |
 
-| Nhắn Tin (Chat) | Thông Báo & Menu |
+| Nhắn Tin (Chat) | Thông Báo (Notification) |
 |:---:|:---:|
 | <img src="docs/screenshots/messages.png" alt="Chat" width="400"/> | <img src="docs/screenshots/notifications.png" alt="Notif" width="400"/> |
+
+| Kết Nối (Friends) | Khám Phá (Discover) |
+|:---:|:---:|
+| <img src="docs/screenshots/connections.png" alt="Connections" width="400"/> | <img src="docs/screenshots/discover.png" alt="Discover" width="400"/> |
+
+| Bình Luận (Comments) | |
+|:---:|:---:|
+| <img src="docs/screenshots/comments.png" alt="Comments" width="400"/> | |
 
 ---
 
