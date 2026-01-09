@@ -48,7 +48,7 @@ export const getUserRoles = async (userId) => {
   const result = await db.request().input('userId', sql.Int, userId).query(`
       SELECT
         r.id, r.name, r.description,
-        ur.assigned_at, ur.assigned_by
+        ur.assigned_at
       FROM user_roles ur
       JOIN roles r ON ur.role_id = r.id
       WHERE ur.user_id = @userId
@@ -129,10 +129,9 @@ export const assignRole = async (userId, roleName, assignedBy = null) => {
   await db
     .request()
     .input('userId', sql.Int, userId)
-    .input('roleId', sql.Int, role.id)
-    .input('assignedBy', sql.Int, assignedBy).query(`
-      INSERT INTO user_roles (user_id, role_id, assigned_by)
-      VALUES (@userId, @roleId, @assignedBy)
+    .input('roleId', sql.Int, role.id).query(`
+      INSERT INTO user_roles (user_id, role_id)
+      VALUES (@userId, @roleId)
     `);
 
   logger.info({
