@@ -36,12 +36,12 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {user.full_name || "No name"}
+                  {user.full_name || "Chưa có tên"}
                 </h1>
                 <Verified className="w-6 h-6 text-blue-500" />
               </div>
               <p className="text-gray-600">
-                {user.username ? `@${user.username}` : "Add username"}
+                {user.username ? `@${user.username}` : "Thêm tên người dùng"}
               </p>
             </div>
 
@@ -54,7 +54,7 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
                   className="flex items-center gap-2 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0"
                 >
                   <PenBox className="w-4 h-4" />
-                  Edit
+                  Chỉnh sửa
                 </button>
 
                 {/* Đổi mật khẩu */}
@@ -70,23 +70,23 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
 
           {/* Bio */}
           <p className="text-gray-700 text-sm max-w-md mt-4">
-            {user.bio || "No bio"}
+            {user.bio || "Chưa có tiểu sử"}
           </p>
 
           {/* Location + joined time */}
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 mt-4">
             <span className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4" />
-              {user.address || "No address"}
+              {user.address || "Chưa có địa chỉ"}
             </span>
 
             <span className="flex items-center gap-1.5">
               <Calendar className="w-4 h-4" />
-              Joined{" "}
+              Tham gia{" "}
               <span className="font-medium">
                 {user.created_at
                   ? dayjs(user.created_at).fromNow()
-                  : "unknown"}
+                  : "không rõ"}
               </span>
             </span>
           </div>
@@ -98,7 +98,7 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
                 {posts.length}
               </span>
               <span className="text-xs sm:text-sm text-gray-500 ml-1.5">
-                Posts
+                Bài viết
               </span>
             </div>
 

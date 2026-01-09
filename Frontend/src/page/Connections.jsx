@@ -216,7 +216,7 @@ const Connections = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 sm:-ml-46">
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-6xl mx-auto p-6">
         {/* Title */}
         <div className="mb-8">
@@ -230,17 +230,17 @@ const Connections = () => {
         </div>
 
         {/* Counts */}
-        <div className="mb-8 flex flex-wrap gap-6">
+        <div className="mb-8 grid grid-cols-2 md:flex md:flex-wrap gap-4 md:gap-6">
           {tabs.map((item) => (
             <div
               key={item.key}
               className="flex flex-col items-center justify-center gap-1 border
-              h-20 w-40 border-gray-200 bg-white shadow rounded-md cursor-pointer
+              h-20 md:w-40 border-gray-200 bg-white shadow rounded-md cursor-pointer
               hover:border-indigo-300 transition"
               onClick={() => goTab(item.key)}
             >
               <b className="text-2xl text-indigo-600">{item.value.length}</b>
-              <p className="text-slate-600 text-sm">{item.label}</p>
+              <p className="text-slate-600 text-sm text-center px-2">{item.label}</p>
             </div>
           ))}
         </div>
@@ -265,14 +265,14 @@ const Connections = () => {
         </div>
 
         {/* User List */}
-        <div className="flex flex-wrap gap-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {tabs
             .find((item) => item.key === currentTab)
             ?.value.map((user) => (
               <div
                 key={`tra-${user.id}`}
                 // key={`${currentTab}-${user.id}`}
-                className="w-full max-w-[360px] flex gap-5 p-5 bg-white shadow rounded-md
+                className="flex gap-5 p-5 bg-white shadow rounded-md
                 hover:shadow-lg transition"
               >
                 <img

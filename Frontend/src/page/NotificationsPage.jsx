@@ -82,7 +82,7 @@ const NotificationsPage = ({ socket, currentUser }) => {
   const unreadCount = notifications.filter((n) => n.status === 'unread').length;
 
   return (
-    <div className="max-w-2xl mx-auto pt-6 pb-10 px-4 sm:px-6 sm:-ml-46">
+    <div className="max-w-4xl mx-auto pt-6 pb-10 px-4 sm:px-0">
       <div className="mb-6">
         <NotificationHeader />
         <NotificationFilters

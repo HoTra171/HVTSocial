@@ -54,6 +54,7 @@ router.get('/discover', authMiddleware, discoverUsers);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/suggest', authMiddleware, suggestUsers);
+router.get('/suggestions', authMiddleware, suggestUsers); // Alternative route for frontend compatibility
 
 // ========== CONNECTIONS & PROFILE ==========
 

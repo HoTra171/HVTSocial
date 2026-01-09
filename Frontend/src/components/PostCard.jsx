@@ -1114,7 +1114,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
           <span>{likesCount} lượt thích</span>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={loadComments} className="hover:underline">
+          <button onClick={() => navigate(`/post/${post.id}`)} className="hover:underline">
             {commentsCount} bình luận
           </button>
           <button className="hover:underline">
@@ -1135,7 +1135,7 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
           </button>
 
           <button
-            onClick={loadComments}
+            onClick={() => navigate(`/post/${post.id}`)}
             className="flex-1 flex items-center justify-center gap-2 py-2 rounded-md hover:bg-gray-200 transition"
           >
             <MessageCircle className="w-5 h-5" />

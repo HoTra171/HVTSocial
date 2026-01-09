@@ -49,7 +49,25 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   };
   const elapsedRef = useRef(0);
 
-  const currentUserIndex = allStories?.findIndex(
+  const me = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUserIdVal = me?.id;
+
+  // Sort allStories in the same order as StoriesBar
+  const sortedStories = [...(allStories || [])].sort((a, b) => {
+    // Current user's story always first
+    if (a.user.id === currentUserIdVal) return -1;
+    if (b.user.id === currentUserIdVal) return 1;
+
+    // Unseen stories before seen stories
+    const aHasUnseen = a.stories.some(s => !s.is_viewed);
+    const bHasUnseen = b.stories.some(s => !s.is_viewed);
+    if (aHasUnseen && !bHasUnseen) return -1;
+    if (!aHasUnseen && bHasUnseen) return 1;
+
+    return 0;
+  });
+
+  const currentUserIndex = sortedStories?.findIndex(
     (group) => group.user.id === viewStory?.user?.id
   ) ?? 0;
 
@@ -58,7 +76,6 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   const currentStory = stories[currentStoryIndex];
   const user = viewStory?.user;
 
-  const me = JSON.parse(localStorage.getItem("user") || "{}");
   const isMyStory = Number(me?.id) === Number(user?.id);
   //  MARK AS VIEWED
   //  SMART VIEW TRACKING
@@ -161,8 +178,8 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
       });
     } else {
       //  HẾT STORIES CỦA USER NÀY → NEXT USER
-      if (allStories && currentUserIndex < allStories.length - 1) {
-        const nextUserStories = allStories[currentUserIndex + 1];
+      if (sortedStories && currentUserIndex < sortedStories.length - 1) {
+        const nextUserStories = sortedStories[currentUserIndex + 1];
         setViewStory({
           user: nextUserStories.user,
           stories: nextUserStories.stories,
@@ -183,9 +200,9 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
         ...viewStory,
         currentIndex: currentStoryIndex - 1,
       });
-    } else if (allStories && currentUserIndex > 0) {
+    } else if (sortedStories && currentUserIndex > 0) {
       //  PREV USER
-      const prevUserStories = allStories[currentUserIndex - 1];
+      const prevUserStories = sortedStories[currentUserIndex - 1];
       setViewStory({
         user: prevUserStories.user,
         stories: prevUserStories.stories,
@@ -432,9 +449,9 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
       <div className="absolute top-8 left-0 right-0 flex items-center justify-between px-4 z-20">
         <div className="flex items-center gap-3">
           <img
-            src={toUrl(user?.avatar)}
+            src={user?.avatar || user?.profile_picture || '/default.jpg'}
             alt=""
-            className="w-10 h-10 rounded-full border-2 border-white"
+            className="w-10 h-10 rounded-full border-2 border-white object-cover"
           />
           <div>
             <div className="flex items-center gap-2">
@@ -451,17 +468,6 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Viewers button (only for my story) */}
-          {isMyStory && (
-            <button
-              onClick={handleShowViewers}
-              className="text-white p-2 hover:bg-white/20 rounded-full flex items-center gap-1"
-            >
-              <Eye size={20} />
-              <span className="text-sm">{viewers.length || ''}</span>
-            </button>
-          )}
-
           {/* Pause/Play */}
           <button
             onClick={togglePause}
@@ -596,6 +602,19 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
               <SendHorizonal className="text-white" size={24} />
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Viewers button (bottom-left, only for my story) */}
+      {isMyStory && (
+        <div className="absolute bottom-4 left-4 z-20">
+          <button
+            onClick={handleShowViewers}
+            className="text-white p-2 hover:bg-white/20 rounded-full flex items-center gap-2 bg-black/30 backdrop-blur-sm"
+          >
+            <Eye size={20} />
+            <span className="text-sm font-medium">{viewers.length || 0}</span>
+          </button>
         </div>
       )}
 

@@ -297,19 +297,70 @@ export const discoverUsers = async (req, res) => {
   }
 };
 
-// GET /api/users/suggest?q=abc&limit=8
+// GET /api/users/suggest?q=abc&limit=8 or GET /api/users/suggestions
 export const suggestUsers = async (req, res) => {
   try {
     const currentUserId = req.user.id;
     const q = (req.query.q || '').trim();
     const limit = Math.min(Number(req.query.limit || 8), 20);
 
-    if (!q) return res.json({ success: true, data: [] });
+    const db = await pool;
 
+    // If no search query, return general suggestions
+    if (!q) {
+      const suggestionQuery = `
+        SELECT TOP (@limit)
+          u.id, u.full_name, u.username, u.avatar, u.bio, u.address,
+          CASE WHEN f1.status = 'accepted' OR f2.status = 'accepted' THEN 1 ELSE 0 END AS is_friend,
+          (
+            -- Score based on mutual friends, location, etc.
+            CASE WHEN u.address = (SELECT address FROM users WHERE id = @currentUserId) THEN 20 ELSE 0 END
+            + (SELECT COUNT(*) FROM friendships WHERE
+                ((user_id = @currentUserId AND friend_id IN (
+                  SELECT CASE WHEN f.user_id = u.id THEN f.friend_id ELSE f.user_id END
+                  FROM friendships f
+                  WHERE (f.user_id = u.id OR f.friend_id = u.id) AND f.status = 'accepted'
+                )) OR
+                (friend_id = @currentUserId AND user_id IN (
+                  SELECT CASE WHEN f.user_id = u.id THEN f.friend_id ELSE f.user_id END
+                  FROM friendships f
+                  WHERE (f.user_id = u.id OR f.friend_id = u.id) AND f.status = 'accepted'
+                )))
+                AND status = 'accepted'
+              ) * 5
+          ) AS score
+        FROM users u
+        LEFT JOIN friendships f1 ON f1.user_id = @currentUserId AND f1.friend_id = u.id
+        LEFT JOIN friendships f2 ON f2.friend_id = @currentUserId AND f2.user_id = u.id
+        WHERE u.id <> @currentUserId
+          AND (f1.status IS NULL OR f1.status <> 'accepted')
+          AND (f2.status IS NULL OR f2.status <> 'accepted')
+        ORDER BY score DESC, u.created_at DESC;
+      `;
+
+      const result = await db
+        .request()
+        .input('currentUserId', sql.Int, currentUserId)
+        .input('limit', sql.Int, limit)
+        .query(suggestionQuery);
+
+      const users = result.recordset.map((u) => ({
+        id: u.id,
+        full_name: u.full_name,
+        username: u.username,
+        avatar: u.avatar,
+        bio: u.bio,
+        address: u.address,
+        isFriend: !!u.is_friend,
+        isFollowing: false,
+      }));
+
+      return res.json({ success: true, data: users });
+    }
+
+    // If search query provided, use search-based suggestions
     const prefix = `${q}%`;
     const like = `%${q}%`;
-
-    const db = await pool;
 
     const query = `
       SELECT TOP (@limit)

@@ -21,6 +21,9 @@ const Layout = () => {
   //  Kiểm tra đang ở trang messages hay chatbox
   const isChatPage = location.pathname.startsWith('/messages/')
 
+  // Kiểm tra đang ở trang story
+  const isStoryPage = location.pathname.startsWith('/story')
+
   // Check mobile
   const isMobile = window.innerWidth < 768
 
@@ -60,7 +63,7 @@ const Layout = () => {
     <div className="w-full min-h-screen flex bg-slate-50 overflow-hidden touch-pan-y">
 
       {/* ===== MOBILE HEADER (Mobile only) ===== */}
-      {!isChatPage && <MobileHeader currentUserId={currentUserId} />}
+      {!isChatPage && !isStoryPage && <MobileHeader currentUserId={currentUserId} />}
 
       {/* ===== SIDEBAR / RECENT CHATS (Desktop only) ===== */}
       {isChatPage ? (
@@ -80,7 +83,12 @@ const Layout = () => {
 
       {/* ===== MAIN CONTENT ===== */}
       <div
-        className={`flex-1 pl-120 max-sm:pl-0 relative ${isChatPage ? "h-screen min-h-0 overflow-hidden max-sm:pb-14" : "min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16"
+        className={`flex-1 md:pl-20 xl:pl-70 max-sm:pl-0 relative ${
+          isChatPage
+            ? "h-screen min-h-0 overflow-hidden"
+            : isStoryPage
+              ? "min-h-screen overflow-y-auto"
+              : "min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16"
           }`}
       >
 
@@ -99,7 +107,7 @@ const Layout = () => {
       </div>
 
       {/* ===== BOTTOM NAVIGATION (Mobile only) ===== */}
-      <BottomNav currentUserId={currentUserId} />
+      {!isChatPage && !isStoryPage && <BottomNav currentUserId={currentUserId} />}
 
     </div>
   )

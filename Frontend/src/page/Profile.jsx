@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
-import { Heart } from "lucide-react";
+import { Heart, FileText, Image, Bookmark } from "lucide-react";
 import UserProfileInfo from "../components/UserProfileInfo";
 import Loading from "../components/Loading";
 import PostCard from "../components/PostCard";
@@ -28,6 +28,13 @@ const Profile = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [savedPosts, setSavedPosts] = useState([]);
   const [likedPosts, setLikedPosts] = useState([]);
+
+  const tabs = [
+    { key: "posts", icon: FileText, label: "Bài viết" },
+    { key: "media", icon: Image, label: "Ảnh & video" },
+    { key: "likes", icon: Heart, label: "Lượt thích" },
+    { key: "saved", icon: Bookmark, label: "Đã lưu" }
+  ];
 
 
   useEffect(() => {
@@ -128,7 +135,12 @@ const Profile = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setLikedPosts(res.data || []);
+      // Loại bỏ các bài post trùng lặp dựa trên ID
+      const uniquePosts = Array.from(
+        new Map((res.data || []).map(post => [post.id, post])).values()
+      );
+
+      setLikedPosts(uniquePosts);
     } catch (err) {
       console.error("Fetch liked posts error:", err);
     }
@@ -149,7 +161,7 @@ const Profile = () => {
 
 
   return (
-    <div className="relative h-full overflow-y-scroll bg-gray-50 p-6 sm:-ml-60">
+    <div className="relative h-full overflow-y-scroll bg-gray-50 p-6">
       <div className="max-w-3xl mx-auto">
         {/* PROFILE CARD */}
         <div className="bg-white rounded-2xl shadow overflow-hidden">
@@ -175,16 +187,18 @@ const Profile = () => {
           {/* TABS */}
           <div className="mt-6">
             <div className="bg-white rounded-xl shadow p-1 flex max-w-md mx-auto">
-              {["posts", "media", "likes", "saved"].map((tab) => (
+              {tabs.map(({ key, icon: Icon, label }) => (
                 <button
-                  key={`tab-${tab}`}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${activeTab === tab
+                  key={`tab-${key}`}
+                  onClick={() => setActiveTab(key)}
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 ${activeTab === key
                     ? "bg-indigo-600 text-white"
                     : "text-gray-600 hover:text-gray-900"
                     }`}
+                  title={label}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  <Icon className="w-5 h-5" />
+                  <span className="max-sm:hidden">{label}</span>
                 </button>
               ))}
             </div>
@@ -259,8 +273,8 @@ const Profile = () => {
               ) : (
                 // Nếu đang xem profile của chính mình
                 <div className="flex flex-col items-center gap-6">
-                  {likedPosts.map((post) => (
-                    <div key={`liked-post-${post.id}`} className="w-full max-w-2xl">
+                  {likedPosts.map((post, index) => (
+                    <div key={`liked-${post.id}-${index}`} className="w-full max-w-2xl">
                       {/* Hiển thị thời gian thích */}
                       {post.likedAt && (
                         <div className="text-xs text-slate-400 mb-2 flex items-center gap-2">

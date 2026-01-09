@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import {
   Check,
   CheckCheck,
@@ -21,6 +22,39 @@ const MessageBubble = ({
   reactMenuFor,
   setReactMenuFor
 }) => {
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const longPressTimer = useRef(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleTouchStart = (e) => {
+    if (!isMobile || msg.recalled || msg.failed) return;
+
+    longPressTimer.current = setTimeout(() => {
+      setShowMobileMenu(true);
+      // Haptic feedback on supported devices
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500); // 500ms long press
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+    }
+  };
   // Render status icon cho tin nhắn của mình
   const renderMessageStatus = () => {
     if (!isMe) return null;
@@ -44,23 +78,29 @@ const MessageBubble = ({
   };
 
   return (
-    <div
-      className={`flex w-full mb-1 ${isMe ? "justify-end" : "justify-start"
-        }`}
-    >
-      {/* Avatar người gửi (không phải mình) */}
-      {!isMe && (
-        <img
-          src={
-            partner?.avatar ||
-            `/default.jpg`
-          }
+    <>
+      <div
+        className={`flex w-full mb-1 ${isMe ? "justify-end" : "justify-start"
+          }`}
+      >
+        {/* Avatar người gửi (không phải mình) */}
+        {!isMe && (
+          <img
+            src={
+              partner?.avatar ||
+              `/default.jpg`
+            }
 
-          className="w-8 h-8 rounded-full mr-2 self-end"
-        />
-      )}
+            className="w-8 h-8 rounded-full mr-2 self-end"
+          />
+        )}
 
-      <div className="relative max-w-[80%] group">
+        <div
+          className="relative max-w-[80%] group"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+        >
         {/* Icon bar (emoji + menu) */}
         {!msg.recalled && !msg.failed && (
           <div
@@ -210,6 +250,75 @@ const MessageBubble = ({
         )}
       </div>
     </div>
+
+    {/* Mobile Long Press Menu - Full screen overlay */}
+    {showMobileMenu && isMobile && (
+      <div
+        className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:hidden"
+        onClick={() => setShowMobileMenu(false)}
+      >
+        <div
+          className="bg-white rounded-t-3xl w-full p-4 pb-8 animate-slide-up"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Drag handle */}
+          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
+
+          {/* Reaction emojis */}
+          <div className="flex justify-center gap-4 mb-6 pb-4 border-b">
+            {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
+              <button
+                key={emo}
+                className="text-4xl hover:scale-125 active:scale-110 transition"
+                onClick={() => {
+                  onReact(msg.id, emo);
+                  setShowMobileMenu(false);
+                }}
+              >
+                {emo}
+              </button>
+            ))}
+          </div>
+
+          {/* Action buttons */}
+          <div className="space-y-2">
+            {isMe && msg.message_type === "text" && (
+              <button
+                className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
+                onClick={() => {
+                  onEdit(msg);
+                  setShowMobileMenu(false);
+                }}
+              >
+                <span className="text-xl">✏️</span>
+                <span>Chỉnh sửa tin nhắn</span>
+              </button>
+            )}
+
+            {isMe && (
+              <button
+                onClick={() => {
+                  onRecall(msg.id);
+                  setShowMobileMenu(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base text-red-500"
+              >
+                <span className="text-xl">🗑️</span>
+                <span>Thu hồi tin nhắn</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowMobileMenu(false)}
+              className="w-full text-center px-4 py-3 bg-gray-100 rounded-lg font-medium text-base mt-4"
+            >
+              Hủy
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 };
 

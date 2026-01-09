@@ -89,7 +89,7 @@ const CreatePost = ({ onPostCreated }) => {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-slate-50 to-white sm:-ml-50'>
+    <div className='min-h-screen bg-gradient-to-b from-slate-50 to-white'>
       <div className='max-w-6xl mx-auto p-6'>
         {/* Title */}
         <div className='mb-8'>

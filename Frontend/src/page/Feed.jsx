@@ -3,6 +3,7 @@ import StoriesBar from '../components/StoriesBar';
 import { assets } from '../assets/assets';
 import Loading from '../components/Loading.jsx';
 import PostCard from '../components/PostCard.jsx';
+import SharedPostCard from '../components/SharedPostCard.jsx';
 import RecentMessages from '../components/RecentMessages.jsx';
 import axios from "axios";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
@@ -135,17 +136,33 @@ const Feed = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-start justify-center xl:gap-8 sm:-ml-60 py-10'>
+    <div className='min-h-screen flex items-start justify-center xl:gap-8 py-10'>
       <div className="p-4 w-full max-w-[600px]">
         <StoriesBar />
 
         <div className="space-y-6">
-          {feeds.map((post, index) => (
-            <PostCard post={post}
-              currentUser={currentUser}
-              onPostDeleted={handlePostDeleted}
-              key={`post-${post.id}`} />
-          ))}
+          {feeds.map((post, index) => {
+            // Nếu post có originalPost thì đây là bài share
+            if (post.originalPost) {
+              return (
+                <SharedPostCard
+                  post={post}
+                  currentUser={currentUser}
+                  key={`shared-${post.id}`}
+                />
+              )
+            }
+
+            // Bài viết thường
+            return (
+              <PostCard
+                post={post}
+                currentUser={currentUser}
+                onPostDeleted={handlePostDeleted}
+                key={`post-${post.id}`}
+              />
+            )
+          })}
 
           {/* sentinel để IntersectionObserver bắt khi scroll gần cuối */}
           {hasMore && (

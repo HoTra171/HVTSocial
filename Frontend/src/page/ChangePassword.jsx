@@ -115,7 +115,7 @@ const ChangePassword = () => {
         </div>
 
         {/* Card */}
-        <div className="max-w-xl bg-white p-6 sm:p-8 rounded-xl shadow-md space-y-6">
+        <div className="max-w-4xl bg-white p-6 sm:p-8 rounded-xl shadow-md space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
             <div className="p-3 rounded-full bg-indigo-50">
               <Lock className="w-6 h-6 text-indigo-600" />

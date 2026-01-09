@@ -703,10 +703,16 @@ const Chatbox = () => {
         const form = new FormData();
         form.append("file", img.file);
 
+        const token = localStorage.getItem("token");
         const uploadRes = await axios.post(
           `${API_URL}/upload`,
           form,
-          { headers: { "Content-Type": "multipart/form-data" } }
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "Authorization": `Bearer ${token}`
+            }
+          }
         );
 
         socketRef.current.emit("send_message", {
@@ -746,7 +752,15 @@ const Chatbox = () => {
       audioStreamRef.current = stream;
       audioChunksRef.current = [];
 
-      const mediaRecorder = new MediaRecorder(stream);
+      // Try to use ogg/opus codec if supported, fallback to default
+      let options = {};
+      if (MediaRecorder.isTypeSupported('audio/ogg; codecs=opus')) {
+        options = { mimeType: 'audio/ogg; codecs=opus' };
+      } else if (MediaRecorder.isTypeSupported('audio/webm; codecs=opus')) {
+        options = { mimeType: 'audio/webm; codecs=opus' };
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
@@ -757,20 +771,32 @@ const Chatbox = () => {
 
       mediaRecorder.onstop = async () => {
         try {
+          // Get the actual MIME type from the recorder
+          const mimeType = mediaRecorderRef.current?.mimeType || "audio/webm";
+
           const blob = new Blob(audioChunksRef.current, {
-            type: "audio/webm",
+            type: mimeType,
           });
-          const file = new File([blob], `voice_${Date.now()}.webm`, {
-            type: "audio/webm",
+
+          // Determine file extension based on MIME type
+          const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+          const file = new File([blob], `voice_${Date.now()}.${extension}`, {
+            type: mimeType,
           });
 
           const form = new FormData();
           form.append("file", file);
 
+          const token = localStorage.getItem("token");
           const uploadRes = await axios.post(
             `${API_URL}/upload`,
             form,
-            { headers: { "Content-Type": "multipart/form-data" } }
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                "Authorization": `Bearer ${token}`
+              }
+            }
           );
 
           socketRef.current.emit("send_message", {
@@ -1452,23 +1478,23 @@ const Chatbox = () => {
           )}
 
           {/* INPUT - Sticky Bottom */}
-          <div className="sticky bottom-0 shrink-0 p-3 bg-white flex items-center gap-3 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20">
+          <div className="sticky bottom-0 shrink-0 p-3 bg-white flex items-center gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20">
             <button
               onClick={isRecording ? stopRecording : startRecording}
-              className={`p-3 rounded-full ${isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-black"
+              className={`p-2.5 rounded-full flex-shrink-0 ${isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-black"
                 }`}
             >
-              <Mic size={18} />
+              <Mic size={20} />
             </button>
 
             {isRecording && (
-              <span className="text-xs text-red-500 min-w-[40px]">
+              <span className="text-xs text-red-500 min-w-[40px] flex-shrink-0">
                 {recordingTime}s
               </span>
             )}
 
-            <label>
-              <ImageIcon className="w-6 h-6 text-gray-700 cursor-pointer" />
+            <label className="flex-shrink-0 cursor-pointer">
+              <ImageIcon className="w-6 h-6 text-gray-700" />
               <input
                 type="file"
                 accept="image/*"
@@ -1493,14 +1519,14 @@ const Chatbox = () => {
               }}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder={editingMessage ? "Chỉnh sửa tin nhắn..." : "Aa"}
-              className="flex-1 px-4 py-2 bg-gray-100 rounded-full"
+              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full outline-none min-w-0"
             />
 
             <button
               onClick={sendMessage}
-              className="p-3 bg-blue-600 rounded-full text-white"
+              className="p-2.5 bg-blue-600 rounded-full text-white flex-shrink-0 hover:bg-blue-700 transition"
             >
-              <SendHorizonal size={18} />
+              <SendHorizonal size={20} />
             </button>
           </div>
         </div>

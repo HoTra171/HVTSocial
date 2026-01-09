@@ -888,7 +888,7 @@ const PostDetail = () => {
   if (!post) return null;
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] sm:-ml-46">
+    <div className="min-h-screen bg-[#f0f2f5]">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
         <div className="max-w-3xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-3">

@@ -69,7 +69,7 @@ const Messages = () => {
   if (loading) return <Loading />;
 
   return (
-    <div className="min-h-screen relative sm:-ml-48 bg-slate-50">
+    <div className="min-h-screen relative bg-slate-50">
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex items-center gap-3 mb-2">
           <MessagesSquare className="w-8 h-8 text-indigo-600" />
