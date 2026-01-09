@@ -1,5 +1,0 @@
-{
-  "artifactType":  "ARTIFACT_TYPE_OTHER",
-  "summary":  "Hướng dẫn chi tiết deploy dự án HVTSocial lên production với 3 phương án: Deploy miễn phí (Render + Vercel + Azure), Deploy trên VPS, và Deploy với Docker. Bao gồm cấu hình môi trường, CORS, SSL, và checklist đầy đủ.",
-  "updatedAt":  "2025-12-22T20:21:14.136189200Z"
-}
