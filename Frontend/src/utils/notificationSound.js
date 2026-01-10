@@ -1,39 +1,20 @@
 
-// Base64 encoded "Crystal/Chime" sound
-const NOTIFICATION_SOUND = "data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAG84AA0WAgAAAAAAAAAAAA0WAgAAAAAAAAAA//uQZAZAAB9AA3gAAAA0kAA3gAAAAHOX3cAEDtn//iQBDf/nL7uACA7Z//4kAQ3/wAAAGkAAAAAAAAD/nL7uACA7Z//4kAQ3/5y+7gAgO2f/+JUEN/+AAAADSQAAAAAAA//uQZCSAAB9AA3gAAAA0kAA3gAAAAHOX3cAEDtn//iQBDf/nL7uACA7Z//4kAQ3/wAAAGkAAAAAAAAD/nL7uACA7Z//4kAQ3/5y+7gAgO2f/+JUEN/+AAAADSQAAAAAAA//uQZDyAAB9AA3gAAAA0kAA3gAAAAHOX3cAEDtn//iQBDf/nL7uACA7Z//4kAQ3/wAAAGkAAAAAAAAD/nL7uACA7Z//4kAQ3/5y+7gAgO2f/+JUEN/+AAAADSQAAAAAAA//uQZEsAAB9AA3gAAAA0kAA3gAAAAHOX3cAEDtn//iQBDf/nL7uACA7Z//4kAQ3/wAAAGkAAAAAAAAD/nL7uACA7Z//4kAQ3/5y+7gAgO2f/+JUEN/+AAAADSQAAAAAAA//uQZFYaaB9AA3gAAAA0kAA3gAAAAHOX3cAEDtn//iQBDf/nL7uACA7Z//4kAQ3/wAAAGkAAAAAAAAD/nL7uACA7Z//4kAQ3/5y+7gAgO2f/+JUEN/+AAAADSQAAAAAAA//uQZGkaaB9AA3gAAAA0kAA3gAAAAHOX3cAEDtn//iQBDf/nL7uACA7Z//4kAQ3/wAAAGkAAAAAAAAD/nL7uACA7Z//4kAQ3/5y+7gAgO2f/+JUEN/+AAAADSQAAAAAAA";
+// notificationSound.js
+// Sử dụng AudioContext để tạo âm thanh (Synthesized Sound)
+// Cách này KHÔNG bị lỗi decode và load cực nhanh.
 
 let audioContext = null;
-let audioBuffer = null;
-
-// Convert Base64 to ArrayBuffer
-const base64ToArrayBuffer = (base64) => {
-  const binaryString = window.atob(base64.split(',')[1]);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-};
 
 export const initAudio = async () => {
   try {
-    // 1. Create AudioContext if not exists
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    // 2. Resume context (Mobile unlock)
+    // Mở khóa AudioContext trên Mobile (Resume khi user chạm)
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
-
-    // 3. Decode audio data once and cache it
-    if (!audioBuffer) {
-      const arrayBuffer = base64ToArrayBuffer(NOTIFICATION_SOUND);
-      audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    }
-
   } catch (error) {
     console.error("Audio unlock failed:", error);
   }
@@ -41,32 +22,41 @@ export const initAudio = async () => {
 
 export const playNotificationSound = async () => {
   try {
-    // VIBRATION support (Android)
+    // 1. RUNG (Vibration) - Chỉ Android hỗ trợ
     if ("vibrate" in navigator) {
-      navigator.vibrate([200]); // Vibrate for 200ms
+      navigator.vibrate([200]);
     }
 
-    // AUDIO playback
+    // 2. KHỞI TẠO CONTEXT
     if (!audioContext) {
-      // Try to init if not ready (might fail if no interaction, but worth a shot)
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
     }
 
     if (audioContext.state === 'suspended') {
-      // Try to resume again
       await audioContext.resume();
     }
 
-    if (!audioBuffer) {
-      const arrayBuffer = base64ToArrayBuffer(NOTIFICATION_SOUND);
-      audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    }
+    // 3. TẠO ÂM THANH "TING" (Synthesized)
+    const t = audioContext.currentTime;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
 
-    // Create source and play
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-    source.start(0);
+    // Cấu hình âm thanh: Sine wave (tiếng chuông trong)
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, t); // 880Hz (Nốt A5) - Tiếng cao, rõ
+    oscillator.frequency.exponentialRampToValueAtTime(110, t + 0.5); // Giảm dần cao độ chút (Hiệu ứng Ping)
+
+    // Cấu hình âm lượng (Fade out - Hiệu ứng ngân)
+    gainNode.gain.setValueAtTime(0.5, t);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+
+    // Nối mạch: Oscillator -> Gain -> Loa
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Phát và dừng sau 0.5s
+    oscillator.start(t);
+    oscillator.stop(t + 0.5);
 
   } catch (error) {
     console.error("Play sound error:", error);
