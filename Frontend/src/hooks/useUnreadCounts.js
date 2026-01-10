@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axiosInstance from '../utils/axios';
 import { socket } from '../socket';
+import { playNotificationSound } from '../utils/notificationSound';
 
 export const useUnreadCounts = () => {
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -100,6 +101,7 @@ export const useUnreadCounts = () => {
     // Update when new message arrives
     socket.on('receive_message', () => {
       fetchUnreadMessages();
+      playNotificationSound();
     });
 
     // Update when messages are read
@@ -120,6 +122,7 @@ export const useUnreadCounts = () => {
     // Update when new notification arrives
     socket.on('new_notification', (data) => {
       fetchUnreadNotifications();
+      playNotificationSound();
 
       // If it's a friend request notification, update friend requests count
       if (data?.type === 'friend_request') {
