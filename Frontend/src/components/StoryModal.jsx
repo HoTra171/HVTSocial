@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Image, Video, Music, Type, Users, Globe, Lock, Smile } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -204,8 +205,8 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-gray-900 rounded-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
         <div className="p-4">
           {/* Header */}
@@ -548,7 +549,8 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

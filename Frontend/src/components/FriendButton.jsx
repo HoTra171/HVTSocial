@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, UserCheck, UserMinus, Clock, X } from 'lucide-react';
+import { UserPlus, UserCheck, UserMinus, Clock, X, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
@@ -114,9 +114,10 @@ const FriendButton = ({ userId, currentUserId }) => {
   if (loading) {
     return (
       <button
-        className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed"
+        className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed font-medium mt-4 md:mt-0 flex items-center gap-2"
         disabled
       >
+        <Loader2 className="w-5 h-5 animate-spin" />
         Đang tải...
       </button>
     );

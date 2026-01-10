@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   X,
   ChevronLeft,
@@ -424,8 +425,8 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
   };
 
 
-  return (
-    <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overscroll-none touch-none">
       {/* Progress bars */}
       <div className="absolute top-4 left-0 right-0 flex gap-1 px-4 z-20">
         {stories.map((_, idx) => (
@@ -685,7 +686,8 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
 
