@@ -40,20 +40,27 @@ function App() {
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
 
-  // UNLOCK AUDIO ON FIRST INTERACTION (MOBILE FIX)
+  // UNLOCK AUDIO & REQUEST NOTIFICATION PERMISSION
   useEffect(() => {
-    const unlockAudio = () => {
+    const handleUserInteraction = () => {
+      // 1. Initialize Audio
       initAudio();
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
+
+      // 2. Request Notification Permission
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+      }
+
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
     };
 
-    window.addEventListener('click', unlockAudio);
-    window.addEventListener('touchstart', unlockAudio);
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('touchstart', handleUserInteraction);
 
     return () => {
-      window.removeEventListener('click', unlockAudio);
-      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
     };
   }, []);
 
@@ -132,13 +139,29 @@ function App() {
   useEffect(() => {
     if (!currentUser?.id) return;
 
+    const showSystemNotification = (title, body) => {
+      // Chỉ hiện thông báo nếu App đang ẩn (background) hoặc user cho phép
+      if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+        try {
+          new Notification(title, {
+            body: body,
+            icon: "/logo.svg", // Đảm bảo logo có trong public/assets hoặc root
+          });
+        } catch (e) {
+          console.error("Notification error:", e);
+        }
+      }
+    };
+
     const handleNewNotification = (data) => {
       console.log("New notification:", data);
       playNotificationSound();
+      showSystemNotification("HVT Social", data.message || "Bạn có thông báo mới");
     };
 
     const handleNewMessage = () => {
       playNotificationSound();
+      showSystemNotification("Tin nhắn mới", "Bạn có một tin nhắn mới");
     };
 
     const handleUnreadCount = (count) => {
