@@ -34,7 +34,7 @@ export const requestDataExport = async (userId) => {
         FROM data_export_requests
         WHERE user_id = @userId
           AND status IN ('pending', 'processing')
-          AND requested_at > DATEADD(hour, -24, GETDATE())
+          AND requested_at > DATEADD(hour, -24, NOW())
       `);
 
     if (existingRequest.recordset.length > 0) {
@@ -125,7 +125,7 @@ export const processDataExport = async (requestId) => {
         SET status = 'completed',
             file_url = @fileUrl,
             file_expires_at = @expiresAt,
-            completed_at = GETDATE()
+            completed_at = NOW()
         WHERE id = @requestId
       `);
 
@@ -334,7 +334,7 @@ export const approveDeletionRequest = async (requestId, reviewedBy) => {
       .input('reviewedBy', sql.Int, reviewedBy).query(`
         UPDATE data_deletion_requests
         SET status = 'approved',
-            reviewed_at = GETDATE(),
+            reviewed_at = NOW(),
             reviewed_by = @reviewedBy
         WHERE id = @requestId AND status = 'pending'
       `);
@@ -375,7 +375,7 @@ export const rejectDeletionRequest = async (requestId, reviewedBy, rejectionReas
       .input('rejectionReason', sql.NVarChar, rejectionReason).query(`
         UPDATE data_deletion_requests
         SET status = 'rejected',
-            reviewed_at = GETDATE(),
+            reviewed_at = NOW(),
             reviewed_by = @reviewedBy,
             rejection_reason = @rejectionReason
         WHERE id = @requestId AND status = 'pending'
@@ -435,7 +435,7 @@ export const processDeletion = async (requestId, method = 'anonymize') => {
     await db.request().input('requestId', sql.Int, requestId).query(`
         UPDATE data_deletion_requests
         SET status = 'completed',
-            completed_at = GETDATE()
+            completed_at = NOW()
         WHERE id = @requestId
       `);
 
@@ -504,8 +504,7 @@ export const listDeletionRequests = async (status = 'pending', limit = 50, offse
       LEFT JOIN users reviewer ON dr.reviewed_by = reviewer.id
       WHERE dr.status = @status
       ORDER BY dr.requested_at DESC
-      OFFSET @offset ROWS
-      FETCH NEXT @limit ROWS ONLY
+      LIMIT @limit OFFSET @offset
     `);
 
   return result.recordset;

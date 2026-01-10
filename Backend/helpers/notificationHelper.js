@@ -85,9 +85,9 @@ export const emitNotification = async (io, data) => {
       io.to(`user_${userId}`).emit('new_notification', {
         id: notification.id,
         type: notification.type,
-        content: notification.content,
-        sender_id: notification.sender_id,
-        post_id: notification.post_id,
+        content: notification.message,
+        sender_id: notification.actor_id,
+        post_id: notification.target_id,
         created_at: notification.created_at,
       });
 

@@ -105,7 +105,7 @@ export const CommentService = {
       .input('commentParent', sql.Int, commentParent).query(`
         INSERT INTO comments (post_id, user_id, content, parent_comment_id, created_at)
         OUTPUT INSERTED.*
-        VALUES (@postId, @userId, @content, @commentParent, GETDATE())
+        VALUES (@postId, @userId, @content, @commentParent, NOW())
       `);
 
     const newComment = result.recordset[0];
@@ -162,7 +162,7 @@ export const CommentService = {
       // FIX: NVARCHAR(MAX) + updated_at
       .input('content', sql.NVarChar(sql.MAX), content).query(`
         UPDATE comments
-        SET content = @content, updated_at = GETDATE()
+        SET content = @content, updated_at = NOW()
         WHERE id = @commentId
       `);
 

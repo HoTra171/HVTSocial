@@ -39,7 +39,7 @@ export const FriendshipService = {
       .input('friendId', sql.Int, friendId).query(`
         INSERT INTO friendships (user_id, friend_id, status, created_at)
         OUTPUT INSERTED.*
-        VALUES (@userId, @friendId, 'pending', GETDATE())
+        VALUES (@userId, @friendId, 'pending', NOW())
       `);
 
     return result.recordset[0];
@@ -55,7 +55,7 @@ export const FriendshipService = {
       .input('friendId', sql.Int, friendId).query(`
       UPDATE friendships
       SET status = 'accepted',
-          updated_at = GETDATE()
+          updated_at = NOW()
       OUTPUT INSERTED.*
       WHERE user_id = @friendId 
         AND friend_id = @userId 
@@ -229,7 +229,7 @@ export const FriendshipService = {
     SELECT *
     FROM friends
     ORDER BY friend_since DESC
-    OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY;
+    LIMIT @limit OFFSET @offset;
   `;
 
     const rs = await db
@@ -266,8 +266,7 @@ export const FriendshipService = {
         WHERE f.friend_id = @userId 
           AND f.status = 'pending'
         ORDER BY f.created_at DESC
-        OFFSET @offset ROWS
-        FETCH NEXT @limit ROWS ONLY
+        LIMIT @limit OFFSET @offset
       `);
 
     return result.recordset;
@@ -297,8 +296,7 @@ export const FriendshipService = {
         WHERE f.user_id = @userId 
           AND f.status = 'pending'
         ORDER BY f.created_at DESC
-        OFFSET @offset ROWS
-        FETCH NEXT @limit ROWS ONLY
+        LIMIT @limit OFFSET @offset
       `);
 
     return result.recordset;

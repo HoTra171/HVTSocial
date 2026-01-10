@@ -253,7 +253,7 @@ export const processEmailQueue = async (limit = 10) => {
         SELECT TOP (@limit) *
         FROM email_queue
         WHERE status = 'pending'
-          AND scheduled_at <= GETDATE()
+          AND scheduled_at <= NOW()
           AND attempts < max_attempts
         ORDER BY scheduled_at ASC
       `);
@@ -278,7 +278,7 @@ export const processEmailQueue = async (limit = 10) => {
         await db.request().input('id', sql.Int, email.id).query(`
             UPDATE email_queue
             SET status = 'sent',
-                sent_at = GETDATE()
+                sent_at = NOW()
             WHERE id = @id
           `);
 
@@ -350,7 +350,7 @@ export const cleanEmailQueue = async (daysOld = 7) => {
   const result = await db.request().input('daysOld', sql.Int, daysOld).query(`
       DELETE FROM email_queue
       WHERE status IN ('sent', 'failed')
-        AND created_at < DATEADD(day, -@daysOld, GETDATE())
+        AND created_at < DATEADD(day, -@daysOld, NOW())
     `);
 
   logger.info({

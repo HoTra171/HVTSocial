@@ -301,8 +301,7 @@ export const getAuditLogs = async (filters = {}) => {
 
   query += `
     ORDER BY al.created_at DESC
-    OFFSET @offset ROWS
-    FETCH NEXT @limit ROWS ONLY
+    LIMIT @limit OFFSET @offset
   `;
 
   request.input('limit', sql.Int, limit);
@@ -346,8 +345,7 @@ export const getResourceAuditLogs = async (resourceType, resourceId, limit = 50,
       WHERE al.entity_type = @resourceType
         AND al.entity_id = @resourceId
       ORDER BY al.created_at DESC
-      OFFSET @offset ROWS
-      FETCH NEXT @limit ROWS ONLY
+      LIMIT @limit OFFSET @offset
     `);
 
   return result.recordset;
@@ -385,8 +383,7 @@ export const getSecurityEvents = async (userId = null, limit = 50, offset = 0) =
 
   query += `
     ORDER BY created_at DESC
-    OFFSET @offset ROWS
-    FETCH NEXT @limit ROWS ONLY
+    LIMIT @limit OFFSET @offset
   `;
 
   request.input('limit', sql.Int, limit);
@@ -424,8 +421,7 @@ export const getAdminActions = async (limit = 100, offset = 0) => {
           'assign_role', 'remove_role', 'delete_post', 'delete_comment'
         )
       ORDER BY al.created_at DESC
-      OFFSET @offset ROWS
-      FETCH NEXT @limit ROWS ONLY
+      LIMIT @limit OFFSET @offset
     `);
 
   return result.recordset;

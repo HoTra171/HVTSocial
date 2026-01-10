@@ -11,10 +11,94 @@ export const NotificationService = {
   },
 
   /**
-   * NOTE: Notification creation functions have been removed
-   * These notifications are now handled automatically by database triggers
-   * See: Backend/database/create-notification-triggers.sql
+   * CREATE NOTIFICATIONS
    */
+
+  /**
+   * Create like notification
+   */
+  async createLikeNotification(postId, senderId, userId) {
+    const result = await db
+      .request()
+      .input('userId', userId)
+      .input('actorId', senderId)
+      .input('targetId', postId).query(`
+        INSERT INTO notifications (user_id, actor_id, type, target_type, target_id, message, is_read)
+        VALUES (@userId, @actorId, 'like', 'post', @targetId, 'đã thích bài viết của bạn', false)
+        RETURNING *
+      `);
+    return result.recordset[0];
+  },
+
+  /**
+   * Create comment notification
+   */
+  async createCommentNotification(postId, senderId, userId, content) {
+    const message = content || 'đã bình luận bài viết của bạn';
+    const result = await db
+      .request()
+      .input('userId', userId)
+      .input('actorId', senderId)
+      .input('targetId', postId)
+      .input('message', message).query(`
+        INSERT INTO notifications (user_id, actor_id, type, target_type, target_id, message, is_read)
+        VALUES (@userId, @actorId, 'comment', 'post', @targetId, @message, false)
+        RETURNING *
+      `);
+    return result.recordset[0];
+  },
+
+  /**
+   * Create friend request notification
+   */
+  async createFriendRequestNotification(userId, senderId, content) {
+    const message = content || 'đã gửi lời mời kết bạn';
+    const result = await db
+      .request()
+      .input('userId', userId)
+      .input('actorId', senderId)
+      .input('message', message).query(`
+        INSERT INTO notifications (user_id, actor_id, type, message, is_read)
+        VALUES (@userId, @actorId, 'friend_request', @message, false)
+        RETURNING *
+      `);
+    return result.recordset[0];
+  },
+
+  /**
+   * Create message notification
+   */
+  async createMessageNotification({ userId, senderId, chatId, content }) {
+    const message = content || 'đã gửi tin nhắn cho bạn';
+    const result = await db
+      .request()
+      .input('userId', userId)
+      .input('actorId', senderId)
+      .input('message', message).query(`
+        INSERT INTO notifications (user_id, actor_id, type, message, is_read)
+        VALUES (@userId, @actorId, 'message', @message, false)
+        RETURNING *
+      `);
+    return result.recordset[0];
+  },
+
+  /**
+   * Create other notification
+   */
+  async createOtherNotification({ userId, senderId, content, postId }) {
+    const message = content || 'Bạn có thông báo mới';
+    const result = await db
+      .request()
+      .input('userId', userId)
+      .input('actorId', senderId)
+      .input('targetId', postId || null)
+      .input('message', message).query(`
+        INSERT INTO notifications (user_id, actor_id, type, target_type, target_id, message, is_read)
+        VALUES (@userId, @actorId, 'share', ${postId ? "'post'" : 'NULL'}, @targetId, @message, false)
+        RETURNING *
+      `);
+    return result.recordset[0];
+  },
 
   /**
    * 8. LẤY DANH SÁCH THÔNG BÁO
@@ -39,8 +123,7 @@ export const NotificationService = {
         LEFT JOIN users u ON n.actor_id = u.id
         WHERE n.user_id = @userId
         ORDER BY n.created_at DESC
-        OFFSET 0 ROWS
-        FETCH NEXT @limit ROWS ONLY
+        LIMIT @limit
       `);
 
     return result.recordset;

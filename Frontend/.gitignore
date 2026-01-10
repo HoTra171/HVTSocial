@@ -27,3 +27,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.md
+!README.md
+!docs/*.md
+*.resolved
+*.resolved.0
+
+# Temporary Windows files
+nul
+Frontend/nul
+Backend/nul
+

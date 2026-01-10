@@ -34,11 +34,11 @@ export const suspendAccount = async (userId, reason, until = null, suspendedBy =
       .input('suspendedBy', sql.Int, suspendedBy).query(`
         UPDATE users
         SET account_status = 'suspended',
-            suspended_at = GETDATE(),
+            suspended_at = NOW(),
             suspended_until = @until,
             suspension_reason = @reason,
             suspended_by = @suspendedBy,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE id = @userId
       `);
 
@@ -80,7 +80,7 @@ export const unsuspendAccount = async (userId, unsuspendedBy = null) => {
             suspended_until = NULL,
             suspension_reason = NULL,
             suspended_by = NULL,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE id = @userId
       `);
 
@@ -168,7 +168,7 @@ export const deactivateAccount = async (userId, reason = null) => {
         UPDATE users
         SET account_status = 'deactivated',
             suspension_reason = @reason,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE id = @userId
       `);
 
@@ -203,7 +203,7 @@ export const reactivateAccount = async (userId) => {
         UPDATE users
         SET account_status = 'active',
             suspension_reason = NULL,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE id = @userId AND account_status = 'deactivated'
       `);
 
@@ -240,7 +240,7 @@ export const softDeleteAccount = async (userId, reason = null) => {
         UPDATE users
         SET account_status = 'deleted',
             suspension_reason = @reason,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE id = @userId
       `);
 
@@ -294,7 +294,7 @@ export const anonymizeAccount = async (userId) => {
             phone_number = NULL,
             two_factor_secret = NULL,
             two_factor_backup_codes = NULL,
-            updated_at = GETDATE()
+            updated_at = NOW()
         WHERE id = @userId
       `);
 
@@ -425,8 +425,7 @@ export const listSuspendedAccounts = async (limit = 50, offset = 0) => {
       LEFT JOIN users admin ON u.suspended_by = admin.id
       WHERE u.account_status = 'suspended'
       ORDER BY u.suspended_at DESC
-      OFFSET @offset ROWS
-      FETCH NEXT @limit ROWS ONLY
+      LIMIT @limit OFFSET @offset
     `);
 
   return result.recordset;

@@ -61,7 +61,7 @@ export const createUserRateLimiter = (options) => {
           FROM rate_limit_tracking
           WHERE user_id = @userId
             AND endpoint = @endpoint
-            AND window_end > GETDATE()
+            AND window_end > NOW()
           ORDER BY window_start DESC
         `);
 
@@ -273,7 +273,7 @@ export const getUserRateLimitStatus = async (userId) => {
         window_end
       FROM rate_limit_tracking
       WHERE user_id = @userId
-        AND window_end > GETDATE()
+        AND window_end > NOW()
       ORDER BY window_start DESC
     `);
 
@@ -320,7 +320,7 @@ export const cleanExpiredRateLimits = async () => {
 
   const result = await db.request().query(`
     DELETE FROM rate_limit_tracking
-    WHERE window_end < DATEADD(hour, -1, GETDATE())
+    WHERE window_end < DATEADD(hour, -1, NOW())
   `);
 
   logger.info({

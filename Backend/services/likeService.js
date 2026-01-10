@@ -144,8 +144,7 @@ export const LikeService = {
         JOIN users u ON u.id = p.user_id
         WHERE l.user_id = @userId
         ORDER BY l.created_at DESC
-        OFFSET @offset ROWS
-        FETCH NEXT @limit ROWS ONLY
+        LIMIT @limit OFFSET @offset
       `);
 
     return result.recordset.map((row) => ({

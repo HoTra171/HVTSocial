@@ -233,7 +233,7 @@ export const discoverUsers = async (req, res) => {
           + CASE WHEN (f1.status = 'accepted' OR f2.status = 'accepted') THEN 30 ELSE 0 END
 
           -- freshness score
-          + CASE WHEN u.created_at >= DATEADD(DAY, -30, GETDATE()) THEN 3 ELSE 0 END
+          + CASE WHEN u.created_at >= DATEADD(DAY, -30, NOW()) THEN 3 ELSE 0 END
         ) AS score
 
       FROM users u
@@ -490,7 +490,7 @@ export const updatePrivacySettings = async (req, res) => {
     }
 
     // Thêm updated_at
-    updates.push('updated_at = GETDATE()');
+    updates.push('updated_at = NOW()');
 
     const query = `
       UPDATE users

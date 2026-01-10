@@ -415,7 +415,7 @@ export const detectSpam = async (
       SELECT COUNT(*) as count
       FROM ${table}
       WHERE user_id = @userId
-        AND created_at > DATEADD(minute, -@minutes, GETDATE())
+        AND created_at > DATEADD(minute, -@minutes, NOW())
     `);
 
   const count = result.recordset[0].count;
@@ -465,8 +465,7 @@ export const getFlaggedContent = async (limit = 50, offset = 0) => {
       LEFT JOIN users u ON r.reporter_id = u.id
       WHERE r.status = 'pending'
       ORDER BY r.created_at DESC
-      OFFSET @offset ROWS
-      FETCH NEXT @limit ROWS ONLY
+      LIMIT @limit OFFSET @offset
     `);
 
   return result.recordset;
@@ -508,7 +507,7 @@ export const reviewFlaggedContent = async (reportId, reviewerId, action, notes =
     .input('notes', sql.NVarChar, notes).query(`
       UPDATE reports
       SET status = 'reviewed',
-          reviewed_at = GETDATE(),
+          reviewed_at = NOW(),
           reviewer_id = @reviewerId,
           action_taken = @action,
           action_notes = @notes

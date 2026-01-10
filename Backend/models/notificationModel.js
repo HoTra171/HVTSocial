@@ -17,7 +17,7 @@ export const NotificationModel = {
         (user_id, sender_id, content, type, status, created_at)
       OUTPUT INSERTED.*
       VALUES
-        (@userId, @senderId, @content, 'message', 'unread', GETDATE());
+        (@userId, @senderId, @content, 'message', 'unread', NOW());
     `;
 
     const result = await req.query(query);
@@ -83,7 +83,7 @@ export const NotificationModel = {
     const query = `
     INSERT INTO notifications (user_id, sender_id, post_id, content, type, status, created_at)
     OUTPUT INSERTED.*
-    VALUES (@userId, @senderId, @postId, @content, 'post_tag', 'unread', GETDATE());
+    VALUES (@userId, @senderId, @postId, @content, 'post_tag', 'unread', NOW());
   `;
 
     const result = await req.query(query);
@@ -104,7 +104,7 @@ export const NotificationModel = {
     const query = `
     INSERT INTO notifications (user_id, sender_id, post_id, content, type, status, created_at)
     OUTPUT INSERTED.*
-    VALUES (@userId, @senderId, @postId, @content, 'comment_tag', 'unread', GETDATE());
+    VALUES (@userId, @senderId, @postId, @content, 'comment_tag', 'unread', NOW());
   `;
 
     const result = await req.query(query);
@@ -124,7 +124,7 @@ export const NotificationModel = {
     const query = `
     INSERT INTO notifications (user_id, sender_id, content, type, status, created_at)
     OUTPUT INSERTED.*
-    VALUES (@userId, @senderId, @content, 'follow', 'unread', GETDATE());
+    VALUES (@userId, @senderId, @content, 'follow', 'unread', NOW());
   `;
 
     const result = await req.query(query);
@@ -144,7 +144,7 @@ export const NotificationModel = {
     const query = `
     INSERT INTO notifications (user_id, sender_id, content, type, status, created_at)
     OUTPUT INSERTED.*
-    VALUES (@userId, @senderId, @content, 'story_view', 'unread', GETDATE());
+    VALUES (@userId, @senderId, @content, 'story_view', 'unread', NOW());
   `;
 
     const result = await req.query(query);
@@ -163,7 +163,7 @@ export const NotificationModel = {
     const query = `
     INSERT INTO notifications (user_id, content, type, status, created_at)
     OUTPUT INSERTED.*
-    VALUES (@userId, @content, 'report', 'unread', GETDATE());
+    VALUES (@userId, @content, 'report', 'unread', NOW());
   `;
 
     const result = await req.query(query);

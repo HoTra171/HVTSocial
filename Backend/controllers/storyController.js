@@ -26,7 +26,7 @@ export const getStories = async (req, res) => {
         FROM stories s
         JOIN users u ON u.id = s.user_id
         LEFT JOIN story_views sv ON sv.story_id = s.id AND sv.viewer_id = @userId
-        WHERE s.expires_at > GETDATE()
+        WHERE s.expires_at > NOW()
           AND (
             s.privacy = 'public'
             OR s.user_id = @userId
@@ -100,7 +100,7 @@ export const viewStory = async (req, res) => {
       await db.request().input('storyId', sql.Int, storyId).input('viewerId', sql.Int, viewerId)
         .query(`
           INSERT INTO story_views (story_id, viewer_id, viewed_at)
-          VALUES (@storyId, @viewerId, GETDATE())
+          VALUES (@storyId, @viewerId, NOW())
         `);
     }
 
@@ -187,7 +187,7 @@ export const createStory = async (req, res) => {
         VALUES (
           @userId, @mediaType, @mediaUrl, @caption,
           @bgColor, @privacy,
-          GETDATE(), DATEADD(HOUR, @hours, GETDATE())
+          NOW(), DATEADD(HOUR, @hours, NOW())
         )
       `);
 
