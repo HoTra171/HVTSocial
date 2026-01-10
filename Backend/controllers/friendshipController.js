@@ -274,3 +274,30 @@ export const getSuggestedFriends = async (req, res) => {
     });
   }
 };
+
+// GET /api/friendships/count/:userId
+export const getFriendsCount = async (req, res) => {
+  try {
+    const targetUserId = Number(req.params.userId);
+
+    if (!targetUserId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid userId'
+      });
+    }
+
+    const count = await FriendshipService.getFriendsCount(targetUserId);
+
+    res.json({
+      success: true,
+      count,
+    });
+  } catch (err) {
+    console.error('getFriendsCount error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+};

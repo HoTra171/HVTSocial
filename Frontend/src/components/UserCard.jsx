@@ -51,23 +51,21 @@ const UserCard = ({ user, currentUser }) => {
 
 
   return (
-    <div className="p-5 pt-6 flex flex-col justify-between w-72 shadow-md hover:shadow-xl 
-    border border-gray-200 rounded-xl transition-all duration-200 bg-white mx-auto">
+    <div
+      className="p-5 pt-6 flex flex-col justify-between w-72 shadow-md hover:shadow-xl
+      border border-gray-200 rounded-xl transition-all duration-200 bg-white mx-auto cursor-pointer"
+      onClick={() => navigate(`/profile/${userId}`)}
+    >
       {/* Avatar + Info */}
       <div className="text-center">
         <img
           src={avatar}
           alt={user.full_name}
-          className="rounded-full w-20 h-20 shadow-md mx-auto cursor-pointer 
+          className="rounded-full w-20 h-20 shadow-md mx-auto
           hover:scale-105 transition-transform"
-          onClick={() => navigate(`/profile/${userId}`)}
         />
 
-        <p
-          className="mt-4 font-semibold text-lg text-slate-800 cursor-pointer 
-          hover:text-indigo-600 transition"
-          onClick={() => navigate(`/profile/${userId}`)}
-        >
+        <p className="mt-4 font-semibold text-lg text-slate-800 hover:text-indigo-600 transition">
           {user.full_name || user.name || 'Người dùng'}
         </p>
 
@@ -107,7 +105,7 @@ const UserCard = ({ user, currentUser }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex mt-5 gap-2">
+      <div className="flex mt-5 gap-2" onClick={(e) => e.stopPropagation()}>
         {/* FriendButton - Hiển thị đúng trạng thái */}
         <div className="flex-1">
           <FriendButton userId={userId} currentUserId={currentUserId} />
@@ -118,7 +116,7 @@ const UserCard = ({ user, currentUser }) => {
           <button
             onClick={openDirectChat}
             className="flex items-center justify-center w-12 h-12 border-2 border-indigo-200
-            text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer 
+            text-indigo-600 hover:bg-indigo-50 rounded-lg cursor-pointer
             active:scale-95 transition-all"
             title="Nhắn tin"
           >
@@ -126,15 +124,6 @@ const UserCard = ({ user, currentUser }) => {
           </button>
         )}
       </div>
-
-      {/* View Profile Link */}
-      <button
-        onClick={() => navigate(`/profile/${userId}`)}
-        className="mt-3 text-sm text-indigo-600 hover:text-indigo-700 
-        font-medium hover:underline"
-      >
-        Xem trang cá nhân
-      </button>
     </div>
   );
 };

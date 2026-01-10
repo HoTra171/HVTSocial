@@ -12,6 +12,9 @@ import {
   ChevronDown,
   ChevronUp,
   EyeOff,
+  Globe,
+  Users,
+  Lock,
 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -919,13 +922,20 @@ const PostCard = ({ post, currentUser, onPostDeleted, onPostUnsaved, onPostUnlik
           />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-900 text-sm sm:text-base truncate max-w-[120px] sm:max-w-xs block">
                 {pickName(postUser)}
               </span>
               <BadgeCheck className="text-blue-500 w-4 h-4" />
             </div>
-            <div className="text-gray-500 text-sm">
-              @{postUser?.username || "user"} • {safeFromNow(post.createdAt || post.created_at)} • {editStatus === "friends" ? "Bạn bè" : editStatus === "private" ? "Chỉ mình tôi" : "Công khai"}
+            <div className="text-gray-500 text-sm flex items-center gap-1">
+              {safeFromNow(post.createdAt || post.created_at)} •
+              {editStatus === "friends" ? (
+                <Users className="w-3.5 h-3.5" title="Bạn bè" />
+              ) : editStatus === "private" ? (
+                <Lock className="w-3.5 h-3.5" title="Chỉ mình tôi" />
+              ) : (
+                <Globe className="w-3.5 h-3.5" title="Công khai" />
+              )}
             </div>
           </div>
         </div>

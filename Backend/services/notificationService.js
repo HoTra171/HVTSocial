@@ -117,7 +117,7 @@ export const NotificationService = {
           n.target_type,
           n.created_at,
           u.full_name AS sender_name,
-          u.avatar AS sender_avatar,
+          COALESCE(u.avatar, u.profile_picture) AS sender_avatar,
           u.id AS sender_id
         FROM notifications n
         LEFT JOIN users u ON n.actor_id = u.id

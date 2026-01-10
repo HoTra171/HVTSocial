@@ -161,19 +161,22 @@ const Profile = () => {
 
 
   return (
-    <div className="relative h-full overflow-y-scroll bg-gray-50 p-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="relative h-full overflow-y-scroll bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+      <div className="max-w-4xl mx-auto">
         {/* PROFILE CARD */}
-        <div className="bg-white rounded-2xl shadow overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
           {/* COVER PHOTO */}
-          <div className="h-40 md:h-56 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200">
-            {user.background && (
+          <div className="h-48 md:h-64 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 relative group">
+            {user.background ? (
               <img
                 src={user.background}
                 alt="cover"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 opacity-90"></div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
           </div>
 
           {/* USER INFO */}
@@ -185,20 +188,24 @@ const Profile = () => {
           />
 
           {/* TABS */}
-          <div className="mt-6">
-            <div className="bg-white rounded-xl shadow p-1 flex max-w-md mx-auto">
+          <div className="px-6 pt-6">
+            <div className="bg-gray-50 rounded-2xl p-1.5 flex max-w-2xl mx-auto shadow-inner border border-gray-200">
               {tabs.map(({ key, icon: Icon, label }) => (
                 <button
                   key={`tab-${key}`}
                   onClick={() => setActiveTab(key)}
-                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 ${activeTab === key
-                    ? "bg-indigo-600 text-white"
-                    : "text-gray-600 hover:text-gray-900"
-                    }`}
+                  className={`flex-1 px-3 py-3 text-sm font-semibold rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 relative ${
+                    activeTab === key
+                      ? "bg-white text-indigo-600 shadow-md scale-105"
+                      : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                  }`}
                   title={label}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-5 h-5 ${activeTab === key ? "animate-pulse" : ""}`} />
                   <span className="max-sm:hidden">{label}</span>
+                  {activeTab === key && (
+                    <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full"></div>
+                  )}
                 </button>
               ))}
             </div>
@@ -206,7 +213,7 @@ const Profile = () => {
 
           {/* POSTS TAB */}
           {activeTab === "posts" && (
-            <div className="mt-6 flex flex-col items-center gap-6">
+            <div className="mt-8 px-4 pb-6 flex flex-col items-center gap-6">
               {posts.map((post) => (
                 <PostCard
                   key={`post-${post.id}`}
@@ -219,56 +226,69 @@ const Profile = () => {
               ))}
 
               {posts.length === 0 && (
-                <p className="mb-6 text-gray-500 text-sm">
-                  Chưa có bài viết nào.
-                </p>
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <FileText className="w-10 h-10 text-indigo-500" />
+                  </div>
+                  <p className="text-gray-600 font-medium mb-2">Chưa có bài viết nào</p>
+                  <p className="text-gray-400 text-sm">Bài viết sẽ hiển thị ở đây</p>
+                </div>
               )}
             </div>
           )}
 
           {/* MEDIA TAB */}
           {activeTab === "media" && (
-            <div className="flex flex-wrap mt-6 max-w-6xl">
-              {posts
-                .filter((post) => post.image_urls?.length > 0)
-                .map((post) => (
-                  <div key={post.id}>
-                    {post.image_urls.map((image, index) => (
+            <div className="mt-8 px-4 pb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
+                {posts
+                  .filter((post) => post.image_urls?.length > 0)
+                  .flatMap((post) =>
+                    post.image_urls.map((image, index) => (
                       <Link
-                        key={`image-${index}`}
+                        key={`${post.id}-${index}`}
                         to={image}
                         target="_blank"
-                        className="relative group"
+                        className="relative group aspect-square overflow-hidden rounded-xl bg-gray-100 shadow-sm hover:shadow-xl transition-all duration-300"
                       >
                         <img
                           src={image}
                           alt=""
-                          className="w-64 aspect-video object-cover"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
-                        <p className="absolute bottom-0 right-0 text-xs p-1 px-3 backdrop-blur-xl text-white opacity-0 group-hover:opacity-100 transition duration-300">
-                          Posted {dayjs(post.createdAt).fromNow()}
-                        </p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <p className="absolute bottom-3 left-3 text-xs font-medium text-white">
+                            {dayjs(post.createdAt).fromNow()}
+                          </p>
+                        </div>
                       </Link>
-                    ))}
-                  </div>
-                ))}
+                    ))
+                  )}
+              </div>
 
               {posts.filter((p) => p.image_urls?.length > 0).length === 0 && (
-                <p className="m-6 text-gray-500 text-sm w-full text-center">
-                  Chưa có ảnh nào được đăng.
-                </p>
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-orange-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Image className="w-10 h-10 text-pink-500" />
+                  </div>
+                  <p className="text-gray-600 font-medium mb-2">Chưa có ảnh & video</p>
+                  <p className="text-gray-400 text-sm">Ảnh và video sẽ hiển thị ở đây</p>
+                </div>
               )}
-
             </div>
           )}
 
           {/* LIKES TAB */}
           {activeTab === "likes" && (
-            <div className="mt-6 mb-6">
+            <div className="mt-8 px-4 pb-6">
               {profileId ? (
                 // Nếu đang xem profile người khác
-                <div className="text-center text-gray-500">
-                  Không thể xem bài viết đã thích của người khác.
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Heart className="w-10 h-10 text-red-500" />
+                  </div>
+                  <p className="text-gray-600 font-medium mb-2">Nội dung riêng tư</p>
+                  <p className="text-gray-400 text-sm">Không thể xem bài viết đã thích của người khác</p>
                 </div>
               ) : (
                 // Nếu đang xem profile của chính mình
@@ -277,9 +297,9 @@ const Profile = () => {
                     <div key={`liked-${post.id}-${index}`} className="w-full max-w-2xl">
                       {/* Hiển thị thời gian thích */}
                       {post.likedAt && (
-                        <div className="text-xs text-slate-400 mb-2 flex items-center gap-2">
-                          <Heart className="w-3 h-3 text-red-500 fill-red-500" />
-                          <span>
+                        <div className="text-xs text-slate-500 mb-2 flex items-center gap-2 px-2">
+                          <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500" />
+                          <span className="font-medium">
                             Đã thích {new Date(post.likedAt).toLocaleDateString('vi-VN')}
                           </span>
                         </div>
@@ -299,14 +319,12 @@ const Profile = () => {
                   ))}
 
                   {likedPosts.length === 0 && (
-                    <div className="text-center py-8">
-                      <Heart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-2">
-                        Chưa có bài viết nào được thích
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Nhấn vào icon trái tim trên bài viết để thích
-                      </p>
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-pink-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <Heart className="w-10 h-10 text-red-500" />
+                      </div>
+                      <p className="text-gray-600 font-medium mb-2">Chưa có bài viết nào được thích</p>
+                      <p className="text-gray-400 text-sm">Nhấn vào icon trái tim để thích bài viết</p>
                     </div>
                   )}
                 </div>
@@ -314,13 +332,17 @@ const Profile = () => {
             </div>
           )}
 
-          {/* THÊM SAVED TAB */}
+          {/* SAVED TAB */}
           {activeTab === "saved" && (
-            <div className="mt-6 mb-6">
+            <div className="mt-8 px-4 pb-6">
               {profileId ? (
                 // Nếu đang xem profile người khác
-                <div className="text-center text-gray-500">
-                  Không thể xem bài viết đã lưu của người khác.
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Bookmark className="w-10 h-10 text-amber-500" />
+                  </div>
+                  <p className="text-gray-600 font-medium mb-2">Nội dung riêng tư</p>
+                  <p className="text-gray-400 text-sm">Không thể xem bài viết đã lưu của người khác</p>
                 </div>
               ) : (
                 // Nếu đang xem profile của chính mình
@@ -340,13 +362,12 @@ const Profile = () => {
                   ))}
 
                   {savedPosts.length === 0 && (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500 mb-2">
-                        Chưa có bài viết nào được lưu
-                      </p>
-                      <p className="text-gray-400 text-sm">
-                        Nhấn vào icon bookmark trên bài viết để lưu lại
-                      </p>
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <Bookmark className="w-10 h-10 text-amber-500" />
+                      </div>
+                      <p className="text-gray-600 font-medium mb-2">Chưa có bài viết nào được lưu</p>
+                      <p className="text-gray-400 text-sm">Nhấn vào icon bookmark để lưu bài viết</p>
                     </div>
                   )}
                 </div>

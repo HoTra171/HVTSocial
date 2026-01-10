@@ -63,7 +63,7 @@ export default function Login() {
           className="h-18 object-contain absolute top-5"
         />
 
-        <div className="max-w-md mt-30 flex justify-center flex-col">
+        <div className="max-w-md mt-30 hidden md:flex justify-center flex-col">
           <div className="flex items-start gap-3 mb-4">
             <img
               src={assets.group_users}
@@ -77,7 +77,7 @@ export default function Login() {
                 ))}
               </div>
               <p className="text-xs md:text-sm text-indigo-900 font-medium mt-1">
-                “Một cộng đồng năng động để kết nối và chia sẻ mọi khoảnh khắc trong cuộc sống.”
+                "Một cộng đồng năng động để kết nối và chia sẻ mọi khoảnh khắc trong cuộc sống."
               </p>
             </div>
           </div>

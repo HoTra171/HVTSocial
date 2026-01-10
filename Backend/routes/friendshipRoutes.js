@@ -12,6 +12,7 @@ import {
   getPendingRequestsCount,
   getSentRequests,
   getSuggestedFriends,
+  getFriendsCount,
 } from '../controllers/friendshipController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
@@ -257,5 +258,27 @@ router.get('/sent', authMiddleware, getSentRequests);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/suggestions', authMiddleware, getSuggestedFriends);
+
+/**
+ * @swagger
+ * /api/friendships/count/{userId}:
+ *   get:
+ *     summary: Lấy số lượng bạn bè của một user
+ *     tags: [Friendships]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Số lượng bạn bè
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.get('/count/:userId', authMiddleware, getFriendsCount);
 
 export default router;

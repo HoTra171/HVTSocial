@@ -987,12 +987,26 @@ const Chatbox = () => {
   };
 
   const startCall = async (isVideo) => {
+    // Validate prerequisites
     if (!partner?.target_id) {
       toast.error('Không tìm thấy người nhận');
       return;
     }
 
+    if (!socketRef.current || !socketRef.current.connected) {
+      toast.error('Kết nối socket bị mất. Vui lòng tải lại trang.');
+      return;
+    }
+
+    // Check browser support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast.error('Trình duyệt không hỗ trợ cuộc gọi');
+      return;
+    }
+
     try {
+      console.log('🔵 Starting call:', { isVideo, partnerId: partner.target_id, chatId });
+
       // STOP LOCAL STREAM CŨ TRƯỚC
       if (localStream) {
         localStream.getTracks().forEach(track => {
@@ -1002,11 +1016,12 @@ const Chatbox = () => {
         setLocalStream(null);
       }
 
-      console.log('Requesting media devices...');
+      console.log('📹 Requesting media devices...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: isVideo,
       });
+      console.log('✅ Media devices granted');
 
       setLocalStream(stream);
       setMicOn(true);
@@ -1022,6 +1037,7 @@ const Chatbox = () => {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
+      console.log('📞 Emitting call_user to:', partner.target_id);
       socketRef.current.emit("call_user", {
         to: partner.target_id,
         offer,
@@ -1031,8 +1047,9 @@ const Chatbox = () => {
 
       setInCall(true);
       toast.success(isVideo ? 'Đang gọi video...' : 'Đang gọi...');
+      console.log('✅ Call initiated successfully');
     } catch (err) {
-      console.error("Start call error:", err);
+      console.error("❌ Start call error:", err);
 
       if (err.name === 'NotReadableError') {
         toast.error('Camera/mic đang được sử dụng bởi ứng dụng khác');
@@ -1221,14 +1238,18 @@ const Chatbox = () => {
 
             <button
               onClick={() => startCall(false)}
-              className="p-2 bg-gray-100 rounded-full"
+              disabled={!partner?.target_id || !socketRef.current?.connected}
+              className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              title={!partner?.target_id ? 'Đang tải thông tin...' : !socketRef.current?.connected ? 'Mất kết nối' : 'Gọi thoại'}
             >
               <Phone size={18} />
             </button>
 
             <button
               onClick={() => startCall(true)}
-              className="p-2 bg-gray-100 rounded-full"
+              disabled={!partner?.target_id || !socketRef.current?.connected}
+              className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              title={!partner?.target_id ? 'Đang tải thông tin...' : !socketRef.current?.connected ? 'Mất kết nối' : 'Gọi video'}
             >
               <Video size={18} />
             </button>

@@ -6,7 +6,7 @@ import {
   UserMinus,
   X,
   Check,
-  MessagesSquare,
+  MessageCircle,
   Clock,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -331,20 +331,17 @@ const Connections = () => {
                 key={`tra-${user.id}`}
                 // key={`${currentTab}-${user.id}`}
                 className="flex gap-5 p-5 bg-white shadow rounded-md
-                hover:shadow-lg transition"
+                hover:shadow-lg transition cursor-pointer"
+                onClick={() => navigate(`/profile/${user.id}`)}
               >
                 <img
                   src={user.avatar || '/default.jpg'}
                   alt=""
-                  className="rounded-full w-12 h-12 shadow-md cursor-pointer"
-                  onClick={() => navigate(`/profile/${user.id}`)}
+                  className="rounded-full w-12 h-12 shadow-md"
                 />
 
                 <div className="flex-1 min-w-0">
-                  <p
-                    className="font-medium text-slate-700 cursor-pointer hover:text-indigo-600 truncate"
-                    onClick={() => navigate(`/profile/${user.id}`)}
-                  >
+                  <p className="font-medium text-slate-700 hover:text-indigo-600 truncate">
                     {user.full_name}
                   </p>
                   <p className="text-slate-500 text-sm truncate">@{user.username}</p>
@@ -360,24 +357,17 @@ const Connections = () => {
                   )}
 
                   {/* Buttons */}
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
                     {/* TAB: FRIENDS */}
                     {currentTab === 'friends' && (
                       <>
                         <button
-                          onClick={() => navigate(`/profile/${user.id}`)}
-                          className="px-3 py-1.5 text-sm rounded-md bg-indigo-600
-                          hover:bg-indigo-700 text-white transition active:scale-95"
-                        >
-                          Xem trang cá nhân
-                        </button>
-                        <button
                           onClick={() => openDirectChat(user.id)}
-                          className="px-3 py-1.5 text-sm rounded-md bg-slate-100 
-                          hover:bg-slate-200 text-slate-800 transition active:scale-95
+                          className="px-3 py-1.5 text-sm rounded-md bg-blue-600
+                          hover:bg-blue-700 text-white transition active:scale-95
                           flex items-center gap-1"
                         >
-                          <MessagesSquare className="w-4 h-4" />
+                          <MessageCircle className="w-4 h-4" />
                           Nhắn tin
                         </button>
                         <button
@@ -431,24 +421,15 @@ const Connections = () => {
 
                     {/* TAB: SUGGESTIONS */}
                     {currentTab === 'suggestions' && (
-                      <>
-                        <button
-                          onClick={() => handleSendRequest(user.id)}
-                          className="px-3 py-1.5 text-sm rounded-md bg-indigo-600
-                          hover:bg-indigo-700 text-white transition active:scale-95
-                          flex items-center gap-1"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          Kết bạn
-                        </button>
-                        <button
-                          onClick={() => navigate(`/profile/${user.id}`)}
-                          className="px-3 py-1.5 text-sm rounded-md bg-slate-100
-                          hover:bg-slate-200 text-slate-800 transition active:scale-95"
-                        >
-                          Xem trang
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleSendRequest(user.id)}
+                        className="px-3 py-1.5 text-sm rounded-md bg-indigo-600
+                        hover:bg-indigo-700 text-white transition active:scale-95
+                        flex items-center gap-1"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Kết bạn
+                      </button>
                     )}
                   </div>
                 </div>

@@ -127,10 +127,9 @@ const FriendButton = ({ userId, currentUserId }) => {
     return (
       <button
         onClick={handleSendRequest}
-        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg
-        transition flex items-center gap-2 active:scale-95"
+        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mt-4 md:mt-0 transition active:scale-95"
       >
-        <UserPlus className="w-4 h-4" />
+        <UserPlus className="w-5 h-5" />
         Kết bạn
       </button>
     );
@@ -139,21 +138,19 @@ const FriendButton = ({ userId, currentUserId }) => {
   // STATUS: friends
   if (status === 'friends') {
     return (
-      <div className="flex gap-2">
+      <div className="flex gap-2 mt-4 md:mt-0">
         <button
-          className="px-4 py-2 bg-green-100 text-green-700 rounded-lg
-          flex items-center gap-2 cursor-default"
+          className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 font-medium rounded-lg cursor-default border border-green-200"
         >
-          <UserCheck className="w-4 h-4" />
+          <UserCheck className="w-5 h-5" />
           Bạn bè
         </button>
         <button
           onClick={handleUnfriend}
-          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg
-          transition flex items-center gap-2 active:scale-95"
+          className="aspect-square flex items-center justify-center p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition border border-gray-200 active:scale-95"
           title="Hủy kết bạn"
         >
-          <UserMinus className="w-4 h-4" />
+          <UserMinus className="w-5 h-5" />
         </button>
       </div>
     );
@@ -164,12 +161,11 @@ const FriendButton = ({ userId, currentUserId }) => {
     return (
       <button
         onClick={handleCancel}
-        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg
-        transition flex items-center gap-2 active:scale-95"
+        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0 transition active:scale-95"
       >
-        <Clock className="w-4 h-4" />
+        <Clock className="w-5 h-5" />
         Đã gửi lời mời
-        <X className="w-4 h-4" />
+        <X className="w-4 h-4 ml-1" />
       </button>
     );
   }
@@ -177,21 +173,19 @@ const FriendButton = ({ userId, currentUserId }) => {
   // STATUS: pending_received (nhận được lời mời)
   if (status === 'pending_received') {
     return (
-      <div className="flex gap-2">
+      <div className="flex gap-2 mt-4 md:mt-0">
         <button
           onClick={handleAccept}
-          className="px-2 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg
-          transition flex items-center gap-2 active:scale-95"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition active:scale-95"
         >
-          <UserCheck className="w-4 h-4" />
+          <UserCheck className="w-5 h-5" />
           Chấp nhận
         </button>
         <button
           onClick={handleReject}
-          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg
-          transition flex items-center gap-2 active:scale-95"
+          className="aspect-square flex items-center justify-center p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition border border-gray-200 active:scale-95"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
     );
@@ -201,7 +195,7 @@ const FriendButton = ({ userId, currentUserId }) => {
   if (status === 'blocked') {
     return (
       <button
-        className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
+        className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed mt-4 md:mt-0 font-medium"
         disabled
       >
         Đã chặn

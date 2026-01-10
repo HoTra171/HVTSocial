@@ -403,4 +403,22 @@ export const FriendshipService = {
 
     return result.recordset[0]?.count || 0;
   },
+
+  /**
+   * Lấy số lượng bạn bè của một user
+   */
+  async getFriendsCount(userId) {
+    const db = await pool;
+
+    const result = await db
+      .request()
+      .input('userId', sql.Int, userId).query(`
+        SELECT COUNT(*) AS count
+        FROM friendships
+        WHERE status = 'accepted'
+          AND (user_id = @userId OR friend_id = @userId)
+      `);
+
+    return result.recordset[0]?.count || 0;
+  },
 };

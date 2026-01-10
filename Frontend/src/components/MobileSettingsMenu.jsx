@@ -80,18 +80,16 @@ const MobileSettingsMenu = ({ isOpen, onClose }) => {
                 navigate('/admin/dashboard');
                 onClose();
               }}
-              className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+              className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center">
-                  <ShieldAlert className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-gray-900">Admin Panel</p>
-                  <p className="text-xs text-gray-500">Quản lý hệ thống</p>
-                </div>
+              <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
+                <ShieldAlert className="w-5 h-5 text-indigo-600" />
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
+              <div className="flex-1 text-left">
+                <p className="font-medium text-gray-900">Admin Panel</p>
+                <p className="text-xs text-gray-500">Quản lý hệ thống</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
             </button>
           )}
 
@@ -101,18 +99,16 @@ const MobileSettingsMenu = ({ isOpen, onClose }) => {
               navigate('/profile');
               onClose();
             }}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Hồ sơ của bạn</p>
-                <p className="text-xs text-gray-500">Xem và chỉnh sửa thông tin</p>
-              </div>
+            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="w-5 h-5 text-blue-600" />
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <div className="flex-1 text-left">
+              <p className="font-medium text-gray-900">Hồ sơ của bạn</p>
+              <p className="text-xs text-gray-500">Xem và chỉnh sửa thông tin</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
           </button>
 
           {/* Change Password */}
@@ -121,18 +117,16 @@ const MobileSettingsMenu = ({ isOpen, onClose }) => {
               navigate('/change-password');
               onClose();
             }}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center">
-                <KeyRound className="w-5 h-5 text-orange-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Đổi mật khẩu</p>
-                <p className="text-xs text-gray-500">Thay đổi mật khẩu của bạn</p>
-              </div>
+            <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <KeyRound className="w-5 h-5 text-orange-600" />
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <div className="flex-1 text-left">
+              <p className="font-medium text-gray-900">Đổi mật khẩu</p>
+              <p className="text-xs text-gray-500">Thay đổi mật khẩu của bạn</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
           </button>
 
           {/* Privacy Settings */}
@@ -141,18 +135,16 @@ const MobileSettingsMenu = ({ isOpen, onClose }) => {
               navigate('/privacy-settings');
               onClose();
             }}
-            className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+            className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-50 transition"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-green-600" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium text-gray-900">Quyền riêng tư</p>
-                <p className="text-xs text-gray-500">Cài đặt bảo mật</p>
-              </div>
+            <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <Shield className="w-5 h-5 text-green-600" />
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <div className="flex-1 text-left">
+              <p className="font-medium text-gray-900">Quyền riêng tư</p>
+              <p className="text-xs text-gray-500">Cài đặt bảo mật</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
           </button>
         </div>
 
