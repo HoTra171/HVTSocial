@@ -27,7 +27,6 @@ import IncomingCallModal from "../components/IncomingCallModal.jsx";
 import toast from "react-hot-toast";
 import MessageBubble from "../components/MessageWithRetry.jsx";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
-import { playMessageSound } from '../utils/notificationSound.js';
 import { getFullImageUrl, handleImageError } from '../utils/imageHelper.js';
 import Sidebar from "../components/Sidebar.jsx";
 
@@ -313,7 +312,7 @@ const Chatbox = () => {
 
       // Phát âm thanh nếu tin nhắn không phải từ mình
       if (msg.sender_id !== myId) {
-        playMessageSound();
+        // playMessageSound(); - Removed (Handled globally in App.jsx)
       }
 
       // nếu muốn tự mark read khi đang mở phòng
