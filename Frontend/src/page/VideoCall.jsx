@@ -27,10 +27,20 @@ const VideoCall = () => {
     // handle incoming answer
     socket.on("call-answered", async (data) => {
       // data: { fromUserId, answer }
-      if (!peerRef.current) return;
-      await peerRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
-      setCallingState("in-call");
-      startTimer();
+      if (!peerRef.current || !data.answer) return;
+
+      const state = peerRef.current.signalingState;
+      if (state === 'have-local-offer') {
+        try {
+          await peerRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+          setCallingState("in-call");
+          startTimer();
+        } catch (error) {
+          console.error("Set remote description error:", error.message);
+        }
+      } else {
+        console.warn("Cannot set remote description, current state:", state);
+      }
     });
 
     // incoming call (if someone calls us while on this page)
@@ -45,9 +55,14 @@ const VideoCall = () => {
     // ice candidates from remote
     socket.on("ice-candidate", async (data) => {
       if (data.candidate && peerRef.current) {
-        try {
-          await peerRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (e) { console.warn("addIceCandidate error", e) }
+        const state = peerRef.current.signalingState;
+        if (state !== 'closed') {
+          try {
+            await peerRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+          } catch (e) {
+            console.warn("addIceCandidate error:", e.message);
+          }
+        }
       }
     });
 

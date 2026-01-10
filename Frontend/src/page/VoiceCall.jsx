@@ -26,16 +26,32 @@ const VoiceCall = () => {
     });
 
     socket.on("call-answered", async (data) => {
-      if (pcRef.current) {
-        await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
-        setCallingState("in-call");
-        startTimer();
+      if (pcRef.current && data.answer) {
+        const state = pcRef.current.signalingState;
+        if (state === 'have-local-offer') {
+          try {
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+            setCallingState("in-call");
+            startTimer();
+          } catch (error) {
+            console.error("Set remote description error:", error.message);
+          }
+        } else {
+          console.warn("Cannot set remote description, current state:", state);
+        }
       }
     });
 
     socket.on("ice-candidate", async (data) => {
       if (data.candidate && pcRef.current) {
-        try { await pcRef.current.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {}
+        const state = pcRef.current.signalingState;
+        if (state !== 'closed') {
+          try {
+            await pcRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
+          } catch (e) {
+            console.warn("addIceCandidate error:", e.message);
+          }
+        }
       }
     });
 

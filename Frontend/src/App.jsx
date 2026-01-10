@@ -42,25 +42,30 @@ function App() {
 
   // UNLOCK AUDIO & REQUEST NOTIFICATION PERMISSION
   useEffect(() => {
-    const handleUserInteraction = () => {
-      // 1. Initialize Audio
-      initAudio();
+    const handleUserInteraction = async () => {
+      // 1. Initialize Audio (Quan trọng cho iOS)
+      await initAudio();
 
       // 2. Request Notification Permission
       if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
       }
 
+      // Remove listeners after first interaction
       window.removeEventListener('click', handleUserInteraction);
       window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('touchend', handleUserInteraction);
     };
 
+    // Listen to multiple events (iOS needs touchend)
     window.addEventListener('click', handleUserInteraction);
     window.addEventListener('touchstart', handleUserInteraction);
+    window.addEventListener('touchend', handleUserInteraction);
 
     return () => {
       window.removeEventListener('click', handleUserInteraction);
       window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('touchend', handleUserInteraction);
     };
   }, []);
 

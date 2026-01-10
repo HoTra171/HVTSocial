@@ -340,11 +340,34 @@ const Chatbox = () => {
     });
 
     socket.on("call_answered", async ({ answer }) => {
-      if (pcRef.current) await pcRef.current.setRemoteDescription(answer);
+      if (pcRef.current && answer) {
+        const state = pcRef.current.signalingState;
+        // Chỉ set remote description khi đang ở trạng thái chờ answer
+        if (state === 'have-local-offer') {
+          try {
+            await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+            console.log("Remote description set successfully");
+          } catch (error) {
+            console.error("Set remote description error:", error.message);
+          }
+        } else {
+          console.warn("Cannot set remote description, current state:", state);
+        }
+      }
     });
 
     socket.on("ice_candidate", async ({ candidate }) => {
-      if (pcRef.current && candidate) await pcRef.current.addIceCandidate(candidate);
+      // Kiểm tra state của peerConnection trước khi add ICE candidate
+      if (pcRef.current && candidate) {
+        const state = pcRef.current.signalingState;
+        if (state !== 'closed' && state !== 'stable') {
+          try {
+            await pcRef.current.addIceCandidate(candidate);
+          } catch (error) {
+            console.error("Add ICE candidate error:", error);
+          }
+        }
+      }
     });
 
     socket.on("call_ended", () => cleanupCall());

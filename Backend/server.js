@@ -17,6 +17,7 @@ import savedPostRoutes from './routes/savedPostRoutes.js';
 import shareRoutes from './routes/shareRoutes.js';
 import friendshipRoutes from './routes/friendshipRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import callHistoryRoutes from './routes/callHistoryRoutes.js';
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 import { helmetConfig, apiLimiter, authLimiter, uploadLimiter } from './middlewares/security.js';
@@ -147,6 +148,7 @@ app.use('/api/saved-posts', apiLimiter, savedPostRoutes);
 app.use('/api/shares', apiLimiter, shareRoutes);
 app.use('/api/friendships', apiLimiter, friendshipRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/call-history', apiLimiter, callHistoryRoutes);
 
 // SOCKET.IO
 const server = http.createServer(app);
