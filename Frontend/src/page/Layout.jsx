@@ -65,15 +65,16 @@ const Layout = () => {
       {/* ===== MOBILE HEADER (Mobile only) ===== */}
       {!isChatPage && !isStoryPage && <MobileHeader currentUserId={currentUserId} />}
 
-      {/* ===== SIDEBAR / RECENT CHATS (Desktop only) ===== */}
-      {isChatPage ? (
+      {/* ===== SIDEBAR (Desktop only - always visible) ===== */}
+      <Sidebar
+        currentUserId={currentUserId}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      />
+
+      {/* ===== RECENT CHATS (Visible on Chat Page) ===== */}
+      {isChatPage && (
         <RecentChats
-          currentUserId={currentUserId}
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-        />
-      ) : (
-        <Sidebar
           currentUserId={currentUserId}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
@@ -83,12 +84,11 @@ const Layout = () => {
 
       {/* ===== MAIN CONTENT ===== */}
       <div
-        className={`flex-1 md:pl-20 xl:pl-70 max-sm:pl-0 relative ${
-          isChatPage
-            ? "h-screen min-h-0 overflow-hidden"
+        className={`flex-1 relative ${isChatPage
+            ? "md:pl-80 xl:pl-[36rem] h-screen min-h-0 overflow-hidden"
             : isStoryPage
-              ? "min-h-screen overflow-y-auto"
-              : "min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16"
+              ? "md:pl-20 xl:pl-72 min-h-screen overflow-y-auto" // Sidebar only
+              : "md:pl-20 xl:pl-72 min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16" // Sidebar only
           }`}
       >
 

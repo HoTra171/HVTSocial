@@ -72,7 +72,7 @@ export const searchPosts = async (req, res) => {
 
     // Use db.request() for compatibility
     let query = `
-      SELECT TOP (@limit)
+      SELECT
         p.id, p.user_id, p.content, p.media_url, p.visibility, p.created_at, p.updated_at,
         u.full_name, u.username, u.avatar,
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS like_count,
@@ -106,7 +106,7 @@ export const searchPosts = async (req, res) => {
 
     // Pagination (cursor based on id or created_at? keeping simple with id for now or standard created_at)
     // For search, maybe simple order by rank? or just created_at
-    query += ` ORDER BY p.created_at DESC`;
+    query += ` ORDER BY p.created_at DESC LIMIT @limit`;
 
     const request = db.request()
       .input('limit', sql.Int, take)
@@ -208,9 +208,9 @@ export const updatePost = async (req, res) => {
       content = @content,
       media_url = @mediaUrl,
       visibility = @visibility,
-      updated_at = GETDATE()
-    OUTPUT INSERTED.*
+      updated_at = NOW()
     WHERE id = @postId
+    RETURNING *
   `);
 
   return res.json(result.recordset[0]);

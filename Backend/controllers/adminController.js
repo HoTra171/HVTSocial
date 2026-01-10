@@ -98,7 +98,7 @@ export const updateUserStatus = async (req, res) => {
             UPDATE users 
             SET account_status = @status, 
                 suspension_reason = @reason,
-                suspended_at = CASE WHEN @status = 'suspended' THEN GETDATE() ELSE NULL END
+                suspended_at = CASE WHEN @status = 'suspended' THEN NOW() ELSE NULL END
             WHERE id = @id
         `);
 

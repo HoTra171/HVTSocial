@@ -150,23 +150,11 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
     <div
       className={`
         bg-white border-r border-gray-200 flex flex-col transition-all duration-300
-        w-60 xl:w-72 fixed top-0 left-0 h-screen z-50
+        w-60 xl:w-72 fixed top-0 h-screen z-10
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        md:translate-x-0 md:static md:w-72
+        md:translate-x-0 md:left-20 xl:left-72
       `}
     >
-      <div className="p-3 border-b border-gray-200 flex items-center gap-3">
-        {/* logo app (click về feed) */}
-        <img
-          src={assets.logo} // dùng logo như code cũ
-          alt="Logo"
-          className="w-20 cursor-pointer"
-          onClick={() => {
-            navigate("/feed");
-            if (isMobile) setSidebarOpen(false);
-          }}
-        />
-      </div>
       <div className="p-3 border-b border-gray-200 flex items-center gap-2">
         <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1 flex-1">
           <Search size={16} className="text-gray-500" />
@@ -200,8 +188,8 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
             <div className="relative">
               <img
                 src={u.is_group_chat ? "/group.png" : u.avatar ||
-                   `/default.jpg`
-                  }
+                  `/default.jpg`
+                }
                 alt=""
                 className="w-10 h-10 rounded-full object-cover"
               />
@@ -225,7 +213,7 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
                 </p>
               </div>
 
-              <div className="flex justify-between items-center gap-2">
+              <div className="flex-1 flex justify-between items-center gap-2">
                 <p className="text-xs text-gray-500 truncate">
                   {u.last_message || "Media"}
                 </p>

@@ -29,7 +29,7 @@ import MessageBubble from "../components/MessageWithRetry.jsx";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 import { playMessageSound } from '../utils/notificationSound.js';
 import { getFullImageUrl, handleImageError } from '../utils/imageHelper.js';
-
+import Sidebar from "../components/Sidebar.jsx";
 
 const PAGE = 15;
 
@@ -107,6 +107,7 @@ const Chatbox = () => {
 
   const scrollRef = useRef(null);
   const socketRef = useRef(null);
+  const isSubmittingRef = useRef(false);
 
   // Call states
   const [inCall, setInCall] = useState(false);
@@ -642,101 +643,109 @@ const Chatbox = () => {
 
 
   const sendMessage = async () => {
-    if (!socketRef.current) return;
+    if (!socketRef.current || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
-    // SỬA TIN NHẮN
-    if (editingMessage) {
-      try {
-        socketRef.current.emit("edit_message", {
-          messageId: editingMessage.id,
-          newContent: text,
-          chatId: Number(chatId),
-        });
+    try {
+      // SỬA TIN NHẮN
+      if (editingMessage) {
+        try {
+          socketRef.current.emit("edit_message", {
+            messageId: editingMessage.id,
+            newContent: text,
+            chatId: Number(chatId),
+          });
 
-        setEditingMessage(null);
+          setEditingMessage(null);
+          setText("");
+          setReplyingTo(null);
+        } catch (err) {
+          console.error("Edit message error:", err);
+        }
+        return;
+      }
+
+      // GỬI TIN NHẮN TEXT
+      if (text.trim()) {
+        const payload = replyingTo
+          ? {
+            chatId: Number(chatId),
+            senderId: myId,
+            content: text,
+            message_type: "text",
+            reply_to_id: replyingTo.id,
+            reply_content: replyingTo.content,
+            reply_type: replyingTo.message_type,
+            reply_sender: replyingTo.sender_name,
+          }
+          : {
+            chatId: Number(chatId),
+            senderId: myId,
+            content: text,
+            message_type: "text",
+          };
+
+        // CLEAR INPUT NGAY
         setText("");
         setReplyingTo(null);
-      } catch (err) {
-        console.error("Edit message error:", err);
-      }
-      return;
-    }
 
-    // GỬI TIN NHẮN TEXT
-    if (text.trim()) {
-      const payload = replyingTo
-        ? {
-          chatId: Number(chatId),
-          senderId: myId,
-          content: text,
-          message_type: "text",
-          reply_to_id: replyingTo.id,
-          reply_content: replyingTo.content,
-          reply_type: replyingTo.message_type,
-          reply_sender: replyingTo.sender_name,
-        }
-        : {
-          chatId: Number(chatId),
-          senderId: myId,
-          content: text,
-          message_type: "text",
-        };
-
-      // CLEAR INPUT NGAY 
-      setText("");
-      setReplyingTo(null);
-
-      try {
-        socketRef.current.emit("send_message", payload, (response) => {
-          if (!response.ok) {
-            toast.error("Không thể gửi tin nhắn");
-          }
-        });
-
-        socketRef.current.emit("typing", {
-          chatId: Number(chatId),
-          userId: myId,
-          isTyping: false,
-        });
-      } catch (err) {
-        console.error("Send message error:", err);
-        toast.error("Không thể gửi tin nhắn");
-      }
-    }
-
-    // GỬI ẢNH (giống cũ)
-    for (const img of previewImages) {
-      try {
-        const form = new FormData();
-        form.append("file", img.file);
-
-        const token = localStorage.getItem("token");
-        const uploadRes = await axios.post(
-          `${API_URL}/upload`,
-          form,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              "Authorization": `Bearer ${token}`
+        try {
+          socketRef.current.emit("send_message", payload, (response) => {
+            if (!response.ok) {
+              toast.error("Không thể gửi tin nhắn");
             }
-          }
-        );
+          });
 
-        socketRef.current.emit("send_message", {
-          chatId: Number(chatId),
-          senderId: myId,
-          content: "",
-          message_type: "image",
-          media_url: uploadRes.data.url,
-          created_at: new Date().toISOString(),
-        });
-      } catch (err) {
-        console.error("Upload image error:", err);
-        toast.error("Gửi ảnh thất bại!");
+          socketRef.current.emit("typing", {
+            chatId: Number(chatId),
+            userId: myId,
+            isTyping: false,
+          });
+        } catch (err) {
+          console.error("Send message error:", err);
+          toast.error("Không thể gửi tin nhắn");
+        }
       }
-    }
 
-    setPreviewImages([]);
+      // GỬI ẢNH
+      const imagesToSend = [...previewImages];
+      if (imagesToSend.length > 0) {
+        setPreviewImages([]); // Clear state immediately
+
+        for (const img of imagesToSend) {
+          try {
+            const form = new FormData();
+            form.append("file", img.file);
+
+            const token = localStorage.getItem("token");
+            const uploadRes = await axios.post(
+              `${API_URL}/upload`,
+              form,
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                  "Authorization": `Bearer ${token}`
+                }
+              }
+            );
+
+            socketRef.current.emit("send_message", {
+              chatId: Number(chatId),
+              senderId: myId,
+              content: "",
+              message_type: "image",
+              media_url: uploadRes.data.url,
+              created_at: new Date().toISOString(),
+            });
+          } catch (err) {
+            console.error("Upload image error:", err);
+            toast.error("Gửi ảnh thất bại!");
+          }
+        }
+      }
+    } finally {
+      isSubmittingRef.current = false;
+    }
   };
 
 
@@ -1105,46 +1114,7 @@ const Chatbox = () => {
       <div className="fixed inset-0 z-50 flex h-[100dvh] w-full overflow-hidden bg-[#f0f2f5]">
 
         {/* MINI SIDEBAR - Icon Only (Instagram Style) */}
-        <div className="hidden sm:flex flex-col items-center w-16 bg-white border-r py-4 gap-2 border-gray-200">
-          {/* Logo */}
-          <button
-            onClick={() => navigate('/feed')}
-            className="w-10 h-10 flex items-center justify-center mb-4"
-            title="HVT Social"
-          >
-            <span className="text-xl font-bold text-indigo-600">H</span>
-          </button>
-
-          {/* Nav Icons matching sidebar order */}
-          {[
-            { to: '/feed', Icon: Home, label: 'Bảng tin' },
-            { to: '/messages', Icon: MessageCircle, label: 'Tin nhắn' },
-            { to: '/connections', Icon: Users, label: 'Kết nối' },
-            { to: '/discover', Icon: Search, label: 'Khám phá' },
-            { to: '/notifications', Icon: Bell, label: 'Thông báo' },
-          ].map(({ to, Icon, label }) => (
-            <button
-              key={to}
-              onClick={() => navigate(to)}
-              className={`w-10 h-10 flex items-center justify-center rounded-lg transition ${to === '/messages' ? 'bg-gray-100' : 'hover:bg-gray-100'}`}
-              title={label}
-            >
-              <Icon className={`w-6 h-6 ${to === '/messages' ? 'text-indigo-600' : 'text-gray-600'}`} />
-            </button>
-          ))}
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Profile */}
-          <button
-            onClick={() => navigate('/profile')}
-            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"
-            title="Hồ sơ"
-          >
-            <UserIcon className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
+        <Sidebar collapsed={true} relative={true} currentUserId={myId} setSidebarOpen={() => { }} />
 
         {/* RECENT CHATS LIST (like RecentMessages) */}
         <div className="hidden sm:flex flex-col w-80 bg-white border-r overflow-hidden border-gray-200">
