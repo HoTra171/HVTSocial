@@ -29,6 +29,9 @@ import { socket, connectSocket, disconnectSocket } from "./socket";
 // MODAL CUỘC GỌI ĐẾN
 import IncomingCallModal from "./components/IncomingCallModal";
 
+// UTILS
+import { initAudio, playNotificationSound } from "./utils/notificationSound";
+
 function App() {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
@@ -36,6 +39,23 @@ function App() {
   // TRẠNG THÁI CUỘC GỌI ĐẾN
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState(null);
+
+  // UNLOCK AUDIO ON FIRST INTERACTION (MOBILE FIX)
+  useEffect(() => {
+    const unlockAudio = () => {
+      initAudio();
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, []);
 
   // SETUP SOCKET KHI APP LOAD
   useEffect(() => {
@@ -108,12 +128,17 @@ function App() {
     };
   }, [currentUser?.id]);
 
-  // LẮNG NGHE NOTIFICATION
+  // LẮNG NGHE NOTIFICATION & SOUND
   useEffect(() => {
     if (!currentUser?.id) return;
 
     const handleNewNotification = (data) => {
       console.log("New notification:", data);
+      playNotificationSound();
+    };
+
+    const handleNewMessage = () => {
+      playNotificationSound();
     };
 
     const handleUnreadCount = (count) => {
@@ -121,10 +146,12 @@ function App() {
     };
 
     socket.on("new_notification", handleNewNotification);
+    socket.on("receive_message", handleNewMessage);
     socket.on("unread_count", handleUnreadCount);
 
     return () => {
       socket.off("new_notification", handleNewNotification);
+      socket.off("receive_message", handleNewMessage);
       socket.off("unread_count", handleUnreadCount);
     };
   }, [currentUser?.id]);
