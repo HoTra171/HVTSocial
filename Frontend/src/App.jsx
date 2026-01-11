@@ -31,6 +31,7 @@ import IncomingCallModal from "./components/IncomingCallModal";
 
 // UTILS
 import { initAudio, playNotificationSound } from "./utils/notificationSound";
+import { unlockCallRingtone, playCallRingtone, stopCallRingtone, playCallEndTone } from "./utils/callRingtone";
 
 function App() {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ function App() {
     const handleUserInteraction = async () => {
       // 1. Initialize Audio (Quan trọng cho iOS)
       await initAudio();
+      unlockCallRingtone(); // Unlock ringtone audio
 
       // 2. Request Notification Permission
       if ("Notification" in window && Notification.permission !== "granted") {
@@ -131,12 +133,47 @@ function App() {
         chatId,
       });
       setShowIncomingCall(true);
+
+      // Play ringtone for incoming call
+      playCallRingtone(isVideo ? 'video' : 'voice');
+
+      // Show browser notification (works even when tab is not active)
+      if ("Notification" in window && Notification.permission === "granted") {
+        const callType = isVideo ? "cuộc gọi video" : "cuộc gọi thoại";
+        const notification = new Notification(`${callerName || 'Ai đó'} đang gọi`, {
+          body: `Bạn có ${callType} đến từ ${callerName || 'người dùng'}`,
+          icon: callerAvatar || "/logo.svg",
+          tag: 'incoming-call', // Prevents duplicate notifications
+          requireInteraction: true, // Notification stays until user interacts
+          silent: false, // Use system sound (in addition to our ringtone)
+        });
+
+        // Navigate to chat when notification is clicked
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+          handleAcceptCall();
+        };
+      }
+    };
+
+    // Handle when caller cancels the call before we answer
+    const handleCallCancelled = () => {
+      console.log("📞 Call was cancelled by caller");
+      stopCallRingtone();
+      setShowIncomingCall(false);
+      setIncomingCallData(null);
+      toast("Cuộc gọi đã kết thúc");
     };
 
     socket.on("incoming_call", handleIncomingCall);
+    socket.on("call_ended", handleCallCancelled);
+    socket.on("call_cancelled", handleCallCancelled);
 
     return () => {
       socket.off("incoming_call", handleIncomingCall);
+      socket.off("call_ended", handleCallCancelled);
+      socket.off("call_cancelled", handleCallCancelled);
     };
   }, [currentUser?.id]);
 
@@ -188,6 +225,9 @@ function App() {
   const handleAcceptCall = () => {
     if (!incomingCallData) return;
 
+    // Stop ringtone when call is accepted
+    stopCallRingtone();
+
     // LƯU VÀO sessionStorage trước khi navigate
     sessionStorage.setItem('pendingCall', JSON.stringify({
       from: incomingCallData.from,
@@ -204,6 +244,12 @@ function App() {
 
   // TỪ CHỐI CUỘC GỌI
   const handleRejectCall = () => {
+    // Stop ringtone when call is rejected
+    stopCallRingtone();
+
+    // Play call end tone
+    playCallEndTone();
+
     if (incomingCallData) {
       socket.emit("end_call", { to: incomingCallData.from });
     }

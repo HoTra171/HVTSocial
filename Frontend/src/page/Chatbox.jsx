@@ -29,6 +29,8 @@ import MessageBubble from "../components/MessageWithRetry.jsx";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 import { getFullImageUrl, handleImageError } from '../utils/imageHelper.js';
 import Sidebar from "../components/Sidebar.jsx";
+import { saveCallHistory, getCallHistoryBetweenUsers } from '../api/callHistory';
+import CallHistoryItem from "../components/CallHistoryItem.jsx";
 
 const PAGE = 15;
 
@@ -80,6 +82,7 @@ const Chatbox = () => {
   const [editingMessage, setEditingMessage] = useState(null);
   const [chatList, setChatList] = useState([]);
   const [chatSearch, setChatSearch] = useState("");
+  const [historyList, setHistoryList] = useState([]);
 
   const [previewImages, setPreviewImages] = useState([]);
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -115,10 +118,22 @@ const Chatbox = () => {
   const [isVideoCall, setIsVideoCall] = useState(false);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  const [callStartTime, setCallStartTime] = useState(null);
   const pcRef = useRef(null);
   const remoteUserIdRef = useRef(null);
   const [incomingCallData, setIncomingCallData] = useState(null);
   const [showIncomingCall, setShowIncomingCall] = useState(false);
+
+  const fetchCallHistory = async () => {
+    if (partner?.target_id) {
+      const history = await getCallHistoryBetweenUsers(partner.target_id);
+      setHistoryList(history);
+    }
+  };
+
+  useEffect(() => {
+    fetchCallHistory();
+  }, [partner?.target_id]);
 
 
   const partnerIdRef = useRef(null);
@@ -213,6 +228,7 @@ const Chatbox = () => {
           });
 
           setInCall(true);
+          setCallStartTime(Date.now());
           toast.success('Đã kết nối cuộc gọi');
         } catch (err) {
           console.error("Auto answer error:", err);
@@ -372,6 +388,27 @@ const Chatbox = () => {
 
     socket.on("call_ended", () => cleanupCall());
 
+    // Xử lý khi người gọi hủy cuộc gọi (Missed Call)
+    socket.on("call_cancelled", async () => {
+      // Chỉ lưu history nếu mình là người nhận và chưa bắt máy
+      if (showIncomingCall) {
+        console.log("📞 Call missed (cancelled by caller)");
+        try {
+          // Fetch lại history để hiện missed call mới
+          fetchCallHistory();
+        } catch (error) {
+          console.error("Fetch history error:", error);
+        }
+      }
+      setShowIncomingCall(false);
+      setIncomingCallData(null);
+    });
+
+    // Khi có cuộc gọi đến, cũng fetch lại history (để hiện Incoming Call nếu muốn, hoặc chuẩn bị)
+    socket.on("incoming_call", () => {
+      fetchCallHistory();
+    });
+
     // status online
     socket.on("user_status_changed", ({ userId, status }) => {
       if (Number(userId) === Number(partnerIdRef.current)) {
@@ -443,6 +480,7 @@ const Chatbox = () => {
       socketRef.current.emit("answer_call", { to: incomingCallData.from, answer });
 
       setInCall(true);
+      setCallStartTime(Date.now());
       setShowIncomingCall(false);
       setIncomingCallData(null);
     } catch (err) {
@@ -451,9 +489,20 @@ const Chatbox = () => {
     }
   };
 
-  const handleRejectCall = () => {
+  const handleRejectCall = async () => {
     if (incomingCallData && socketRef.current) {
       socketRef.current.emit("end_call", { to: incomingCallData.from });
+
+      // Save rejected call to history
+      if (incomingCallData.from) {
+        await saveCallHistory(
+          incomingCallData.from, // Caller ID
+          incomingCallData.isVideo ? 'video' : 'voice',
+          'rejected',
+          0
+        );
+        fetchCallHistory(); // Update list
+      }
     }
     setShowIncomingCall(false);
     setIncomingCallData(null);
@@ -473,9 +522,32 @@ const Chatbox = () => {
       });
       console.log("📡 Partner response:", res.data);
 
+      // Nếu không có conversation nào, thử load thông tin user trực tiếp
       if (!res.data || res.data.length === 0) {
+        console.log("📡 No conversations found, trying to load user directly...");
+        try {
+          const userRes = await axios.get(
+            `${API_URL}/users/${chatId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (userRes.data) {
+            console.log("📡 Loaded user info:", userRes.data);
+            setPartner({
+              target_id: userRes.data.id,
+              name: userRes.data.full_name,
+              username: userRes.data.username,
+              avatar: userRes.data.avatar,
+              is_group_chat: false,
+            });
+            return true;
+          }
+        } catch (userErr) {
+          console.error("Failed to load user:", userErr);
+        }
+
         setHasRedirected(true);
-        toast.error("Bạn chưa có cuộc trò chuyện nào");
+        toast.error("Không tìm thấy người dùng");
         setTimeout(() => navigate('/messages'), 100);
         return false;
       }
@@ -487,13 +559,33 @@ const Chatbox = () => {
         }, {})
       );
 
-      // console.log("📡 Unique chats:", unique);
-
+      // Tìm conversation theo chat_id
       const row = unique.find((c) => Number(c.chat_id) === Number(chatId));
 
-      // console.log("📡 Found chat:", row);
-
+      // Nếu không tìm thấy conversation, thử load user info theo chatId (có thể là userId)
       if (!row) {
+        console.log("📡 Conversation not found, trying to load user directly...");
+        try {
+          const userRes = await axios.get(
+            `${API_URL}/users/${chatId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (userRes.data) {
+            console.log("📡 Loaded user info:", userRes.data);
+            setPartner({
+              target_id: userRes.data.id,
+              name: userRes.data.full_name,
+              username: userRes.data.username,
+              avatar: userRes.data.avatar,
+              is_group_chat: false,
+            });
+            return true;
+          }
+        } catch (userErr) {
+          console.error("Failed to load user:", userErr);
+        }
+
         setHasRedirected(true);
         toast.error("Không tìm thấy cuộc trò chuyện");
         setTimeout(() => navigate('/messages'), 100);
@@ -781,6 +873,9 @@ const Chatbox = () => {
     }
   };
 
+
+
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -1008,6 +1103,30 @@ const Chatbox = () => {
     return pc;
   };
 
+  // Toggle camera
+  const toggleCamera = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setCamOn(videoTrack.enabled);
+        console.log('📹 Camera', videoTrack.enabled ? 'ON' : 'OFF');
+      }
+    }
+  };
+
+  // Toggle microphone
+  const toggleMicrophone = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setMicOn(audioTrack.enabled);
+        console.log('🎤 Mic', audioTrack.enabled ? 'ON' : 'OFF');
+      }
+    }
+  };
+
   const startCall = async (isVideo) => {
     // Validate prerequisites
     if (!partner?.target_id) {
@@ -1068,6 +1187,7 @@ const Chatbox = () => {
       });
 
       setInCall(true);
+      setCallStartTime(Date.now());
       toast.success(isVideo ? 'Đang gọi video...' : 'Đang gọi...');
       console.log('✅ Call initiated successfully');
     } catch (err) {
@@ -1092,8 +1212,41 @@ const Chatbox = () => {
     setInCall(false);
   };
 
-  const endCall = () => {
+  const endCall = async () => {
     console.log('Ending call...');
+
+    // Calculate call duration and save to history
+    let duration = 0;
+    if (callStartTime) {
+      duration = Math.floor((Date.now() - callStartTime) / 1000); // seconds
+      console.log('📞 Call duration:', duration, 'seconds');
+    }
+
+    // Save call history if call was connected
+    if (partner?.target_id && duration > 0) {
+      try {
+        await saveCallHistory(
+          partner.target_id,
+          isVideoCall ? 'video' : 'voice',
+          'completed',
+          duration
+        );
+        console.log('✅ Call history saved');
+
+        // Format duration for toast
+        const mins = Math.floor(duration / 60);
+        const secs = duration % 60;
+        const durationStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+        toast.success(`Cuộc gọi kết thúc sau ${durationStr}`);
+
+        fetchCallHistory(); // Refresh list immediately
+      } catch (error) {
+        console.error('Failed to save call history:', error);
+        toast('Đã kết thúc cuộc gọi');
+      }
+    } else {
+      toast('Đã kết thúc cuộc gọi');
+    }
 
     // STOP ALL TRACKS
     if (localStream) {
@@ -1122,10 +1275,9 @@ const Chatbox = () => {
     setLocalStream(null);
     setRemoteStream(null);
     setIsVideoCall(false);
+    setCallStartTime(null);
     pcRef.current = null;
     remoteUserIdRef.current = null;
-
-    toast('Đã kết thúc cuộc gọi');
   };
 
   // Show loading hoặc error
@@ -1286,157 +1438,183 @@ const Chatbox = () => {
             }}
           >
 
-            {messages.length === 0 && (
+
+            {messages.length === 0 && historyList.length === 0 && (
               <div className="text-center text-gray-500 mt-10">
                 <p>Chưa có tin nhắn nào</p>
                 <p className="text-sm">Hãy bắt đầu cuộc trò chuyện!</p>
               </div>
             )}
 
-            {messages.map((msg, idx) => {
-              const isMe = msg.sender_id === myId;
-              const prevMsg = idx > 0 ? messages[idx - 1] : null;
-              const showTime = shouldShowTime(msg, prevMsg);
-              const parsed = parseMessage(msg);
-
-              const storyMeta = parseStoryMeta(msg);
-              const isStoryReply = !!storyMeta?.storyId;
-
-              const keepLegacy =
-                parsed.isReply ||
-                msg.message_type === "shared_post" ||
-                msg.message_type === "image" ||
-                isStoryReply;
-
-
-              const msgForBubble =
-                msg.message_type === "text" ? { ...msg, content: parsed.actualContent } : msg;
-
-              return (
-                <React.Fragment key={`${msg.id}-${msg.created_at}`}>
-                  {showTime && (
-                    <div className="text-center text-xs text-gray-400 my-2">
-                      {formatTime(msg.created_at)}
-                    </div>
-                  )}
-
-                  {keepLegacy ? (
-                    <div className={`flex items-start gap-2 mb-2 ${isMe ? "justify-end" : "justify-start"}`}>
-                      {!isMe && (
-                        <img
-                          src={partner.avatar || "/default.jpg"}
-                          className="w-8 h-8 rounded-full"
-                          alt=""
-                        />
-                      )}
-
-                      <div className="relative max-w-[70%] group">
-                        {/* Menu thu hồi cho tin nhắn của mình */}
-                        {isMe && !msg.recalled && (
-                          <button
-                            onClick={() => recallMessage(msg.id)}
-                            className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white shadow-md rounded-full text-red-500 hover:bg-red-50"
-                            title="Thu hồi"
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-
-                        {parsed.isReply && (
-                          <div className="mb-1 px-3 py-2 bg-gray-100 rounded-lg text-xs border-l-2 border-blue-500">
-                            <p className="font-semibold text-gray-600">{parsed.replyData.sender}</p>
-                            <p className="text-gray-500 truncate">
-                              {parsed.replyData.type === "text"
-                                ? parsed.replyData.content
-                                : parsed.replyData.type === "image"
-                                  ? "📷 Hình ảnh"
-                                  : "🎤 Tin nhắn thoại"}
-                            </p>
-                          </div>
-                        )}
-
-                        {msg.recalled ? (
-                          <div className="italic opacity-60 px-3 py-2 bg-gray-200 rounded-2xl text-sm">
-                            Tin nhắn đã thu hồi
-                          </div>
-                        ) : msg.message_type === "image" ? (
-                          <div className="flex flex-col gap-1">
-                            <img
-                              src={getFullImageUrl(msg.media_url)}
-                              className="max-w-[220px] rounded-xl cursor-pointer shadow"
-                              onClick={() => setFullImage(getFullImageUrl(msg.media_url))}
-                              alt=""
-                              onError={(e) => handleImageError(e, msg.media_url)}
-                            />
-                            <div className="flex justify-end">{renderMessageStatus(msg)}</div>
-                          </div>
-                        ) : msg.message_type === "shared_post" ? (
-                          <div className="flex flex-col gap-1">
-                            {(() => {
-                              const data = parseShared(msg);
-                              return (
-                                <button
-                                  onClick={() => {
-                                    openSharedPost(data?.postId);
-                                    console.log("Open shared post:", data?.postId);
-                                  }}
-                                  className="text-left w-full"
-                                >
-                                  <div className="p-3 rounded-xl border bg-white shadow-sm">
-                                    <p className="font-semibold text-sm">Bài viết được chia sẻ</p>
-                                    <p className="text-xs text-gray-600 line-clamp-2">
-                                      {data?.content || "Nhấn để xem bài viết"}
-                                    </p>
-                                  </div>
-                                </button>
-                              );
-                            })()}
-                            <div className="flex justify-end">{renderMessageStatus(msg)}</div>
-                          </div>
-                        ) : (
-                          <div
-                            className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"}`}
-                          >
-                            {isStoryReply && (
-                              <div className={`text-xs mb-1 ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                                Bạn đã trả lời tin của {storyMeta?.storyOwnerName || partner.name}
-                              </div>
-                            )}
-
-
-                            {msg.message_type === "voice" ? (
-                              <audio src={msg.media_url} controls className="max-w-[220px]" />
-                            ) : (
-                              <div>{parsed.actualContent}</div>
-                            )}
-                            <div className="flex justify-end mt-1">{renderMessageStatus(msg)}</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <MessageBubble
-                      msg={msgForBubble}
-                      isMe={isMe}
-                      partner={partner}
-                      onRetry={retryMessage}
-                      onReact={sendReaction}
-                      onEdit={(m) => {
-                        setEditingMessage(m);
-                        setText(parseMessage(m).actualContent || "");
-                        setReplyingTo(null);
-                      }}
-                      onRecall={recallMessage}
-                      onImageClick={(url) => setFullImage(url)}
-                      openMenuId={openMenuId}
-                      setOpenMenuId={setOpenMenuId}
-                      reactMenuFor={reactMenuFor}
-                      setReactMenuFor={setReactMenuFor}
+            {[...messages, ...historyList]
+              .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+              .map((item, idx, arr) => {
+                // CASE 1: Call History Item
+                if (item.call_type) {
+                  return (
+                    <CallHistoryItem
+                      key={`call-${item.id}`}
+                      callHistory={item}
+                      currentUserId={myId}
                     />
-                  )}
-                </React.Fragment>
-              );
-            })}
+                  );
+                }
+
+                // CASE 2: Normal Message
+                const msg = item; // Alias for clarity
+
+                const isMe = msg.sender_id === myId;
+                // Note: We need to check against the previous item in this SORTED list, 
+                // but since we are inside the map of an in-line array, we don't have a reference to the array itself easily.
+                // However, `map` provides the array as the 3rd argument!
+                // .map((item, idx, array) => ...
+
+                // Let's rely on a small trick or just ignore strict timestamp grouping for now for mixed types, 
+                // OR better: I will fix this systematically in the next step. 
+                // For now, let's just make it runnable:
+                const prevMsg = idx > 0 ? arr[idx - 1] : null;
+
+                const showTime = shouldShowTime(msg, prevMsg);
+                const parsed = parseMessage(msg);
+
+                const storyMeta = parseStoryMeta(msg);
+                const isStoryReply = !!storyMeta?.storyId;
+
+                const keepLegacy =
+                  parsed.isReply ||
+                  msg.message_type === "shared_post" ||
+                  msg.message_type === "image" ||
+                  isStoryReply;
+
+
+                const msgForBubble =
+                  msg.message_type === "text" ? { ...msg, content: parsed.actualContent } : msg;
+
+                return (
+                  <React.Fragment key={`${msg.id}-${msg.created_at}`}>
+                    {showTime && (
+                      <div className="text-center text-xs text-gray-400 my-2">
+                        {formatTime(msg.created_at)}
+                      </div>
+                    )}
+
+                    {keepLegacy ? (
+                      <div className={`flex items-start gap-2 mb-2 ${isMe ? "justify-end" : "justify-start"}`}>
+                        {!isMe && (
+                          <img
+                            src={partner.avatar || "/default.jpg"}
+                            className="w-8 h-8 rounded-full"
+                            alt=""
+                          />
+                        )}
+
+                        <div className="relative max-w-[70%] group">
+                          {/* Menu thu hồi cho tin nhắn của mình */}
+                          {isMe && !msg.recalled && (
+                            <button
+                              onClick={() => recallMessage(msg.id)}
+                              className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-white shadow-md rounded-full text-red-500 hover:bg-red-50"
+                              title="Thu hồi"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+
+                          {parsed.isReply && (
+                            <div className="mb-1 px-3 py-2 bg-gray-100 rounded-lg text-xs border-l-2 border-blue-500">
+                              <p className="font-semibold text-gray-600">{parsed.replyData.sender}</p>
+                              <p className="text-gray-500 truncate">
+                                {parsed.replyData.type === "text"
+                                  ? parsed.replyData.content
+                                  : parsed.replyData.type === "image"
+                                    ? "📷 Hình ảnh"
+                                    : "🎤 Tin nhắn thoại"}
+                              </p>
+                            </div>
+                          )}
+
+                          {msg.recalled ? (
+                            <div className="italic opacity-60 px-3 py-2 bg-gray-200 rounded-2xl text-sm">
+                              Tin nhắn đã thu hồi
+                            </div>
+                          ) : msg.message_type === "image" ? (
+                            <div className="flex flex-col gap-1">
+                              <img
+                                src={getFullImageUrl(msg.media_url)}
+                                className="max-w-[220px] rounded-xl cursor-pointer shadow"
+                                onClick={() => setFullImage(getFullImageUrl(msg.media_url))}
+                                alt=""
+                                onError={(e) => handleImageError(e, msg.media_url)}
+                              />
+                              <div className="flex justify-end">{renderMessageStatus(msg)}</div>
+                            </div>
+                          ) : msg.message_type === "shared_post" ? (
+                            <div className="flex flex-col gap-1">
+                              {(() => {
+                                const data = parseShared(msg);
+                                return (
+                                  <button
+                                    onClick={() => {
+                                      openSharedPost(data?.postId);
+                                      console.log("Open shared post:", data?.postId);
+                                    }}
+                                    className="text-left w-full"
+                                  >
+                                    <div className="p-3 rounded-xl border bg-white shadow-sm">
+                                      <p className="font-semibold text-sm">Bài viết được chia sẻ</p>
+                                      <p className="text-xs text-gray-600 line-clamp-2">
+                                        {data?.content || "Nhấn để xem bài viết"}
+                                      </p>
+                                    </div>
+                                  </button>
+                                );
+                              })()}
+                              <div className="flex justify-end">{renderMessageStatus(msg)}</div>
+                            </div>
+                          ) : (
+                            <div
+                              className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"}`}
+                            >
+                              {isStoryReply && (
+                                <div className={`text-xs mb-1 ${isMe ? "text-white/80" : "text-gray-500"}`}>
+                                  Bạn đã trả lời tin của {storyMeta?.storyOwnerName || partner.name}
+                                </div>
+                              )}
+
+
+                              {msg.message_type === "voice" ? (
+                                <audio src={msg.media_url} controls className="max-w-[220px]" />
+                              ) : (
+                                <div>{parsed.actualContent}</div>
+                              )}
+                              <div className="flex justify-end mt-1">{renderMessageStatus(msg)}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <MessageBubble
+                        msg={msgForBubble}
+                        isMe={isMe}
+                        partner={partner}
+                        onRetry={retryMessage}
+                        onReact={sendReaction}
+                        onEdit={(m) => {
+                          setEditingMessage(m);
+                          setText(parseMessage(m).actualContent || "");
+                          setReplyingTo(null);
+                        }}
+                        onRecall={recallMessage}
+                        onImageClick={(url) => setFullImage(url)}
+                        openMenuId={openMenuId}
+                        setOpenMenuId={setOpenMenuId}
+                        reactMenuFor={reactMenuFor}
+                        setReactMenuFor={setReactMenuFor}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
 
             {/* Typing indicator */}
             {isPartnerTyping && (
@@ -1590,8 +1768,8 @@ const Chatbox = () => {
             onEnd={endCall}
             micOn={micOn}
             camOn={camOn}
-            toggleMic={(v) => setMicOn(v)}
-            toggleCam={(v) => setCamOn(v)}
+            toggleMic={toggleMicrophone}
+            toggleCam={toggleCamera}
             isVideoCall={isVideoCall}
           />
         )
