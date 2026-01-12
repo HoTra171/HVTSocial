@@ -21,9 +21,9 @@ export const CallHistoryService = {
       .input('status', sql.VarChar(20), status)
       .input('duration', sql.Int, duration)
       .query(`
-        INSERT INTO call_history (caller_id, receiver_id, call_type, status, duration, started_at, ended_at)
+        INSERT INTO call_history (caller_id, receiver_id, call_type, status, duration, created_at)
         OUTPUT INSERTED.*
-        VALUES (@callerId, @receiverId, @callType, @status, @duration, GETDATE(), DATEADD(SECOND, @duration, GETDATE()))
+        VALUES (@callerId, @receiverId, @callType, @status, @duration, GETDATE())
       `);
 
     return result.recordset[0];
@@ -51,8 +51,6 @@ export const CallHistoryService = {
           ch.call_type,
           ch.status,
           ch.duration,
-          ch.started_at,
-          ch.ended_at,
           ch.created_at,
           caller.full_name AS caller_name,
           caller.avatar AS caller_avatar,
@@ -89,8 +87,6 @@ export const CallHistoryService = {
           ch.call_type,
           ch.status,
           ch.duration,
-          ch.started_at,
-          ch.ended_at,
           ch.created_at,
           caller.full_name AS caller_name,
           caller.avatar AS caller_avatar,
@@ -146,8 +142,7 @@ export const CallHistoryService = {
       .query(`
         UPDATE call_history
         SET status = @status,
-            duration = @duration,
-            ended_at = DATEADD(SECOND, @duration, started_at)
+            duration = @duration
         OUTPUT INSERTED.*
         WHERE id = @callId
       `);
