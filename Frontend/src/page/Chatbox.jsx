@@ -137,6 +137,8 @@ const Chatbox = () => {
 
 
   const partnerIdRef = useRef(null);
+  const iceCandidatesQueue = useRef([]); // Queue for early ICE candidates
+
   useEffect(() => {
     partnerIdRef.current = partner?.target_id || null;
   }, [partner?.target_id]);
@@ -358,11 +360,21 @@ const Chatbox = () => {
     socket.on("call_answered", async ({ answer }) => {
       if (pcRef.current && answer) {
         const state = pcRef.current.signalingState;
-        // Chỉ set remote description khi đang ở trạng thái chờ answer
         if (state === 'have-local-offer') {
           try {
             await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
             console.log("Remote description set successfully");
+
+            // Process queued candidates
+            while (iceCandidatesQueue.current.length > 0) {
+              const candidate = iceCandidatesQueue.current.shift();
+              try {
+                await pcRef.current.addIceCandidate(candidate);
+                console.log("Added queued ICE candidate");
+              } catch (e) {
+                console.error("Error adding queued candidate:", e);
+              }
+            }
           } catch (error) {
             console.error("Set remote description error:", error.message);
           }
@@ -373,15 +385,18 @@ const Chatbox = () => {
     });
 
     socket.on("ice_candidate", async ({ candidate }) => {
-      // Kiểm tra state của peerConnection trước khi add ICE candidate
       if (pcRef.current && candidate) {
-        const state = pcRef.current.signalingState;
-        if (state !== 'closed' && state !== 'stable') {
+        // If remote description is set, add directly
+        if (pcRef.current.remoteDescription && pcRef.current.remoteDescription.type) {
           try {
             await pcRef.current.addIceCandidate(candidate);
           } catch (error) {
             console.error("Add ICE candidate error:", error);
           }
+        } else {
+          // Queue if not ready
+          console.log("Queueing ICE candidate (remote desc not ready)");
+          iceCandidatesQueue.current.push(candidate);
         }
       }
     });
@@ -473,6 +488,16 @@ const Chatbox = () => {
       stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallData.offer));
+
+      // Process queued candidates
+      while (iceCandidatesQueue.current.length > 0) {
+        const candidate = iceCandidatesQueue.current.shift();
+        try {
+          await pc.addIceCandidate(candidate);
+        } catch (e) {
+          console.error("Error adding queued candidate in accept:", e);
+        }
+      }
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
