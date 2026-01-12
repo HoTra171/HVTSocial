@@ -30,14 +30,16 @@ const CallWindow = ({
   return (
     <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50">
       {/* Video remote */}
-      {isVideoCall ? (
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="w-full max-w-3xl aspect-video bg-black rounded-2xl object-cover"
-        />
-      ) : (
+      {/* Video remote - Always render to ensure audio plays */}
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        className={`w-full max-w-3xl aspect-video bg-black rounded-2xl object-cover ${!isVideoCall ? 'hidden' : ''}`}
+      />
+
+      {/* Avatar placeholder for Voice Call */}
+      {!isVideoCall && (
         <div className="w-40 h-40 rounded-full bg-slate-700 flex items-center justify-center text-white text-3xl mb-4">
           📞
         </div>
@@ -59,9 +61,8 @@ const CallWindow = ({
         {/* Mic */}
         <button
           onClick={toggleMic}
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${
-            micOn ? "bg-white/10" : "bg-red-600"
-          } text-white`}
+          className={`w-12 h-12 rounded-full flex items-center justify-center ${micOn ? "bg-white/10" : "bg-red-600"
+            } text-white`}
         >
           {micOn ? <Mic size={20} /> : <MicOff size={20} />}
         </button>
@@ -70,9 +71,8 @@ const CallWindow = ({
         {isVideoCall && (
           <button
             onClick={toggleCam}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${
-              camOn ? "bg-white/10" : "bg-yellow-500"
-            } text-white`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center ${camOn ? "bg-white/10" : "bg-yellow-500"
+              } text-white`}
           >
             {camOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
           </button>

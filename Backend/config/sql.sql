@@ -534,3 +534,21 @@ PRINT 'story_viewers table created for custom privacy';
 
 PRINT 'Database HVTSocial created successfully!';
 GO
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='call_history' AND xtype='U')
+BEGIN
+    CREATE TABLE call_history (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        caller_id INT NOT NULL,
+        receiver_id INT NOT NULL,
+        call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('video', 'voice')),
+        status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'missed', 'rejected', 'failed', 'busy')),
+        duration INT DEFAULT 0,
+        created_at DATETIME DEFAULT GETDATE(),
+        FOREIGN KEY (caller_id) REFERENCES users(id), -- Bỏ ON DELETE CASCADE để tránh lỗi cycle
+        FOREIGN KEY (receiver_id) REFERENCES users(id)
+    );
+
+    CREATE INDEX idx_call_history_caller ON call_history(caller_id);
+    CREATE INDEX idx_call_history_receiver ON call_history(receiver_id);
+END

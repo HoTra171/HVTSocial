@@ -1081,14 +1081,20 @@ const Chatbox = () => {
 
   const createPeerConnection = () => {
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:19302" },
+      ],
     });
 
-    const remote = new MediaStream();
-    setRemoteStream(remote);
-
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((t) => remote.addTrack(t));
+      console.log("🎥 Received remote track:", event.streams[0]);
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+      }
     };
 
     pc.onicecandidate = (event) => {
@@ -1097,6 +1103,13 @@ const Chatbox = () => {
           to: remoteUserIdRef.current,
           candidate: event.candidate,
         });
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      console.log("⚠️ ICE Connection State:", pc.iceConnectionState);
+      if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+        toast.error("Kết nối cuộc gọi không ổn định");
       }
     };
 
