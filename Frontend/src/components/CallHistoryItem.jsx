@@ -45,8 +45,10 @@ const CallHistoryItem = ({ callHistory, currentUserId }) => {
     return `${mins} phút ${secs} giây`;
   };
 
+  const isOutgoing = !isIncoming;
+
   return (
-    <div className="flex justify-center my-4 w-full">
+    <div className={`flex w-full my-4 ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
       <div className="flex items-center gap-3 bg-gray-100/80 px-4 py-2 rounded-2xl shadow-sm backdrop-blur-sm max-w-xs">
 
         {/* Icon Circle */}

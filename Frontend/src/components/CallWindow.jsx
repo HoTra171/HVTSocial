@@ -24,6 +24,12 @@ const CallWindow = ({
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+
+      // Log tracks for debugging
+      console.log("📺 Remote Stream Tracks:", remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}`));
+
+      // Force play to ensure audio works (sometimes requires interaction)
+      remoteVideoRef.current.play().catch(e => console.error("Error playing remote video:", e));
     }
   }, [remoteStream]);
 
