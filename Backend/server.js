@@ -182,11 +182,61 @@ app.use(sentryErrorHandler);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+const ensureFullSchema = async () => {
+  try {
+    const isPostgres = process.env.DB_DRIVER === 'postgres' || !!process.env.DATABASE_URL;
+    logger.info(`🛠 Checking database schema... (Driver: ${isPostgres ? 'PostgreSQL' : 'MSSQL'})`);
+
+    const createTableQuery = isPostgres
+      ? `
+        CREATE TABLE IF NOT EXISTS call_history (
+          id SERIAL PRIMARY KEY,
+          caller_id INT NOT NULL,
+          receiver_id INT NOT NULL,
+          call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('video', 'voice')),
+          status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'missed', 'rejected', 'failed', 'busy')),
+          duration INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (caller_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_call_history_caller ON call_history(caller_id);
+        CREATE INDEX IF NOT EXISTS idx_call_history_receiver ON call_history(receiver_id);
+      `
+      : `
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='call_history' AND xtype='U')
+        BEGIN
+            CREATE TABLE call_history (
+                id INT IDENTITY(1,1) PRIMARY KEY,
+                caller_id INT NOT NULL,
+                receiver_id INT NOT NULL,
+                call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('video', 'voice')),
+                status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'missed', 'rejected', 'failed', 'busy')),
+                duration INT DEFAULT 0,
+                created_at DATETIME DEFAULT GETDATE(),
+                FOREIGN KEY (caller_id) REFERENCES users(id),
+                FOREIGN KEY (receiver_id) REFERENCES users(id)
+            );
+            CREATE INDEX idx_call_history_caller ON call_history(caller_id);
+            CREATE INDEX idx_call_history_receiver ON call_history(receiver_id);
+        END
+      `;
+
+    await pool.query(createTableQuery);
+    logger.info('✅ Database schema verified (call_history table)');
+  } catch (error) {
+    logger.error('❌ Database schema check failed:', error);
+    // Don't exit process, app might still work if table exists but query failed for other reasons
+  }
+};
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔒 Security: Helmet + Rate Limiting enabled`);
+ensureFullSchema().then(() => {
+  server.listen(PORT, '0.0.0.0', () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`🔒 Security: Helmet + Rate Limiting enabled`);
+  });
 });
 
 // Graceful Shutdown
