@@ -131,4 +131,11 @@ ORDER BY last_time DESC, chat_id DESC;
     // Return SQL Server compatible format
     return { recordset: result.rows };
   },
+
+  // Check if user has access to chat
+  async checkChatAccess(userId, chatId) {
+    const query = `SELECT 1 FROM chat_users WHERE user_id = $1 AND chat_id = $2`;
+    const result = await db.query(query, [userId, chatId]);
+    return result.rows.length > 0;
+  },
 };

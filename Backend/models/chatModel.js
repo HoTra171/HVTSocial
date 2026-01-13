@@ -359,4 +359,17 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
       throw e;
     }
   },
+  async checkChatAccess(pool, userId, chatId) {
+    if (isPostgres) {
+      const result = await pool.query('SELECT 1 FROM chat_users WHERE user_id = $1 AND chat_id = $2', [userId, chatId]);
+      return result.rows.length > 0;
+    }
+
+    if (!pool.connected) await pool.connect();
+    const req = pool.request();
+    req.input('userId', sql.Int, userId);
+    req.input('chatId', sql.Int, chatId);
+    const result = await req.query('SELECT 1 FROM chat_users WHERE user_id = @userId AND chat_id = @chatId');
+    return result.recordset.length > 0;
+  },
 };

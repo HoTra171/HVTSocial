@@ -38,4 +38,9 @@ export const ChatService = {
   getChatUsers: (chatId) => ChatModel.getChatUsers(pool, chatId),
 
   getOrCreateDm: (userA, userB) => ChatModel.getOrCreateDm(pool, userA, userB),
+
+  checkChatAccess: (userId, chatId) =>
+    usePostgreSQL
+      ? ChatModelPG.checkChatAccess(userId, chatId)
+      : ChatModel.checkChatAccess(pool, userId, chatId),
 };

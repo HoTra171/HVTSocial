@@ -31,9 +31,8 @@ export const getMessages = async (req, res) => {
     if (!authId) return forbid(res);
     if (!chatId) return badRequest(res, 'invalid_chatId');
 
-    // check user có thuộc chat không (tạm dùng getUserChats để check)
-    const chats = await ChatService.getUserChats(authId);
-    const allowed = chats.some((c) => Number(c.chat_id) === chatId);
+    // Check access directly using ChatService
+    const allowed = await ChatService.checkChatAccess(authId, chatId);
     if (!allowed) return forbid(res);
 
     const result = await ChatService.getMessagesByChat(chatId);
