@@ -139,6 +139,7 @@ const Chatbox = () => {
 
   const partnerIdRef = useRef(null);
   const iceCandidatesQueue = useRef([]); // Queue for early ICE candidates
+  const lastMessageIdRef = useRef(null);
 
   useEffect(() => {
     partnerIdRef.current = partner?.target_id || null;
@@ -746,10 +747,19 @@ const Chatbox = () => {
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el) return;
-    setTimeout(() => {
-      el.scrollTop = el.scrollHeight;
-    }, 80);
+    if (!el || messages.length === 0) return;
+
+    const lastMsg = messages[messages.length - 1];
+
+    // Chỉ scroll xuống dưới nếu tin nhắn cuối cùng thay đổi (tin mới)
+    // Nếu chỉ là reaction/recall (update tin cũ) thì ID không đổi -> KHÔNG SCROLL
+    if (lastMsg.id !== lastMessageIdRef.current) {
+      lastMessageIdRef.current = lastMsg.id;
+
+      setTimeout(() => {
+        el.scrollTop = el.scrollHeight;
+      }, 80);
+    }
   }, [messages]);
 
   useEffect(() => {
