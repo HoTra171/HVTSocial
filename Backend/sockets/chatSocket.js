@@ -66,6 +66,10 @@ export default function chatSocket(io) {
           message_type: data?.message_type || 'text',
           media_url: data?.media_url ?? null,
           duration: data?.duration ?? null,
+          reply_to_id: data?.reply_to_id ?? null,
+          reply_content: data?.reply_content ?? null,
+          reply_type: data?.reply_type ?? null,
+          reply_sender: data?.reply_sender ?? null,
         };
 
         if (!payload.chatId) return callback?.({ ok: false, error: 'invalid_params' });
@@ -84,6 +88,10 @@ export default function chatSocket(io) {
           media_url: row.media_url,
           duration: row.duration,
           created_at: row.created_at,
+          reply_to_id: row.reply_to_id,
+          reply_content: row.reply_content,
+          reply_type: row.reply_type,
+          reply_sender: row.reply_sender,
         };
 
         // phát message tới phòng chat

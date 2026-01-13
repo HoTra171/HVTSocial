@@ -25,7 +25,8 @@ export const ChatService = {
       : await ChatModel.getUnreadCount(pool, userId),
 
   // Methods chỉ dùng SQL Server (chưa có PostgreSQL version)
-  sendMessage: (payload) => ChatModel.sendMessage(pool, payload),
+  sendMessage: (payload) =>
+    usePostgreSQL ? ChatModelPG.sendMessage(payload) : ChatModel.sendMessage(pool, payload),
 
   markMessagesRead: (chatId, userId) => ChatModel.markMessagesRead(pool, chatId, userId),
 

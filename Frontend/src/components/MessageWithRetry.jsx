@@ -139,8 +139,8 @@ const MessageBubble = ({
           {/* Icon bar (emoji + menu) - Desktop only - Positioning relative to the Group */}
           {!isRecalled && !msg.failed && (
             <div
-              className={`max-sm:hidden msg-icon-bar absolute top-6 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10
-              ${isMe ? "left-[-110px]" : "right-[-110px]"}`}
+              className={`max-sm:hidden msg-icon-bar absolute top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10
+              ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
             >
               <button
                 onClick={(e) => {
@@ -185,8 +185,8 @@ const MessageBubble = ({
           {openMenuId === msg.id && (
             <div
               ref={menuRef}
-              className={`msg-menu absolute top-6 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
-              ${isMe ? "left-[-160px]" : "right-[-160px]"}`}
+              className={`msg-menu absolute top-0 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
+              ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
             >
               {msg.message_type === "text" && (
                 <button

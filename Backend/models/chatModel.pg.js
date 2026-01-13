@@ -142,4 +142,45 @@ ORDER BY last_time DESC, chat_id DESC;
     const result = await db.query(query, [userId, chatId]);
     return result.rows.length > 0;
   },
+
+  // Send message
+  async sendMessage(payload) {
+    const {
+      chatId,
+      senderId,
+      content,
+      message_type,
+      media_url,
+      duration,
+      reply_to_id,
+      reply_content,
+      reply_type,
+      reply_sender
+    } = payload;
+
+    const query = `
+      INSERT INTO messages (
+        chat_id, sender_id, content, message_type, media_url, duration, 
+        reply_to_id, reply_content, reply_type, reply_sender
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING *;
+    `;
+
+    const values = [
+      chatId,
+      senderId,
+      content,
+      message_type,
+      media_url,
+      duration,
+      reply_to_id,
+      reply_content,
+      reply_type,
+      reply_sender
+    ];
+
+    const result = await db.query(query, values);
+    return { recordset: result.rows };
+  },
 };
