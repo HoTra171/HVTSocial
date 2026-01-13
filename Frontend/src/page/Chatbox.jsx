@@ -385,7 +385,13 @@ const Chatbox = () => {
     });
 
     socket.on("ice_candidate", async ({ candidate }) => {
+      // Validate connection state before adding candidate
       if (pcRef.current && candidate) {
+        if (pcRef.current.signalingState === 'closed') {
+          console.warn("⚠️ Ignored ICE candidate because PC is closed");
+          return;
+        }
+
         // If remote description is set, add directly
         if (pcRef.current.remoteDescription && pcRef.current.remoteDescription.type) {
           try {
@@ -1275,15 +1281,15 @@ const Chatbox = () => {
         const mins = Math.floor(duration / 60);
         const secs = duration % 60;
         const durationStr = `${mins}:${secs.toString().padStart(2, '0')}`;
-        toast.success(`Cuộc gọi kết thúc sau ${durationStr}`);
+        toast.success(`Cuộc gọi kết thúc sau ${durationStr}`, { duration: 3000 });
 
         fetchCallHistory(); // Refresh list immediately
       } catch (error) {
         console.error('Failed to save call history:', error);
-        toast('Đã kết thúc cuộc gọi');
+        toast('Đã kết thúc cuộc gọi', { duration: 3000 });
       }
     } else {
-      toast('Đã kết thúc cuộc gọi');
+      toast('Đã kết thúc cuộc gọi', { duration: 3000 });
     }
 
     // STOP ALL TRACKS
@@ -1521,7 +1527,6 @@ const Chatbox = () => {
                 const keepLegacy =
                   parsed.isReply ||
                   msg.message_type === "shared_post" ||
-                  msg.message_type === "image" ||
                   isStoryReply;
 
 
