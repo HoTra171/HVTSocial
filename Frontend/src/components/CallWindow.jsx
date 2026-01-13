@@ -17,57 +17,14 @@ const CallWindow = ({
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  // ... (previous useEffects) ...
-
-  const toggleSpeaker = () => {
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.muted = !remoteVideoRef.current.muted;
-      setIsSpeakerOn(!remoteVideoRef.current.muted);
+  // 1. Local Stream Handling (Restored)
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
     }
-  };
+  }, [localStream]);
 
-  return (
-    <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50">
-      {/* ... (video render logic) ... */}
-
-      {/* Thanh control */}
-      <div className="flex items-center gap-6 mt-8 bg-black/40 px-6 py-4 rounded-full">
-        {/* Speaker Toggle */}
-        <button
-          onClick={toggleSpeaker}
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${isSpeakerOn ? "bg-white/10" : "bg-white/10 text-red-500"} text-white`}
-        >
-          {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
-        </button>
-
-        {/* Mic */}
-        <button
-          onClick={toggleMic}
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${micOn ? "bg-white/10" : "bg-red-600"} text-white`}
-        >
-          {micOn ? <Mic size={20} /> : <MicOff size={20} />}
-        </button>
-
-        {/* Camera (chỉ với video call) */}
-        {isVideoCall && (
-          <button
-            onClick={toggleCam}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${camOn ? "bg-white/10" : "bg-yellow-500"} text-white`}
-          >
-            {camOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
-          </button>
-        )}
-
-        {/* End call */}
-        <button
-          onClick={onEnd}
-          className="w-14 h-14 rounded-full flex items-center justify-center bg-red-600 text-white"
-        >
-          <PhoneOff size={22} />
-        </button>
-      </div>
-    </div>
-  );
+  // 2. Remote Stream Handling (Moved from bottom)
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
@@ -93,29 +50,32 @@ const CallWindow = ({
     }
   }, [remoteStream]);
 
-  const handleManualPlay = async () => {
-    if (remoteVideoRef.current) {
-      useEffect(() => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.muted = !isSpeakerOn;
-        }
-      }, [isSpeakerOn]);
-
-      try {
-        await remoteVideoRef.current.play();
-        setNeedsUserInteraction(false);
-      } catch (e) {
-        console.error("Manual play failed:", e);
-      }
-    }
-  };
-
-  // Sync mute state with speaker toggle
+  // 3. Sync mute state with speaker toggle
   useEffect(() => {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.muted = !isSpeakerOn;
     }
   }, [isSpeakerOn]);
+
+  const toggleSpeaker = () => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.muted = !remoteVideoRef.current.muted;
+      setIsSpeakerOn(!remoteVideoRef.current.muted);
+    }
+  };
+
+  const handleManualPlay = async () => {
+    if (remoteVideoRef.current) {
+      try {
+        await remoteVideoRef.current.play();
+        setNeedsUserInteraction(false);
+        // Ensure mute state matches isSpeakerOn after manual play
+        remoteVideoRef.current.muted = !isSpeakerOn;
+      } catch (e) {
+        console.error("Manual play failed:", e);
+      }
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50">
@@ -174,6 +134,7 @@ const CallWindow = ({
         <button
           onClick={toggleSpeaker}
           className={`w-12 h-12 rounded-full flex items-center justify-center ${isSpeakerOn ? "bg-white/10" : "bg-white/10 text-red-500"} text-white`}
+          title={isSpeakerOn ? "Tắt loa ngoài" : "Bật loa ngoài"}
         >
           {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
         </button>
@@ -181,8 +142,7 @@ const CallWindow = ({
         {/* Mic */}
         <button
           onClick={toggleMic}
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${micOn ? "bg-white/10" : "bg-red-600"
-            } text-white`}
+          className={`w-12 h-12 rounded-full flex items-center justify-center ${micOn ? "bg-white/10" : "bg-red-600"} text-white`}
         >
           {micOn ? <Mic size={20} /> : <MicOff size={20} />}
         </button>
@@ -191,8 +151,7 @@ const CallWindow = ({
         {isVideoCall && (
           <button
             onClick={toggleCam}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${camOn ? "bg-white/10" : "bg-yellow-500"
-              } text-white`}
+            className={`w-12 h-12 rounded-full flex items-center justify-center ${camOn ? "bg-white/10" : "bg-yellow-500"} text-white`}
           >
             {camOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
           </button>
