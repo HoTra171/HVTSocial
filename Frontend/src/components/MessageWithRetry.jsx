@@ -282,14 +282,14 @@ const MessageBubble = ({
         </div>
       </div>
 
-      {/* Mobile Long Press Menu - Full screen overlay */}
-      {showMobileMenu && isMobile && (
+      {/* Mobile Long Press Menu - Portal to document.body */}
+      {showMobileMenu && isMobile && createPortal(
         <div
           className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:hidden"
           onClick={() => setShowMobileMenu(false)}
         >
           <div
-            className="bg-white rounded-t-3xl w-full p-4 pb-8 animate-slide-up"
+            className="bg-white rounded-t-3xl w-full p-4 pb-8 mb-[env(safe-area-inset-bottom)] animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drag handle */}
@@ -347,7 +347,8 @@ const MessageBubble = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
