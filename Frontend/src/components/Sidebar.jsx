@@ -37,9 +37,17 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false
   max-sm:hidden transition-all duration-300 ease-in-out touch-none`}>
 
             <div className='w-full'>
-                <img onClick={() => navigate('/feed')} src={assets.logo} alt="Logo" className={`w-20 ml-7 my-2 cursor-pointer md:hidden ${!collapsed ? 'xl:block' : 'xl:hidden'}`} />
-                <div className={`md:flex ${!collapsed ? 'xl:hidden' : 'xl:flex'} items-center justify-center my-3`}>
-                    <img onClick={() => navigate('/feed')} src={assets.logo} alt="Logo" className='w-10 h-10 cursor-pointer' />
+                {/* Unified Logo */}
+                <div className={`flex items-center ${!collapsed ? 'xl:justify-start xl:pl-7' : 'justify-center'} justify-center my-3`}>
+                    <img
+                        onClick={() => navigate('/feed')}
+                        src={assets.logo}
+                        alt="Logo"
+                        className={`cursor-pointer transition-all duration-300 object-contain
+                            w-10 h-10
+                            ${!collapsed ? 'xl:w-20 xl:h-auto' : ''}
+                        `}
+                    />
                 </div>
                 <hr className='border-gray-300 mb-8' />
 
@@ -49,23 +57,23 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false
                 {/* Admin Panel Link */}
                 {user?.roles?.includes('admin') && (
                     <div className='md:px-2 xl:px-6'>
-                        <Link to='/admin/dashboard' className={`px-3.5 py-2 flex items-center gap-3 rounded-xl relative
-                            md:justify-center ${!collapsed ? 'md:px-6 xl:justify-start xl:px-3.5' : 'justify-center px-0'}
+                        <Link to='/admin/dashboard' className={`py-2 flex items-center gap-3 rounded-xl relative
+                            justify-center w-full ${!collapsed ? 'xl:justify-start xl:px-3.5' : 'justify-center px-0'}
                              hover:bg-indigo-50 transition text-gray-700 group`}>
                             <div className="relative">
                                 <ShieldAlert className='w-5 h-5 group-hover:text-indigo-600 transition' />
                             </div>
-                            <span className={`md:hidden ${!collapsed ? 'xl:inline' : ''} font-medium group-hover:text-indigo-600`}>Admin Panel</span>
+                            <span className={`hidden ${!collapsed ? 'xl:inline' : ''} font-medium group-hover:text-indigo-600`}>Admin Panel</span>
                         </Link>
                     </div>
                 )}
 
                 <Link to='/create-post' className={`flex items-center justify-center gap-2
-             py-2.5 mt-6 mx-6 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600
+             py-2.5 mt-6 mx-auto w-10/12 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600
             hover:from-indigo-700 hover:to-purple-800 active:scale-95
-             transition text-white cursor-pointer md:mx-2 md:px-2 ${!collapsed ? 'xl:mx-6' : 'xl:mx-2 xl:px-0'}`}>
+             transition text-white cursor-pointer px-0 ${!collapsed ? 'xl:mx-6 xl:w-auto xl:px-4' : 'xl:mx-auto xl:w-10/12 xl:px-0'}`}>
                     <CirclePlus className='w-5 h-5' />
-                    <span className={`md:hidden ${!collapsed ? 'xl:inline' : ''}`}>Tạo bài viết</span>
+                    <span className={`hidden ${!collapsed ? 'xl:inline' : ''}`}>Tạo bài viết</span>
                 </Link>
             </div>
             <div className={`w-full border-t border-gray-200 p-4 px-7 flex items-center justify-between md:flex-col md:gap-3 md:px-2 ${!collapsed ? 'xl:flex-row xl:gap-0 xl:px-7' : ''}`}>
@@ -75,7 +83,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false
                         alt={user.full_name}
                         className="w-10 h-10 rounded-full"
                     />
-                    <div className={`md:hidden ${!collapsed ? 'xl:block' : ''}`}>
+                    <div className={`hidden ${!collapsed ? 'xl:block' : ''}`}>
                         <h1 className='text-sm font-medium'>{user.full_name}</h1>
                         <p className='text-xs text-gray-500'>@{user.username}</p>
                     </div>

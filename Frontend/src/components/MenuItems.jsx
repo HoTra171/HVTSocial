@@ -21,14 +21,14 @@ const MenuItems = ({ setSidebarOpen, collapsed }) => {
 
           return (
             <NavLink key={to} to={to} end={to === '/'} onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) => `px-3.5 py-2 flex items-center gap-3 rounded-xl relative
-            md:justify-center md:px-6 ${!collapsed ? 'xl:justify-start xl:px-3.5' : 'xl:justify-center xl:px-2'}
+              className={({ isActive }) => `py-2 flex items-center gap-3 rounded-xl relative
+            justify-center w-full ${!collapsed ? 'xl:justify-start xl:px-3.5' : 'xl:justify-center xl:px-2'}
             ${isActive ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50'}`}>
               <div className="relative">
                 <Icon className='w-5 h-5' />
                 <NotificationBadge count={badgeCount} />
               </div>
-              <span className={`md:hidden ${!collapsed ? 'xl:inline' : ''}`}>{label}</span>
+              <span className={`hidden ${!collapsed ? 'xl:inline' : ''}`}>{label}</span>
             </NavLink>
           );
         })

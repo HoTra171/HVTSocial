@@ -149,10 +149,10 @@ const RecentChats = ({ currentUserId, sidebarOpen, setSidebarOpen }) => {
   return (
     <div
       className={`
-        bg-white border-r border-gray-200 flex flex-col transition-all duration-300
-        w-60 xl:w-72 fixed top-0 h-screen z-10
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-        md:translate-x-0 md:left-20 xl:left-72
+        bg-white border-r border-gray-200 flex-col transition-all duration-300
+        w-60 min-[820px]:w-80 fixed top-0 h-screen z-10
+        ${sidebarOpen ? "flex translate-x-0" : "hidden -translate-x-full"}
+        md:flex md:translate-x-0 md:left-20 xl:left-72
       `}
     >
       <div className="p-3 border-b border-gray-200 flex items-center gap-2">

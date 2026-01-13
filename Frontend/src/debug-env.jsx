@@ -17,7 +17,7 @@ export default function DebugEnv() {
       backgroundColor: '#f5f5f5',
       margin: '20px'
     }}>
-      <h1>🔍 Environment Variables Debug</h1>
+      <h1>Environment Variables Debug</h1>
 
       <h2>Build-time Environment:</h2>
       <table style={{ borderCollapse: 'collapse', width: '100%' }}>

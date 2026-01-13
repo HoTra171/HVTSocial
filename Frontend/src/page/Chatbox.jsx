@@ -39,9 +39,6 @@ const Chatbox = () => {
   const navigate = useNavigate();
   const [socketReady, setSocketReady] = useState(false);
 
-  // Force reload marker - v2.0
-  console.log("🔄 Chatbox component loaded - Version 2.0");
-
   const myIdRaw = localStorage.getItem("user");
 
   const myId = myIdRaw
@@ -67,10 +64,6 @@ const Chatbox = () => {
 
   // Debug: Kiểm tra chatId
   useEffect(() => {
-    console.log("🔍 chatId từ URL:", chatId);
-    console.log("🔍 chatId type:", typeof chatId);
-    console.log("🔍 chatId số:", Number(chatId));
-    console.log("🔍 chatId valid?:", !isNaN(Number(chatId)) && Number(chatId) > 0);
   }, [chatId]);
 
   const [partner, setPartner] = useState(null);
@@ -267,6 +260,8 @@ const Chatbox = () => {
       return null;
     }
   };
+
+
 
 
   const openSharedPost = (postId) => {
@@ -552,18 +547,14 @@ const Chatbox = () => {
   // Fetch partner
   const fetchPartner = async () => {
     try {
-      console.log("📡 Fetching partner for chatId:", chatId);
-
       const token = localStorage.getItem("token");
       const res = await axios.get(
         `${API_URL}/chat/user/${myId}/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("📡 Partner response:", res.data);
 
       // Nếu không có conversation nào, thử load thông tin user trực tiếp
       if (!res.data || res.data.length === 0) {
-        console.log("📡 No conversations found, trying to load user directly...");
         try {
           const userRes = await axios.get(
             `${API_URL}/users/${chatId}`,
@@ -571,7 +562,6 @@ const Chatbox = () => {
           );
 
           if (userRes.data) {
-            console.log("📡 Loaded user info:", userRes.data);
             setPartner({
               target_id: userRes.data.id,
               name: userRes.data.full_name,
@@ -603,7 +593,6 @@ const Chatbox = () => {
 
       // Nếu không tìm thấy conversation, thử load user info theo chatId (có thể là userId)
       if (!row) {
-        console.log("📡 Conversation not found, trying to load user directly...");
         try {
           const userRes = await axios.get(
             `${API_URL}/users/${chatId}`,
@@ -611,7 +600,6 @@ const Chatbox = () => {
           );
 
           if (userRes.data) {
-            console.log("📡 Loaded user info:", userRes.data);
             setPartner({
               target_id: userRes.data.id,
               name: userRes.data.full_name,
@@ -694,25 +682,17 @@ const Chatbox = () => {
     }
 
     try {
-      console.log("📡 Fetching messages for chatId:", Number(chatId));
-
       const token = localStorage.getItem('token');
       const res = await axios.get(
         `${API_URL}/chat/messages/${Number(chatId)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      console.log("📡 Messages response:", res.data);
-
       const sorted = res.data.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
 
       setAllMessages(sorted);
       setMessages(sorted.slice(-PAGE));
-
-      console.log("Messages loaded:", sorted.length);
-
       if (socketRef.current) {
         socketRef.current.emit("mark_messages_read", {
           chatId: Number(chatId),
@@ -1407,7 +1387,7 @@ const Chatbox = () => {
         <Sidebar collapsed={true} relative={true} currentUserId={myId} setSidebarOpen={() => { }} />
 
         {/* RECENT CHATS LIST (like RecentMessages) */}
-        <div className="hidden sm:flex flex-col w-80 bg-white border-r overflow-hidden border-gray-200">
+        <div className="hidden sm:flex flex-col w-60 min-[820px]:w-80 bg-white border-r overflow-hidden border-gray-200">
           <div className="p-4 border-b border-gray-200">
             <h2 className="font-semibold text-lg mb-3">Tin nhắn</h2>
             <div className="relative">

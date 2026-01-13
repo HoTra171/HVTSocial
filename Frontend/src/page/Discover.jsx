@@ -64,7 +64,6 @@ const Discover = () => {
       const token = localStorage.getItem('token');
 
       if (searchType === 'user') {
-        console.log('🔍 Searching users:', trimmedKeyword);
         const res = await axios.get(`${API_URL}/users/discover`, {
           params: { search: trimmedKeyword, filterType },
           headers: { Authorization: `Bearer ${token}` },
@@ -73,7 +72,6 @@ const Discover = () => {
         if (res.data?.success) setUsers(res.data.data || []);
         else setUsers([]);
       } else {
-        console.log('🔍 Searching posts:', trimmedKeyword);
         const res = await axios.get(`${API_URL}/posts/search`, {
           params: { q: trimmedKeyword },
           headers: { Authorization: `Bearer ${token}` },
@@ -227,11 +225,10 @@ const Discover = () => {
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setSearchType('user')}
-              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-center font-semibold transition-all relative ${
-                searchType === 'user'
+              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-center font-semibold transition-all relative ${searchType === 'user'
                   ? 'text-indigo-600'
                   : 'text-gray-500 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Users className="w-5 h-5 inline-block mr-2" />
               <span className="hidden sm:inline">Mọi người</span>
@@ -242,11 +239,10 @@ const Discover = () => {
             </button>
             <button
               onClick={() => setSearchType('post')}
-              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-center font-semibold transition-all relative ${
-                searchType === 'post'
+              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-center font-semibold transition-all relative ${searchType === 'post'
                   ? 'text-indigo-600'
                   : 'text-gray-500 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Search className="w-5 h-5 inline-block mr-2" />
               <span className="hidden sm:inline">Bài viết</span>
@@ -321,31 +317,28 @@ const Discover = () => {
           <div className="mb-6 flex gap-2 bg-white rounded-lg shadow-sm p-1 border border-gray-200 w-fit">
             <button
               onClick={() => setFilterType('all')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filterType === 'all'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'all'
                   ? 'bg-indigo-600 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Tất cả ({users.length})
             </button>
             <button
               onClick={() => setFilterType('not-friends')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filterType === 'not-friends'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'not-friends'
                   ? 'bg-indigo-600 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Chưa kết bạn ({users.filter((u) => !u.isFriend).length})
             </button>
             <button
               onClick={() => setFilterType('friends')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                filterType === 'friends'
+              className={`px-4 py-2 rounded-md text-sm font-medium transition ${filterType === 'friends'
                   ? 'bg-indigo-600 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Bạn bè ({users.filter((u) => u.isFriend).length})
             </button>

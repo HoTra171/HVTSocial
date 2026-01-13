@@ -85,10 +85,10 @@ const Layout = () => {
       {/* ===== MAIN CONTENT ===== */}
       <div
         className={`flex-1 relative ${isChatPage
-            ? "md:pl-80 xl:pl-[36rem] h-screen min-h-0 overflow-hidden"
-            : isStoryPage
-              ? "md:pl-20 xl:pl-72 min-h-screen overflow-y-auto" // Sidebar only
-              : "md:pl-20 xl:pl-72 min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16" // Sidebar only
+          ? "sm:pl-20 md:pl-[20rem] min-[820px]:pl-[25rem] xl:pl-[38rem] h-screen min-h-0 overflow-hidden"
+          : isStoryPage
+            ? "sm:pl-20 xl:pl-72 min-h-screen overflow-y-auto" // Sidebar only
+            : "sm:pl-20 xl:pl-72 min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16" // Sidebar only
           }`}
       >
 
