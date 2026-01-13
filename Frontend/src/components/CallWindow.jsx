@@ -124,7 +124,7 @@ const CallWindow = ({
           autoPlay
           playsInline
           muted
-          className="w-40 aspect-video bg-black rounded-xl object-cover fixed bottom-6 right-6 border border-white/40 shadow-lg"
+          className="w-40 aspect-video bg-black rounded-xl object-cover absolute top-6 right-6 border border-white/40 shadow-lg z-50"
         />
       )}
 
