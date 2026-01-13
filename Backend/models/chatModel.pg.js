@@ -119,6 +119,10 @@ ORDER BY last_time DESC, chat_id DESC;
         m.media_url,
         m.status,
         m.created_at,
+        m.reply_to_id,
+        m.reply_content,
+        m.reply_type,
+        m.reply_sender,
         u.full_name AS sender_name,
         u.avatar AS sender_avatar
       FROM messages m

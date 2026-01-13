@@ -133,7 +133,8 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
   async getMessagesByChat(pool, chatId) {
     if (isPostgres) {
       const result = await pool.query(`
-        SELECT id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at
+        SELECT id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at,
+               reply_to_id, reply_content, reply_type, reply_sender
         FROM messages WHERE chat_id = $1 ORDER BY created_at ASC
       `, [chatId]);
       return { recordset: result.rows };
@@ -143,7 +144,8 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
     const req = pool.request();
     req.input('chatId', sql.Int, chatId);
     return req.query(`
-      SELECT id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at
+      SELECT id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at,
+             reply_to_id, reply_content, reply_type, reply_sender
       FROM messages WHERE chat_id = @chatId ORDER BY created_at ASC
     `);
   },
