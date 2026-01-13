@@ -96,6 +96,7 @@ const Chatbox = () => {
   // typing: tránh gửi true liên tục, và tự gửi false khi dừng gõ
   const typingStopTimeoutRef = useRef(null);
   const typingSentRef = useRef(false);
+  const callTimeoutRef = useRef(null);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -358,6 +359,12 @@ const Chatbox = () => {
     });
 
     socket.on("call_answered", async ({ answer }) => {
+      // Clear timeout if answered
+      if (callTimeoutRef.current) {
+        clearTimeout(callTimeoutRef.current);
+        callTimeoutRef.current = null;
+      }
+
       if (pcRef.current && answer) {
         const state = pcRef.current.signalingState;
         if (state === 'have-local-offer') {
@@ -1235,6 +1242,17 @@ const Chatbox = () => {
       setInCall(true);
       setCallStartTime(Date.now());
       toast.success(isVideo ? 'Đang gọi video...' : 'Đang gọi...');
+
+      // Set timeout 45s for no answer
+      if (callTimeoutRef.current) clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = setTimeout(() => {
+        if (inCall) {
+          console.log("⏱️ No answer timeout (45s)");
+          toast.error("Người nhận không trả lời");
+          endCall();
+        }
+      }, 45000); // 45 seconds
+
       console.log('✅ Call initiated successfully');
     } catch (err) {
       console.error("❌ Start call error:", err);
@@ -1250,6 +1268,10 @@ const Chatbox = () => {
   };
 
   const cleanupCall = () => {
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
     localStream?.getTracks().forEach((t) => t.stop());
     pcRef.current?.close();
 
@@ -1260,6 +1282,10 @@ const Chatbox = () => {
 
   const endCall = async () => {
     console.log('Ending call...');
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current);
+      callTimeoutRef.current = null;
+    }
 
     // Calculate call duration and save to history
     let duration = 0;
