@@ -52,7 +52,7 @@ const MessageBubble = ({
   }, [setOpenMenuId, setReactMenuFor]);
 
   const handleTouchStart = (e) => {
-    if (!isMobile || msg.recalled || msg.failed) return;
+    if (!isMobile || isRecalled || msg.failed) return;
 
     longPressTimer.current = setTimeout(() => {
       setShowMobileMenu(true);
@@ -75,6 +75,8 @@ const MessageBubble = ({
     }
   };
   // Render status icon cho tin nhắn của mình
+  const isRecalled = msg.recalled || msg.message_type === "recalled";
+
   const renderMessageStatus = () => {
     if (!isMe) return null;
 
@@ -86,6 +88,7 @@ const MessageBubble = ({
         </div>
       );
     }
+
 
     if (msg.status === "read") {
       return <CheckCheck size={14} className="text-blue-500" />;
@@ -103,7 +106,7 @@ const MessageBubble = ({
           }`}
       >
         {/* Avatar người gửi (không phải mình) */}
-        {!isMe && !msg.recalled && (
+        {!isMe && !isRecalled && (
           <img
             src={
               partner?.avatar ||
@@ -121,7 +124,7 @@ const MessageBubble = ({
           onTouchMove={handleTouchMove}
         >
           {/* Icon bar (emoji + menu) - Desktop only */}
-          {!msg.recalled && !msg.failed && (
+          {!isRecalled && !msg.failed && (
             <div
               className={`max-sm:hidden msg-icon-bar absolute top-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200
               ${isMe ? "left-[-80px]" : "right-[-80px]"}`}
@@ -209,7 +212,7 @@ const MessageBubble = ({
           )}
 
           {/* Message bubble */}
-          {msg.recalled ? (
+          {isRecalled ? (
             <div className="italic text-gray-500 px-3 py-2 bg-white border border-gray-200 rounded-2xl text-sm">
               Bạn đã xóa một tin nhắn
             </div>
@@ -272,7 +275,7 @@ const MessageBubble = ({
           ) : null}
 
           {/* Reaction */}
-          {msg.reaction && !msg.recalled && (
+          {msg.reaction && !isRecalled && (
             <div
               className={`mt-1 inline-block px-2 bg-white shadow rounded-full text-lg ${isMe ? "float-right mr-2" : "float-left ml-2"
                 }`}
