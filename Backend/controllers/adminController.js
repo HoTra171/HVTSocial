@@ -116,9 +116,9 @@ export const getAllPosts = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT p.id, p.user_id, p.content, p.media_url, p.privacy, p.created_at,
+            SELECT p.id, p.user_id, p.content, p.media_url, p.status as privacy, p.created_at,
                    u.full_name, u.username, u.avatar,
-                   (SELECT COUNT(*) FROM likes WHERE entity_type = 'post' AND entity_id = p.id) as likes_count,
+                   (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as likes_count,
                    (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comments_count
             FROM posts p
             LEFT JOIN users u ON p.user_id = u.id
@@ -178,7 +178,7 @@ export const deletePostByAdmin = async (req, res) => {
         }
 
         // Delete related data first (comments, likes, shares, etc.)
-        await db.request().input('id', id).query('DELETE FROM likes WHERE entity_type = \'post\' AND entity_id = @id');
+        await db.request().input('id', id).query('DELETE FROM likes WHERE post_id = @id');
         await db.request().input('id', id).query('DELETE FROM shares WHERE post_id = @id');
         await db.request().input('id', id).query('DELETE FROM saved_posts WHERE post_id = @id');
         await db.request().input('id', id).query('DELETE FROM comments WHERE post_id = @id');
@@ -200,10 +200,10 @@ export const getAllComments = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT c.id, c.post_id, c.user_id, c.content, c.parent_comment_id, c.created_at,
+            SELECT c.id, c.post_id, c.user_id, c.content, c.comment_parent as parent_comment_id, c.created_at,
                    u.full_name, u.username, u.avatar,
                    p.content as post_content,
-                   (SELECT COUNT(*) FROM likes WHERE entity_type = 'comment' AND entity_id = c.id) as likes_count
+                   (SELECT COUNT(*) FROM likes WHERE comment_id = c.id) as likes_count
             FROM comments c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN posts p ON c.post_id = p.id
@@ -263,8 +263,8 @@ export const deleteCommentByAdmin = async (req, res) => {
         }
 
         // Delete related data (likes, replies)
-        await db.request().input('id', id).query('DELETE FROM likes WHERE entity_type = \'comment\' AND entity_id = @id');
-        await db.request().input('id', id).query('DELETE FROM comments WHERE parent_comment_id = @id');
+        await db.request().input('id', id).query('DELETE FROM likes WHERE comment_id = @id');
+        await db.request().input('id', id).query('DELETE FROM comments WHERE comment_parent = @id');
 
         // Delete the comment
         await db.request().input('id', id).query('DELETE FROM comments WHERE id = @id');
