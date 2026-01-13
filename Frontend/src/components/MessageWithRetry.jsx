@@ -285,7 +285,7 @@ const MessageBubble = ({
       {/* Mobile Long Press Menu - Full screen overlay */}
       {showMobileMenu && isMobile && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:hidden"
+          className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:hidden"
           onClick={() => setShowMobileMenu(false)}
         >
           <div
