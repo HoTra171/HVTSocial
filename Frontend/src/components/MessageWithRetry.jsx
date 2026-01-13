@@ -121,15 +121,25 @@ const MessageBubble = ({
         )}
 
         <div
-          className="relative max-w-[80%] group select-none"
+          className="relative max-w-[80%] group select-none flex flex-col"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchMove={handleTouchMove}
         >
-          {/* Icon bar (emoji + menu) - Desktop only */}
+          {/* Reply Header: "Bạn đã trả lời..." */}
+          {isReply && replyData && !isRecalled && (
+            <div className={`text-[11px] text-gray-500 mb-1 flex items-center gap-1 ${isMe ? "justify-end" : "justify-start"}`}>
+              <Reply size={12} className="scale-x-[-1]" /> {/* Mirror icon like FB */}
+              <span>
+                {isMe ? "Bạn" : partner?.name || "Người dùng"} đã trả lời {replyData.sender === (isMe ? "Bạn" : partner?.name) ? "chính mình" : replyData.sender}
+              </span>
+            </div>
+          )}
+
+          {/* Icon bar (emoji + menu) - Desktop only - Positioning relative to the Group */}
           {!isRecalled && !msg.failed && (
             <div
-              className={`max-sm:hidden msg-icon-bar absolute top-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200
+              className={`max-sm:hidden msg-icon-bar absolute top-6 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10
               ${isMe ? "left-[-110px]" : "right-[-110px]"}`}
             >
               <button
@@ -171,11 +181,11 @@ const MessageBubble = ({
             </div>
           )}
 
-          {/* Menu 3 chấm - Improved positioning */}
+          {/* Menu 3 chấm */}
           {openMenuId === msg.id && (
             <div
               ref={menuRef}
-              className={`msg-menu absolute top-0 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
+              className={`msg-menu absolute top-6 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
               ${isMe ? "left-[-160px]" : "right-[-160px]"}`}
             >
               {msg.message_type === "text" && (
@@ -203,7 +213,7 @@ const MessageBubble = ({
             </div>
           )}
 
-          {/* Menu reaction - Improved positioning and styling */}
+          {/* Menu reaction */}
           {reactMenuFor === msg.id && (
             <div
               ref={reactMenuRef}
@@ -225,6 +235,19 @@ const MessageBubble = ({
             </div>
           )}
 
+          {/* Reply Context Bubble (Visual Duplicate) */}
+          {isReply && replyData && !isRecalled && (
+            <div className={`mb-[2px] px-3 py-2 rounded-2xl text-xs bg-gray-100 text-gray-500 opacity-90 ${isMe ? "self-end" : "self-start"}`}>
+              <p className="truncate max-w-[200px]">
+                {replyData.type === "text"
+                  ? replyData.content
+                  : replyData.type === "image"
+                    ? "📷 Hình ảnh"
+                    : "🎤 Tin nhắn thoại"}
+              </p>
+            </div>
+          )}
+
           {/* Message bubble */}
           {isRecalled ? (
             <div className="italic text-gray-500 px-3 py-2 bg-white border border-gray-200 rounded-2xl text-sm">
@@ -235,18 +258,7 @@ const MessageBubble = ({
               className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
                 } ${msg.failed ? "opacity-60" : ""}`}
             >
-              {isReply && replyData && (
-                <div className={`mb-1 px-3 py-2 rounded-lg text-xs border-l-2 ${isMe ? "bg-white/20 border-white/60" : "bg-gray-100 border-blue-500"}`}>
-                  <p className={`font-semibold ${isMe ? "text-white" : "text-gray-600"}`}>{replyData.sender}</p>
-                  <p className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
-                    {replyData.type === "text"
-                      ? replyData.content
-                      : replyData.type === "image"
-                        ? "📷 Hình ảnh"
-                        : "🎤 Tin nhắn thoại"}
-                  </p>
-                </div>
-              )}
+              {/* Removed internal reply context */}
               <div>{msg.content}</div>
               <div className="flex items-center justify-end gap-2 mt-1">
                 {renderMessageStatus()}
@@ -263,6 +275,11 @@ const MessageBubble = ({
             </div>
           ) : msg.message_type === "image" ? (
             <div>
+              {/* Note: If image relies on isReply, we should also separate it. 
+                  But existing code handled image separately. For consistency, let's keep image as is but without internal reply logic 
+                  Wait, existing image rendering didn't show reply context inside? 
+                  Looking at previous code, image block didn't have reply logic inside. 
+                  So moving it out is actually better for Images too! */}
               <img
                 src={getFullImageUrl(msg.media_url)}
                 onClick={() => onImageClick(getFullImageUrl(msg.media_url))}
