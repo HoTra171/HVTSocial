@@ -147,6 +147,17 @@ BEGIN
         RAISE NOTICE 'Renamed requester_id/receiver_id to user_id/friend_id';
     END IF;
 END $$;`,
+      // 10. Add reply columns to messages
+      `DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'messages' AND column_name = 'reply_to_id') THEN
+        ALTER TABLE messages ADD COLUMN reply_to_id INTEGER REFERENCES messages(id) ON DELETE SET NULL;
+        ALTER TABLE messages ADD COLUMN reply_content TEXT;
+        ALTER TABLE messages ADD COLUMN reply_type VARCHAR(20);
+        ALTER TABLE messages ADD COLUMN reply_sender VARCHAR(100);
+        RAISE NOTICE 'Added reply columns to messages';
+    END IF;
+END $$;`,
     ];
 
     for (const stmt of statements) {

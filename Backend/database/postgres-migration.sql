@@ -164,6 +164,10 @@ CREATE TABLE IF NOT EXISTS messages (
     media_url TEXT,
     duration INTEGER,
     status VARCHAR(20) DEFAULT 'sent' CHECK (status IN ('sent', 'delivered', 'read')),
+    reply_to_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+    reply_content TEXT,
+    reply_type VARCHAR(20),
+    reply_sender VARCHAR(100),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
