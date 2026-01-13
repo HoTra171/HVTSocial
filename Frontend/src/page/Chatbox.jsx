@@ -1068,7 +1068,24 @@ const Chatbox = () => {
   };
 
   // Parse reply data
+  // Parse reply data
   const parseMessage = (msg) => {
+    // Case 1: Reply data is top-level (New Standard)
+    if (msg.reply_to_id) {
+      return {
+        ...msg,
+        isReply: true,
+        replyData: {
+          id: msg.reply_to_id,
+          content: msg.reply_content,
+          type: msg.reply_type,
+          sender: msg.reply_sender || "Người dùng"
+        },
+        actualContent: msg.content
+      };
+    }
+
+    // Case 2: JSON content (Legacy/Special types)
     // Không phải text thì khỏi parse JSON
     if (msg.message_type !== "text" || !msg.content) {
       return { ...msg, isReply: false, actualContent: msg.content || "" };
