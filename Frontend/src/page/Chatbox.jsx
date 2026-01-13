@@ -1563,7 +1563,6 @@ const Chatbox = () => {
                 const isStoryReply = !!storyMeta?.storyId;
 
                 const keepLegacy =
-                  parsed.isReply ||
                   msg.message_type === "shared_post" ||
                   isStoryReply;
 
@@ -1680,6 +1679,9 @@ const Chatbox = () => {
                         partner={partner}
                         onRetry={retryMessage}
                         onReact={sendReaction}
+                        onReply={(m) => setReplyingTo(m)}
+                        isReply={parsed.isReply}
+                        replyData={parsed.replyData}
                         onEdit={(m) => {
                           setEditingMessage(m);
                           setText(parseMessage(m).actualContent || "");

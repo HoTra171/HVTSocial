@@ -6,7 +6,8 @@ import {
   AlertCircle,
   RefreshCw,
   Smile,
-  MoreVertical
+  MoreVertical,
+  Reply
 } from "lucide-react";
 import { getFullImageUrl, handleImageError } from "../utils/imageHelper.js";
 
@@ -18,6 +19,9 @@ const MessageBubble = ({
   onReact,
   onEdit,
   onRecall,
+  onReply,
+  isReply,
+  replyData,
   onImageClick,
   openMenuId,
   setOpenMenuId,
@@ -89,7 +93,6 @@ const MessageBubble = ({
       );
     }
 
-
     if (msg.status === "read") {
       return <CheckCheck size={14} className="text-blue-500" />;
     } else if (msg.status === "delivered") {
@@ -127,8 +130,19 @@ const MessageBubble = ({
           {!isRecalled && !msg.failed && (
             <div
               className={`max-sm:hidden msg-icon-bar absolute top-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200
-              ${isMe ? "left-[-80px]" : "right-[-80px]"}`}
+              ${isMe ? "left-[-110px]" : "right-[-110px]"}`}
             >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReply && onReply(msg);
+                }}
+                className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                title="Trả lời"
+              >
+                <Reply size={18} />
+              </button>
+
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -221,6 +235,18 @@ const MessageBubble = ({
               className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
                 } ${msg.failed ? "opacity-60" : ""}`}
             >
+              {isReply && replyData && (
+                <div className={`mb-1 px-3 py-2 rounded-lg text-xs border-l-2 ${isMe ? "bg-white/20 border-white/60" : "bg-gray-100 border-blue-500"}`}>
+                  <p className={`font-semibold ${isMe ? "text-white" : "text-gray-600"}`}>{replyData.sender}</p>
+                  <p className={`truncate ${isMe ? "text-white/80" : "text-gray-500"}`}>
+                    {replyData.type === "text"
+                      ? replyData.content
+                      : replyData.type === "image"
+                        ? "📷 Hình ảnh"
+                        : "🎤 Tin nhắn thoại"}
+                  </p>
+                </div>
+              )}
               <div>{msg.content}</div>
               <div className="flex items-center justify-end gap-2 mt-1">
                 {renderMessageStatus()}
@@ -317,6 +343,17 @@ const MessageBubble = ({
 
             {/* Action buttons */}
             <div className="space-y-2">
+              <button
+                className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
+                onClick={() => {
+                  onReply && onReply(msg);
+                  setShowMobileMenu(false);
+                }}
+              >
+                <span className="text-xl">↩️</span>
+                <span>Trả lời</span>
+              </button>
+
               {isMe && msg.message_type === "text" && (
                 <button
                   className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
