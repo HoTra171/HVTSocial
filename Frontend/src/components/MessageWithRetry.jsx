@@ -210,8 +210,8 @@ const MessageBubble = ({
 
           {/* Message bubble */}
           {msg.recalled ? (
-            <div className="italic opacity-60 px-3 py-2 bg-gray-200 rounded-2xl text-sm">
-              Tin nhắn đã thu hồi
+            <div className="italic text-gray-500 px-3 py-2 bg-white border border-gray-200 rounded-2xl text-sm">
+              Bạn đã xóa một tin nhắn
             </div>
           ) : msg.message_type === "text" ? (
             <div
