@@ -26,45 +26,33 @@ const MessageBubble = ({
   openMenuId,
   setOpenMenuId,
   reactMenuFor,
-  setReactMenuFor
+  setReactMenuFor,
+  onReplyClick,
+  id // Receive id prop
 }) => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const longPressTimer = useRef(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const menuRef = useRef(null);
   const reactMenuRef = useRef(null);
-
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpenMenuId(null);
-      }
-      if (reactMenuRef.current && !reactMenuRef.current.contains(event.target)) {
-        setReactMenuFor(null);
-      }
-    };
+  const touchStartRef = useRef({ x: 0, y: 0 });
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [setOpenMenuId, setReactMenuFor]);
+  const isRecalled = msg.recalled;
 
   const handleTouchStart = (e) => {
-    if (!isMobile || isRecalled || msg.failed) return;
-
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY
+    };
     longPressTimer.current = setTimeout(() => {
-      setShowMobileMenu(true);
-      // Haptic feedback on supported devices
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500); // 500ms long press
+      if (isMobile) setShowMobileMenu(true);
+    }, 500);
   };
 
   const handleTouchEnd = () => {
@@ -73,341 +61,337 @@ const MessageBubble = ({
     }
   };
 
-  const handleTouchMove = () => {
+  const handleTouchMove = (e) => {
     if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
+      const moveX = e.touches[0].clientX;
+      const moveY = e.touches[0].clientY;
+      const diffX = Math.abs(moveX - touchStartRef.current.x);
+      const diffY = Math.abs(moveY - touchStartRef.current.y);
+
+      // Only cancel if moved significantly (> 10px) (scrolling)
+      if (diffX > 10 || diffY > 10) {
+        clearTimeout(longPressTimer.current);
+      }
     }
   };
-  // Render status icon cho tin nhắn của mình
-  const isRecalled = msg.recalled || msg.message_type === "recalled";
+
+  const handleContextMenu = (e) => {
+    if (isMobile) {
+      e.preventDefault();
+      setShowMobileMenu(true);
+    }
+  };
 
   const renderMessageStatus = () => {
     if (!isMe) return null;
-
-    if (msg.failed) {
-      return (
-        <div className="flex items-center gap-1 text-red-500">
-          <AlertCircle size={14} />
-          <span className="text-xs">Gửi thất bại</span>
-        </div>
-      );
-    }
-
-    if (msg.status === "read") {
-      return <CheckCheck size={14} className="text-blue-500" />;
-    } else if (msg.status === "delivered") {
-      return <CheckCheck size={14} className="text-gray-400" />;
-    } else {
-      return <Check size={14} className="text-gray-400" />;
-    }
+    if (msg.failed) return <AlertCircle size={14} className="text-red-500" />;
+    if (msg.status === 'read' || msg.read) return <CheckCheck size={14} className="text-blue-500" />;
+    return <CheckCheck size={14} className="text-gray-300" />;
   };
 
   return (
     <>
       <div
-        className={`flex w-full mb-1 ${isMe ? "justify-end" : "justify-start"
-          }`}
+        id={id} // Apply id to root div
+        className={`group relative flex w-full mb-2 px-2 ${isMe ? "justify-end" : "justify-start"}`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
+        onContextMenu={handleContextMenu}
       >
-        {/* Avatar người gửi (không phải mình) */}
-        {!isMe && !isRecalled && (
-          <img
-            src={
-              partner?.avatar ||
-              `/default.jpg`
-            }
-
-            className="w-8 h-8 rounded-full mr-2 self-end"
-          />
-        )}
-
-        <div
-          className="relative max-w-[80%] group select-none flex flex-col"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchMove={handleTouchMove}
-        >
-          {/* Reply Header: "Bạn đã trả lời..." */}
-          {isReply && replyData && !isRecalled && (
-            <div className={`text-[11px] text-gray-500 mb-1 flex items-center gap-1 ${isMe ? "justify-end" : "justify-start"}`}>
-              <Reply size={12} className="scale-x-[-1]" /> {/* Mirror icon like FB */}
-              <span>
-                {isMe ? "Bạn" : partner?.name || "Người dùng"} đã trả lời {replyData.sender === (isMe ? "Bạn" : partner?.name) ? "chính mình" : replyData.sender}
-              </span>
-            </div>
-          )}
-
-          {/* Icon bar (emoji + menu) - Desktop only - Positioning relative to the Group */}
-          {!isRecalled && !msg.failed && (
-            <div
-              className={`max-sm:hidden msg-icon-bar absolute top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10
+        <div className={`relative max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+          {/* Icon bar (emoji + menu) - Desktop only (>= 1024px) - Positioning relative to the Group */}
+          {
+            !isRecalled && !msg.failed && (
+              <div
+                className={`hidden lg:flex msg-icon-bar absolute top-1/2 -translate-y-1/2 items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10
               ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onReply && onReply(msg);
-                }}
-                className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
-                title="Trả lời"
               >
-                <Reply size={18} />
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReactMenuFor(reactMenuFor === msg.id ? null : msg.id);
-                  setOpenMenuId(null);
-                }}
-                className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-yellow-500 hover:bg-yellow-50 transition-all"
-                title="Thả cảm xúc"
-              >
-                <Smile size={18} />
-              </button>
-
-              {isMe && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setOpenMenuId(openMenuId === msg.id ? null : msg.id);
-                    setReactMenuFor(null);
+                    onReply && onReply(msg);
                   }}
-                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-                  title="Tùy chọn"
+                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                  title="Trả lời"
                 >
-                  <MoreVertical size={18} />
+                  <Reply size={18} />
                 </button>
-              )}
-            </div>
-          )}
 
-          {/* Menu 3 chấm */}
-          {openMenuId === msg.id && (
-            <div
-              ref={menuRef}
-              className={`msg-menu absolute top-0 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
-              ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
-            >
-              {msg.message_type === "text" && (
                 <button
-                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-2 transition-colors"
-                  onClick={() => {
-                    onEdit(msg);
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReactMenuFor(reactMenuFor === msg.id ? null : msg.id);
                     setOpenMenuId(null);
                   }}
+                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-yellow-500 hover:bg-yellow-50 transition-all"
+                  title="Thả cảm xúc"
                 >
-                  <span className="text-lg">✏️</span>
-                  <span>Chỉnh sửa</span>
+                  <Smile size={18} />
                 </button>
-              )}
-              <button
-                onClick={() => {
-                  onRecall(msg.id);
-                  setOpenMenuId(null);
-                }}
-                className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-500 text-sm flex items-center gap-2 transition-colors"
-              >
-                <span className="text-lg">🗑️</span>
-                <span>Thu hồi</span>
-              </button>
-            </div>
-          )}
 
-          {/* Menu reaction */}
-          {reactMenuFor === msg.id && (
-            <div
-              ref={reactMenuRef}
-              className={`msg-react-menu absolute bottom-full mb-2 bg-white shadow-2xl rounded-full flex gap-1 px-3 py-2.5 border-2 border-gray-100 z-[60]
-              ${isMe ? "right-0" : "left-0"}`}
-            >
-              {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
-                <button
-                  key={emo}
-                  className="text-2xl cursor-pointer hover:scale-125 active:scale-110 transition-transform p-1 rounded-full hover:bg-gray-100"
-                  onClick={() => {
-                    onReact(msg.id, emo);
-                    setReactMenuFor(null);
-                  }}
-                >
-                  {emo}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Reply Context Bubble (Visual Duplicate) */}
-          {isReply && replyData && !isRecalled && (
-            <div className={`mb-[2px] px-3 py-2 rounded-2xl text-xs bg-gray-100 text-gray-500 opacity-90 ${isMe ? "self-end" : "self-start"}`}>
-              <p className="truncate max-w-[200px]">
-                {replyData.type === "text"
-                  ? replyData.content
-                  : replyData.type === "image"
-                    ? "📷 Hình ảnh"
-                    : "🎤 Tin nhắn thoại"}
-              </p>
-            </div>
-          )}
-
-          {/* Message bubble */}
-          {isRecalled ? (
-            <div className="italic text-gray-500 px-3 py-2 bg-white border border-gray-200 rounded-2xl text-sm">
-              Bạn đã xóa một tin nhắn
-            </div>
-          ) : msg.message_type === "text" ? (
-            <div
-              className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
-                } ${msg.failed ? "opacity-60" : ""}`}
-            >
-              {/* Removed internal reply context */}
-              <div>{msg.content}</div>
-              <div className="flex items-center justify-end gap-2 mt-1">
-                {renderMessageStatus()}
-                {msg.failed && (
+                {isMe && (
                   <button
-                    onClick={() => onRetry(msg)}
-                    className="text-xs underline hover:opacity-80 flex items-center gap-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId(openMenuId === msg.id ? null : msg.id);
+                      setReactMenuFor(null);
+                    }}
+                    className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                    title="Tùy chọn"
                   >
-                    <RefreshCw size={12} />
-                    Gửi lại
+                    <MoreVertical size={18} />
                   </button>
                 )}
               </div>
-            </div>
-          ) : msg.message_type === "image" ? (
-            <div>
-              {/* Note: If image relies on isReply, we should also separate it. 
+            )
+          }
+
+          {/* Menu 3 chấm */}
+          {
+            openMenuId === msg.id && (
+              <div
+                ref={menuRef}
+                className={`msg-menu absolute top-0 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
+              ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
+              >
+                {msg.message_type === "text" && (
+                  <button
+                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-2 transition-colors"
+                    onClick={() => {
+                      onEdit(msg);
+                      setOpenMenuId(null);
+                    }}
+                  >
+                    <span className="text-lg">✏️</span>
+                    <span>Chỉnh sửa</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    onRecall(msg.id);
+                    setOpenMenuId(null);
+                  }}
+                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-500 text-sm flex items-center gap-2 transition-colors"
+                >
+                  <span className="text-lg">🗑️</span>
+                  <span>Thu hồi</span>
+                </button>
+              </div>
+            )
+          }
+
+          {/* Menu reaction */}
+          {
+            reactMenuFor === msg.id && (
+              <div
+                ref={reactMenuRef}
+                className={`msg-react-menu absolute top-1/2 -translate-y-1/2 bg-white shadow-2xl rounded-full flex gap-1 px-3 py-2.5 border-2 border-gray-100 z-[60]
+              ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
+              >
+                {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
+                  <button
+                    key={emo}
+                    className="text-2xl cursor-pointer hover:scale-125 active:scale-110 transition-transform p-1 rounded-full hover:bg-gray-100"
+                    onClick={() => {
+                      onReact(msg.id, emo);
+                      setReactMenuFor(null);
+                    }}
+                  >
+                    {emo}
+                  </button>
+                ))}
+              </div>
+            )
+          }
+
+          {/* Reply Context Bubble (Visual Duplicate) */}
+          {
+            isReply && replyData && !isRecalled && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onReplyClick && replyData.id) onReplyClick(replyData.id);
+                }}
+                className={`mb-[2px] px-3 py-2 rounded-2xl text-xs bg-gray-100 text-gray-500 opacity-90 cursor-pointer hover:bg-gray-200 transition-colors ${isMe ? "self-end" : "self-start"}`}
+              >
+                <p className="truncate max-w-[200px]">
+                  {replyData.type === "text"
+                    ? replyData.content
+                    : replyData.type === "image"
+                      ? "📷 Hình ảnh"
+                      : "🎤 Tin nhắn thoại"}
+                </p>
+              </div>
+            )
+          }
+
+          {/* Message bubble */}
+          {
+            isRecalled ? (
+              <div className="italic text-gray-500 px-3 py-2 bg-white border border-gray-200 rounded-2xl text-sm">
+                Bạn đã xóa một tin nhắn
+              </div>
+            ) : msg.message_type === "text" ? (
+              <div
+                className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
+                  } ${msg.failed ? "opacity-60" : ""}`}
+              >
+                {/* Removed internal reply context */}
+                <div>{msg.content}</div>
+                <div className="flex items-center justify-end gap-2 mt-1">
+                  {renderMessageStatus()}
+                  {msg.failed && (
+                    <button
+                      onClick={() => onRetry(msg)}
+                      className="text-xs underline hover:opacity-80 flex items-center gap-1"
+                    >
+                      <RefreshCw size={12} />
+                      Gửi lại
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : msg.message_type === "image" ? (
+              <div>
+                {/* Note: If image relies on isReply, we should also separate it. 
                   But existing code handled image separately. For consistency, let's keep image as is but without internal reply logic 
                   Wait, existing image rendering didn't show reply context inside? 
                   Looking at previous code, image block didn't have reply logic inside. 
                   So moving it out is actually better for Images too! */}
-              <img
-                src={getFullImageUrl(msg.media_url)}
-                onClick={() => onImageClick(getFullImageUrl(msg.media_url))}
-                className={`rounded-xl max-w-[260px] max-h-[360px] object-cover shadow cursor-pointer ${msg.failed ? "opacity-60" : ""
-                  }`}
-                alt=""
-                onError={(e) => handleImageError(e, msg.media_url)}
-              />
-              <div className="flex items-center justify-end gap-2 mt-1">
+                <img
+                  src={getFullImageUrl(msg.media_url)}
+                  onClick={() => onImageClick(getFullImageUrl(msg.media_url))}
+                  className={`rounded-xl max-w-[260px] max-h-[360px] object-cover shadow cursor-pointer ${msg.failed ? "opacity-60" : ""
+                    }`}
+                  alt=""
+                  onError={(e) => handleImageError(e, msg.media_url)}
+                />
+                <div className="flex items-center justify-end gap-2 mt-1">
+                  {renderMessageStatus()}
+                  {msg.failed && (
+                    <button
+                      onClick={() => onRetry(msg)}
+                      className="text-xs text-red-500 underline hover:opacity-80 flex items-center gap-1"
+                    >
+                      <RefreshCw size={12} />
+                      Gửi lại
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : msg.message_type === "voice" ? (
+              <div className={`px-3 py-2 rounded-2xl shadow bg-white flex items-center gap-2 ${msg.failed ? "opacity-60" : ""
+                }`}>
+                <audio controls src={msg.media_url} className="h-8" />
                 {renderMessageStatus()}
                 {msg.failed && (
                   <button
                     onClick={() => onRetry(msg)}
-                    className="text-xs text-red-500 underline hover:opacity-80 flex items-center gap-1"
+                    className="text-xs text-red-500 underline hover:opacity-80"
                   >
                     <RefreshCw size={12} />
-                    Gửi lại
                   </button>
                 )}
               </div>
-            </div>
-          ) : msg.message_type === "voice" ? (
-            <div className={`px-3 py-2 rounded-2xl shadow bg-white flex items-center gap-2 ${msg.failed ? "opacity-60" : ""
-              }`}>
-              <audio controls src={msg.media_url} className="h-8" />
-              {renderMessageStatus()}
-              {msg.failed && (
-                <button
-                  onClick={() => onRetry(msg)}
-                  className="text-xs text-red-500 underline hover:opacity-80"
-                >
-                  <RefreshCw size={12} />
-                </button>
-              )}
-            </div>
-          ) : null}
+            ) : null
+          }
 
           {/* Reaction */}
-          {msg.reaction && !isRecalled && (
-            <div
-              className={`mt-1 inline-block px-2 bg-white shadow rounded-full text-lg ${isMe ? "float-right mr-2" : "float-left ml-2"
-                }`}
-            >
-              {msg.reaction}
-            </div>
-          )}
-        </div>
-      </div>
+          {
+            msg.reaction && !isRecalled && (
+              <div
+                className={`mt-1 inline-block px-2 bg-white shadow rounded-full text-lg ${isMe ? "float-right mr-2" : "float-left ml-2"
+                  }`}
+              >
+                {msg.reaction}
+              </div>
+            )
+          }
+        </div >
+      </div >
 
       {/* Mobile Long Press Menu - Portal to document.body */}
-      {showMobileMenu && isMobile && createPortal(
-        <div
-          className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:hidden"
-          onClick={() => setShowMobileMenu(false)}
-        >
+      {
+        showMobileMenu && isMobile && createPortal(
           <div
-            className="bg-white rounded-t-3xl w-full p-4 pb-8 mb-[env(safe-area-inset-bottom)] animate-slide-up"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/50 z-[9999] flex items-end sm:hidden"
+            onClick={() => setShowMobileMenu(false)}
           >
-            {/* Drag handle */}
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
+            <div
+              className="bg-white rounded-t-3xl w-full p-4 pb-8 mb-[env(safe-area-inset-bottom)] animate-slide-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drag handle */}
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
 
-            {/* Reaction emojis */}
-            <div className="flex justify-center gap-4 mb-6 pb-4 border-b">
-              {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
-                <button
-                  key={emo}
-                  className="text-4xl hover:scale-125 active:scale-110 transition"
-                  onClick={() => {
-                    onReact(msg.id, emo);
-                    setShowMobileMenu(false);
-                  }}
-                >
-                  {emo}
-                </button>
-              ))}
-            </div>
+              {/* Reaction emojis */}
+              <div className="flex justify-center gap-4 mb-6 pb-4 border-b">
+                {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
+                  <button
+                    key={emo}
+                    className="text-4xl hover:scale-125 active:scale-110 transition"
+                    onClick={() => {
+                      onReact(msg.id, emo);
+                      setShowMobileMenu(false);
+                    }}
+                  >
+                    {emo}
+                  </button>
+                ))}
+              </div>
 
-            {/* Action buttons */}
-            <div className="space-y-2">
-              <button
-                className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
-                onClick={() => {
-                  onReply && onReply(msg);
-                  setShowMobileMenu(false);
-                }}
-              >
-                <span className="text-xl">↩️</span>
-                <span>Trả lời</span>
-              </button>
-
-              {isMe && msg.message_type === "text" && (
+              {/* Action buttons */}
+              <div className="space-y-2">
                 <button
                   className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
                   onClick={() => {
-                    onEdit(msg);
+                    onReply && onReply(msg);
                     setShowMobileMenu(false);
                   }}
                 >
-                  <span className="text-xl">✏️</span>
-                  <span>Chỉnh sửa tin nhắn</span>
+                  <span className="text-xl">↩️</span>
+                  <span>Trả lời</span>
                 </button>
-              )}
 
-              {isMe && (
+                {isMe && msg.message_type === "text" && (
+                  <button
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
+                    onClick={() => {
+                      onEdit(msg);
+                      setShowMobileMenu(false);
+                    }}
+                  >
+                    <span className="text-xl">✏️</span>
+                    <span>Chỉnh sửa tin nhắn</span>
+                  </button>
+                )}
+
+                {isMe && (
+                  <button
+                    onClick={() => {
+                      onRecall(msg.id);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base text-red-500"
+                  >
+                    <span className="text-xl">🗑️</span>
+                    <span>Thu hồi tin nhắn</span>
+                  </button>
+                )}
+
                 <button
-                  onClick={() => {
-                    onRecall(msg.id);
-                    setShowMobileMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base text-red-500"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="w-full text-center px-4 py-3 bg-gray-100 rounded-lg font-medium text-base mt-4"
                 >
-                  <span className="text-xl">🗑️</span>
-                  <span>Thu hồi tin nhắn</span>
+                  Hủy
                 </button>
-              )}
-
-              <button
-                onClick={() => setShowMobileMenu(false)}
-                className="w-full text-center px-4 py-3 bg-gray-100 rounded-lg font-medium text-base mt-4"
-              >
-                Hủy
-              </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )
+      }
     </>
   );
 };

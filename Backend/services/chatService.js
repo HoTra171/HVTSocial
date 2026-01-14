@@ -14,10 +14,10 @@ export const ChatService = {
   getUserChats: (userId) =>
     usePostgreSQL ? ChatModelPG.getUserChats(userId) : ChatModel.getUserChats(pool, userId),
 
-  getMessagesByChat: (chatId) =>
+  getMessagesByChat: (chatId, limit, beforeId) =>
     usePostgreSQL
-      ? ChatModelPG.getMessagesByChat(chatId)
-      : ChatModel.getMessagesByChat(pool, chatId),
+      ? ChatModelPG.getMessagesByChat(chatId, limit, beforeId)
+      : ChatModel.getMessagesByChat(pool, chatId, limit, beforeId),
 
   getUnreadCount: async (userId) =>
     usePostgreSQL

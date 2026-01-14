@@ -28,6 +28,11 @@ export const getMessages = async (req, res) => {
   try {
     const authId = getAuthUserId(req);
     const chatId = Number(req.params.chatId);
+
+    // Parse query params
+    const limit = req.query.limit ? Number(req.query.limit) : 50;
+    const beforeId = req.query.beforeId ? Number(req.query.beforeId) : null;
+
     if (!authId) return forbid(res);
     if (!chatId) return badRequest(res, 'invalid_chatId');
 
@@ -35,7 +40,7 @@ export const getMessages = async (req, res) => {
     const allowed = await ChatService.checkChatAccess(authId, chatId);
     if (!allowed) return forbid(res);
 
-    const result = await ChatService.getMessagesByChat(chatId);
+    const result = await ChatService.getMessagesByChat(chatId, limit, beforeId);
     return res.json(result.recordset);
   } catch (e) {
     console.error('getMessages error:', e);

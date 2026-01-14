@@ -130,24 +130,53 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
     return result.recordset[0].unread_count;
   },
 
-  async getMessagesByChat(pool, chatId) {
+  async getMessagesByChat(pool, chatId, limit = 50, beforeId = null) {
     if (isPostgres) {
-      const result = await pool.query(`
+      let query = `
         SELECT id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at,
                reply_to_id, reply_content, reply_type, reply_sender
-        FROM messages WHERE chat_id = $1 ORDER BY created_at ASC
-      `, [chatId]);
-      return { recordset: result.rows };
+        FROM messages 
+        WHERE chat_id = $1
+      `;
+      const params = [chatId];
+
+      if (beforeId) {
+        query += ` AND id < $2`;
+        params.push(beforeId);
+      }
+
+      query += ` ORDER BY created_at DESC LIMIT $${params.length + 1}`;
+      params.push(limit);
+
+      const result = await pool.query(query, params);
+      // Reverse to return chronological order (oldest -> newest) for frontend
+      return { recordset: result.rows.reverse() };
     }
 
     if (!pool.connected) await pool.connect();
     const req = pool.request();
     req.input('chatId', sql.Int, chatId);
-    return req.query(`
-      SELECT id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at,
+    req.input('limit', sql.Int, limit);
+
+    let sqlQuery = `
+      SELECT TOP (@limit) id, chat_id, sender_id, content, status, message_type, media_url, duration, created_at,
              reply_to_id, reply_content, reply_type, reply_sender
-      FROM messages WHERE chat_id = @chatId ORDER BY created_at ASC
-    `);
+      FROM messages 
+      WHERE chat_id = @chatId
+    `;
+
+    if (beforeId) {
+      req.input('beforeId', sql.Int, beforeId);
+      sqlQuery += ` AND id < @beforeId`;
+    }
+
+    sqlQuery += ` ORDER BY created_at DESC`;
+
+    const result = await req.query(sqlQuery);
+    // Reverse logic handled in service or controller? Standard is DB returns selection, app reverses.
+    // SQL Server 'ORDER BY created_at DESC' gets latest messages first.
+    // We need to reverse them back to ASC for display.
+    return { recordset: result.recordset.reverse() };
   },
 
   async sendMessage(pool, payload) {
