@@ -7,6 +7,8 @@ import SharedPostCard from '../components/SharedPostCard.jsx';
 import RecentMessages from '../components/RecentMessages.jsx';
 import axios from "axios";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { Link } from 'react-router-dom';
+import { PenSquare, Compass } from 'lucide-react';
 
 const Feed = () => {
   const [feeds, setFeeds] = useState([]);
@@ -179,6 +181,34 @@ const Feed = () => {
             <p className="text-center text-xs text-slate-400 mt-4">
               Bạn đã xem hết bài viết.
             </p>
+          )}
+
+          {!initialLoading && feeds.length === 0 && (
+            <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 text-center my-6">
+              <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4 shadow-inner">
+                <PenSquare size={28} />
+              </div>
+              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
+                Chưa có bài viết nào trên bảng tin
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
+                Hãy là người đầu tiên chia sẻ khoảnh khắc thú vị hoặc kết nối thêm bạn bè để bảng tin luôn rộn ràng!
+              </p>
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/create-post"
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-1.5"
+                >
+                  <PenSquare size={14} /> Tạo bài viết ngay
+                </Link>
+                <Link
+                  to="/discover"
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-all hover:scale-105 flex items-center gap-1.5"
+                >
+                  <Compass size={14} /> Khám phá bạn bè
+                </Link>
+              </div>
+            </div>
           )}
         </div>
       </div>

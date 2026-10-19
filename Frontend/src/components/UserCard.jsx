@@ -61,7 +61,10 @@ const UserCard = ({ user, currentUser }) => {
         <img
           src={avatar}
           alt={user.full_name}
-          className="rounded-full w-20 h-20 shadow-md mx-auto
+          onError={(e) => {
+            e.currentTarget.src = '/default.jpg';
+          }}
+          className="rounded-full w-20 h-20 shadow-md mx-auto object-cover
           hover:scale-105 transition-transform"
         />
 

@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 dotenv.config();
 
 /**
@@ -82,9 +82,26 @@ if (usePostgreSQL) {
   pool = poolConnection;
 }
 
-// Export pool (works for both PostgreSQL and SQL Server)
-export { pool };
+// Ensure PostgreSQL query returns compatible recordset and rowsAffected
+if (usePostgreSQL && pool && pool.query) {
+  const origQuery = pool.query.bind(pool);
+  pool.query = async function (text, params) {
+    const res = await origQuery(text, params);
+    if (res && res.rows && !res.recordset) {
+      res.recordset = res.rows;
+      res.rowsAffected = [res.rowCount || 0];
+      res.recordsets = [res.rows];
+    }
+    return res;
+  };
+}
+
+// Export unified pool and db instances
+const db = pool;
+export { pool, db };
 export const getPool = () => pool;
+export const query = (...args) => pool.query(...args);
+export default pool;
 
 // Add unified request() method for both databases
 if (usePostgreSQL) {

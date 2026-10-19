@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { db } from '../config/db-wrapper.js';
+import { db } from '../config/db.js';
 import { sendOtpEmail } from '../services/mailService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import crypto from 'crypto';

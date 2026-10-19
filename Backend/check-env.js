@@ -92,17 +92,16 @@ const requiredVars = {
     sensitive: true,
   },
 
-  // Redis
+  // Redis (Optional - fallback to In-Memory Cache/Queue if omitted)
   REDIS_HOST: {
     value: process.env.REDIS_HOST,
-    required: !process.env.REDIS_URL,
-    default: 'localhost',
-    description: 'Redis host (local)',
+    required: false,
+    description: 'Redis host (local, optional)',
   },
   REDIS_URL: {
     value: process.env.REDIS_URL,
-    required: !process.env.REDIS_HOST,
-    description: 'Redis URL (cloud)',
+    required: false,
+    description: 'Redis URL (Upstash/cloud, optional)',
     sensitive: true,
   },
 

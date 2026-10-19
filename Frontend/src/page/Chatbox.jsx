@@ -33,6 +33,7 @@ import { saveCallHistory, getCallHistoryBetweenUsers } from '../api/callHistory'
 import CallHistoryItem from "../components/CallHistoryItem.jsx";
 import { Virtuoso } from "react-virtuoso";
 import { useChatMessages } from "../hooks/useChatMessages";
+import { ChatHeader } from "../components/chat/ChatHeader";
 
 const PAGE = 15;
 
@@ -1492,64 +1493,15 @@ const Chatbox = () => {
         {/* CHAT CONTENT */}
         <div className="flex-1 flex flex-col h-full overflow-hidden">
 
-          {/* HEADER - Sticky Top */}
-          <div className="shrink-0 flex items-center gap-3 p-3 bg-white shadow z-20">
-            {/* Nút quay lại - luôn hiện để thoát fullscreen chat */}
-            <button
-              onClick={() => navigate('/messages')}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
-              title="Quay lại"
-            >
-              <ArrowLeft size={20} />
-            </button>
-
-            <div className="relative">
-              <img
-                src={
-                  partner.is_group_chat
-                    ? "/group.png"
-                    : partner.avatar || "/default.jpg"
-                }
-                className="w-10 h-10 rounded-full"
-                alt=""
-              />
-              {!partner.is_group_chat && (
-                <div
-                  className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isPartnerOnline ? "bg-green-500" : "bg-gray-400"
-                    }`}
-                />
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <p className="font-medium truncate" title={partner.name}>{partner.name}</p>
-              {!partner.is_group_chat && (
-                <p className="text-xs text-gray-500 truncate" title={isPartnerOnline ? "Đang hoạt động" : `@${partner.username}`}>
-                  {isPartnerOnline ? "Đang hoạt động" : `@${partner.username}`}
-                </p>
-              )}
-            </div>
-
-            <div className="flex-1" />
-
-            <button
-              onClick={() => startCall(false)}
-              disabled={!partner?.target_id || !socketRef.current?.connected}
-              className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-              title={!partner?.target_id ? 'Đang tải thông tin...' : !socketRef.current?.connected ? 'Mất kết nối' : 'Gọi thoại'}
-            >
-              <Phone size={18} />
-            </button>
-
-            <button
-              onClick={() => startCall(true)}
-              disabled={!partner?.target_id || !socketRef.current?.connected}
-              className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-              title={!partner?.target_id ? 'Đang tải thông tin...' : !socketRef.current?.connected ? 'Mất kết nối' : 'Gọi video'}
-            >
-              <Video size={18} />
-            </button>
-          </div>
+          {/* HEADER - Modular ChatHeader */}
+          <ChatHeader
+            partner={partner}
+            isPartnerOnline={isPartnerOnline}
+            isPartnerTyping={isPartnerTyping}
+            onStartVoiceCall={() => startCall(false)}
+            onStartVideoCall={() => startCall(true)}
+            onBack={() => navigate('/messages')}
+          />
 
           {/* BODY */}
           <Virtuoso
@@ -1569,6 +1521,7 @@ const Chatbox = () => {
                     key={`call-${item.id}`}
                     callHistory={item}
                     currentUserId={myId}
+                    onCallBack={() => makeCall(item.call_type === 'video')}
                   />
                 );
               }
@@ -1892,6 +1845,7 @@ const Chatbox = () => {
             toggleMic={toggleMicrophone}
             toggleCam={toggleCamera}
             isVideoCall={isVideoCall}
+            partner={partner}
           />
         )
       }

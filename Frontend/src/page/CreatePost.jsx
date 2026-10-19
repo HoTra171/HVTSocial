@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
-import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { postApi, uploadApi } from '../api';
+import { SERVER_ORIGIN } from '../constants/api';
 
 const CreatePost = ({ onPostCreated }) => {
   const [content, setContent] = useState('');
@@ -35,38 +35,19 @@ const CreatePost = ({ onPostCreated }) => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Bạn chưa đăng nhập');
 
-
       // Upload ảnh trước, lấy URL
       let mediaUrls = [];
       if (images.length > 0) {
-        const formData = new FormData();
-        images.forEach((img) => formData.append("files", img)); 
-
-        const uploadRes = await axios.post(
-          `${API_URL}/upload/multiple`, 
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        mediaUrls = uploadRes.data.urls || []; 
+        const uploadRes = await uploadApi.uploadMultiple(images);
+        mediaUrls = uploadRes.data.urls || [];
       }
 
-      // Tạo post với URLs (nhẹ hơn nhiều)
-      const res = await axios.post(
-        `${API_URL}/posts`,
-        {
-          content,
-          media: mediaUrls.join(';'), 
-          status, 
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      // Tạo post với URLs
+      const res = await postApi.create({
+        content,
+        media: mediaUrls.join(';'),
+        status,
+      });
 
       const newPost = res.data.post || res.data;
 

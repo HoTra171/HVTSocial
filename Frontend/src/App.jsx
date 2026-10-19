@@ -19,12 +19,13 @@ import ChangePassword from "./page/ChangePassword";
 import NotificationsPage from "./page/NotificationsPage";
 import PostDetail from "./page/PostDetail";
 import PrivacySettings from "./page/PrivacySettings";
+import SavedPosts from "./page/SavedPosts";
 import { useNavigate } from 'react-router-dom';
 import DebugEnv from "./debug-env";
 import AdminDashboard from "./page/Admin/AdminDashboard";
 
-// SOCKET
-import { socket, connectSocket, disconnectSocket } from "./socket";
+// CONTEXTS
+import { useAuth, useSocket } from "./contexts";
 
 // MODAL CUỘC GỌI ĐẾN
 import IncomingCallModal from "./components/IncomingCallModal";
@@ -35,7 +36,8 @@ import { unlockCallRingtone, playCallRingtone, stopCallRingtone, playCallEndTone
 
 function App() {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { currentUser } = useAuth();
+  const { socket } = useSocket();
 
   // TRẠNG THÁI CUỘC GỌI ĐẾN
   const [showIncomingCall, setShowIncomingCall] = useState(false);
@@ -71,44 +73,6 @@ function App() {
     };
   }, []);
 
-  // SETUP SOCKET KHI APP LOAD
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-
-    if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
-      try {
-        const userData = JSON.parse(storedUser);
-        setCurrentUser(userData);
-
-        // Connect socket và register user
-        connectSocket(userData.id);
-        console.log("Socket connected for user:", userData.id);
-      } catch (e) {
-        console.error("Parse user error:", e);
-      }
-    }
-
-    // Cleanup socket khi unmount
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
-
-  // Lắng nghe trạng thái kết nối socket
-  useEffect(() => {
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
-    });
-
-    return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-    };
-  }, []);
 
   // LẮNG NGHE CUỘC GỌI ĐẾN TOÀN APP
   useEffect(() => {
@@ -340,6 +304,10 @@ function App() {
           <Route
             path="/privacy-settings"
             element={<PrivacySettings socket={socket} currentUser={currentUser} />}
+          />
+          <Route
+            path="/saved"
+            element={<SavedPosts />}
           />
         </Route>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
-import { API_URL } from '../constants/api';
+import { authApi } from '../api';
 import { Eye, EyeOff } from 'lucide-react';
-
-const API_BASE_URL = `${API_URL}/auth`;
+import toast from 'react-hot-toast';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -78,35 +77,29 @@ const SignUp = () => {
     try {
       const { full_name, username, email, password, date_of_birth, gender } = form;
 
-      const response = await fetch(`${API_BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name,
-          username,
-          email,
-          password,
-          date_of_birth,
-          gender,
-        }),
+      const response = await authApi.register({
+        full_name,
+        username,
+        email,
+        password,
+        date_of_birth,
+        gender,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Đăng ký thất bại');
+      const resData = response.data;
+      if (!resData?.success && !resData?.data?.token) {
+        throw new Error(resData?.message || 'Đăng ký thất bại');
       }
 
       // Lưu token và thông tin user
-      localStorage.setItem('token', data.data.token);
-      localStorage.setItem('user', JSON.stringify(data.data.user));
+      const { token, user } = resData.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
 
-      // Thông báo thành công
-      console.log(' Đăng ký thành công:', data.data.user);
-      alert('Đăng ký thành công! Chào mừng bạn đến với HVTSocial 🎉');
+      toast.success('Đăng ký thành công! Chào mừng bạn đến với HVTSocial 🎉');
 
       // Chuyển đến trang feed
-      navigate('/');
+      navigate('/feed');
 
     } catch (err) {
       console.error(' Sign up error:', err);

@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { Search, Users, X, Clock, UserPlus, Sparkles } from 'lucide-react';
+import { Search, Users, X, Clock, UserPlus, Sparkles, FileText } from 'lucide-react';
 import UserCard from '../components/UserCard';
 import PostCard from '../components/PostCard';
 import Loading from '../components/Loading';
-import { API_URL } from '../constants/api';
+import { userApi, postApi } from '../api';
+import { useAuth } from '../contexts';
 
 const Discover = () => {
+  const { currentUser } = useAuth();
   const [input, setInput] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
   const [filterType, setFilterType] = useState('all'); // all, not-friends, friends
   const [searchType, setSearchType] = useState('user'); // user, post
   const [posts, setPosts] = useState([]);
@@ -21,17 +21,8 @@ const Discover = () => {
   const searchRef = useRef(null);
   const debounceTimer = useRef(null);
 
-  // Load current user and search history
+  // Load search history from localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Parse user error:', e);
-      }
-    }
-
     const storedHistory = localStorage.getItem('searchHistory');
     if (storedHistory) {
       try {
@@ -54,34 +45,21 @@ const Discover = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch users or posts
+  // Fetch users or posts using API layer
   const fetchUsers = async (keyword = '') => {
     try {
       setLoading(true);
       const trimmedKeyword = keyword.trim();
       setHasSearched(trimmedKeyword !== '');
 
-      const token = localStorage.getItem('token');
-
       if (searchType === 'user') {
-        const res = await axios.get(`${API_URL}/users/discover`, {
-          params: { search: trimmedKeyword, filterType },
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log('👥 User search results:', res.data);
+        const res = await userApi.discover({ search: trimmedKeyword, filterType });
         if (res.data?.success) setUsers(res.data.data || []);
         else setUsers([]);
       } else {
-        const res = await axios.get(`${API_URL}/posts/search`, {
-          params: { q: trimmedKeyword },
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        console.log('📝 Post search results:', res.data);
-
-        // Handle different possible response formats
+        const res = await postApi.search({ q: trimmedKeyword });
         if (res.data?.success) {
           const postsData = res.data.posts || res.data.data || [];
-          console.log('📊 Posts found:', postsData.length);
           setPosts(postsData);
         } else {
           setPosts([]);
@@ -89,7 +67,6 @@ const Discover = () => {
       }
     } catch (err) {
       console.error('Discover fetch error:', err);
-      console.error('Error response:', err.response?.data);
       if (searchType === 'user') setUsers([]);
       else setPosts([]);
     } finally {
@@ -100,11 +77,7 @@ const Discover = () => {
   // Fetch suggestions
   const fetchSuggestions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/users/suggestions`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await userApi.getSuggestions();
       if (res.data?.success) {
         setSuggestions(res.data.data || []);
       }

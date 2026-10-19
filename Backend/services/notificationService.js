@@ -1,4 +1,4 @@
-import { db } from '../config/db-wrapper.js';
+import { db } from '../config/db.js';
 
 export const NotificationService = {
   /**

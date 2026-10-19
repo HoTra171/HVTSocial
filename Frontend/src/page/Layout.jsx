@@ -1,63 +1,37 @@
-import React, { useState, useEffect } from 'react'
-import Sidebar from '../components/Sidebar.jsx'
-import RecentChats from '../components/RecentChats.jsx'
-import BottomNav from '../components/BottomNav.jsx'
-import MobileHeader from '../components/MobileHeader.jsx'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import Loading from '../components/Loading.jsx'
-import { ArrowLeft } from 'lucide-react'
-import axios from 'axios'
-import { API_URL } from '../constants/api'
+import React, { useState, useEffect } from 'react';
+import Sidebar from '../components/Sidebar.jsx';
+import RecentChats from '../components/RecentChats.jsx';
+import BottomNav from '../components/BottomNav.jsx';
+import MobileHeader from '../components/MobileHeader.jsx';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import Loading from '../components/Loading.jsx';
+import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const Layout = () => {
+  const { currentUser, loading: authLoading } = useAuth();
+  const currentUserId = currentUser?.id || null;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // LẤY USER ID (sau này đổi auth)
-  const [currentUserId, setCurrentUserId] = useState(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
-
-  //  Kiểm tra đang ở trang messages hay chatbox
-  const isChatPage = location.pathname.startsWith('/messages/')
+  // Kiểm tra đang ở trang messages hay chatbox
+  const isChatPage = location.pathname.startsWith('/messages/');
 
   // Kiểm tra đang ở trang story
-  const isStoryPage = location.pathname.startsWith('/story')
+  const isStoryPage = location.pathname.startsWith('/story');
 
   // Check mobile
-  const isMobile = window.innerWidth < 768
-
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      setAuthLoading(false)
-      setCurrentUserId(null)
-      return
-    }
-
-    axios
-      .get(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const id = res.data?.user?.id ?? res.data?.id
-        setCurrentUserId(id || null)
-      })
-      .catch((err) => {
-        console.error('GET /api/auth/me error:', err)
-        setCurrentUserId(null)
-      })
-      .finally(() => setAuthLoading(false))
-  }, [])
+  const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
     if (!authLoading && !currentUserId) {
-      navigate('/')
+      navigate('/');
     }
-  }, [authLoading, currentUserId, navigate])
+  }, [authLoading, currentUserId, navigate]);
 
-  if (authLoading) return <Loading />
-  if (!currentUserId) return <Loading />
+  if (authLoading) return <Loading />;
+  if (!currentUserId) return <Loading />;
 
   return (
     <div className="w-full min-h-screen flex bg-slate-50 overflow-hidden touch-pan-y">

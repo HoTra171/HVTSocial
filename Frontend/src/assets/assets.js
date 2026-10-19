@@ -3,7 +3,7 @@ import sample_cover from './sample_cover.jpg'
 import sample_profile from './sample_profile.jpg'
 import bgImage from './bgImage.png'
 import group_users from './group_users.png'
-import { Home, MessageCircle, Search, UserIcon, Users, Bell, Shield } from 'lucide-react'
+import { Home, MessageCircle, Search, UserIcon, Users, Bell, Shield, Bookmark } from 'lucide-react'
 import sponsored_img from './sponsored_img.png'
 
 export const assets = {
@@ -20,6 +20,7 @@ export const menuItemsData = [
     { to: '/messages', label: 'Tin nhắn', Icon: MessageCircle },
     { to: '/connections', label: 'Kết nối', Icon: Users },
     { to: '/discover', label: 'Khám phá', Icon: Search },
+    { to: '/saved', label: 'Đã lưu', Icon: Bookmark },
     { to: '/profile', label: 'Hồ sơ', Icon: UserIcon },
     {
         to: '/notifications',

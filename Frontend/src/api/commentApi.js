@@ -1,0 +1,36 @@
+import axiosInstance from '../utils/axios';
+
+export const commentApi = {
+  /**
+   * Lấy danh sách bình luận của bài viết
+   * @param {number|string} postId
+   * @param {Object} params { page, limit }
+   */
+  getByPostId: (postId, params = {}) =>
+    axiosInstance.get(`/comments/post/${postId}`, { params }),
+
+  /**
+   * Tạo bình luận mới cho bài viết
+   * @param {number|string} postId
+   * @param {Object} data { content, media_url, parent_id }
+   */
+  create: (postId, data) =>
+    axiosInstance.post(`/comments/post/${postId}`, data),
+
+  /**
+   * Cập nhật bình luận
+   * @param {number|string} commentId
+   * @param {Object} data { content }
+   */
+  update: (commentId, data) =>
+    axiosInstance.put(`/comments/${commentId}`, data),
+
+  /**
+   * Xóa bình luận
+   * @param {number|string} commentId
+   */
+  delete: (commentId) =>
+    axiosInstance.delete(`/comments/${commentId}`),
+};
+
+export default commentApi;

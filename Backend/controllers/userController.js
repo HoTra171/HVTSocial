@@ -1,4 +1,4 @@
-﻿import { pool } from '../config/db.js';
+import { pool } from '../config/db.js';
 import sql from 'mssql';
 import { UserService } from '../services/userService.js';
 import { v2 as cloudinary } from 'cloudinary';
@@ -356,7 +356,6 @@ export const suggestUsers = async (req, res) => {
         u.id, u.full_name, u.username, u.avatar, u.bio,
 
         CASE WHEN f1.status = 'accepted' OR f2.status = 'accepted' THEN 1 ELSE 0 END AS is_friend,
-        CASE WHEN fo.following_id IS NOT NULL THEN 1 ELSE 0 END AS is_following,
 
         (
           CASE

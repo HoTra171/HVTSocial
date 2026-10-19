@@ -4,26 +4,18 @@ import MenuItems from './MenuItems.jsx'
 import { Link } from 'react-router-dom'
 import { CirclePlus } from 'lucide-react'
 import { LogOut, ShieldAlert } from 'lucide-react'
-import { disconnectSocket } from '../socket'
 import toast from 'react-hot-toast'
-import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false, relative = false }) => {
-
     const navigate = useNavigate();
-    const [user] = useState(() => {
-        const storedUser = localStorage.getItem('user');
-        return storedUser ? JSON.parse(storedUser) : null;
-    });
+    const { currentUser: user, logout } = useAuth();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         try {
-            disconnectSocket();
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            await logout();
             toast.success('Đăng xuất thành công!');
             navigate('/');
-            setTimeout(() => window.location.reload(), 100);
         } catch (error) {
             console.error('Logout error:', error);
             toast.error('Đăng xuất thất bại');
@@ -79,13 +71,14 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false
             <div className={`w-full border-t border-gray-200 p-4 px-7 flex items-center justify-between md:flex-col md:gap-3 md:px-2 ${!collapsed ? 'xl:flex-row xl:gap-0 xl:px-7' : ''}`}>
                 <div className={`flex items-center gap-2 cursor-pointer md:flex-col ${!collapsed ? 'xl:flex-row' : ''}`}>
                     <img
-                        src={user.avatar || user.profile_picture || `/default.jpg`}
-                        alt={user.full_name}
-                        className="w-10 h-10 rounded-full"
+                        src={user?.avatar || user?.profile_picture || `/default.jpg`}
+                        alt={user?.full_name || 'User'}
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => { e.currentTarget.src = '/default.jpg'; }}
                     />
                     <div className={`hidden ${!collapsed ? 'xl:block' : ''}`}>
-                        <h1 className='text-sm font-medium'>{user.full_name}</h1>
-                        <p className='text-xs text-gray-500'>@{user.username}</p>
+                        <h1 className='text-sm font-medium'>{user?.full_name || 'Người dùng'}</h1>
+                        <p className='text-xs text-gray-500'>@{user?.username || 'user'}</p>
                     </div>
                 </div>
 

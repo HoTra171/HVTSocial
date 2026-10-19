@@ -1,6 +1,6 @@
 // src/components/CallWindow.jsx
-import React, { useEffect, useRef } from "react";
-import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Volume2, VolumeX } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Volume2, VolumeX, Shield } from "lucide-react";
 
 const CallWindow = ({
   localStream,
@@ -11,26 +11,43 @@ const CallWindow = ({
   toggleMic,
   toggleCam,
   isVideoCall,
+  partner,
 }) => {
-  const [needsUserInteraction, setNeedsUserInteraction] = React.useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = React.useState(true);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
+  const [duration, setDuration] = useState(0);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  // 1. Local Stream Handling (Restored)
+  // Call duration counter
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDuration((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatDuration = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    }
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
+
+  // 1. Local Stream Handling
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
   }, [localStream]);
 
-  // 2. Remote Stream Handling (Moved from bottom)
+  // 2. Remote Stream Handling
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
-
-      // Log tracks for debugging
-      console.log("📺 Remote Stream Tracks:", remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}`));
 
       const playVideo = async () => {
         try {
@@ -40,7 +57,7 @@ const CallWindow = ({
           setNeedsUserInteraction(false);
         } catch (e) {
           console.error("Error playing remote video:", e);
-          if (e.name === 'NotAllowedError') {
+          if (e.name === "NotAllowedError") {
             setNeedsUserInteraction(true);
           }
         }
@@ -69,7 +86,6 @@ const CallWindow = ({
       try {
         await remoteVideoRef.current.play();
         setNeedsUserInteraction(false);
-        // Ensure mute state matches isSpeakerOn after manual play
         remoteVideoRef.current.muted = !isSpeakerOn;
       } catch (e) {
         console.error("Manual play failed:", e);
@@ -77,93 +93,175 @@ const CallWindow = ({
     }
   };
 
+  const partnerName = partner?.name || partner?.full_name || partner?.username || "Người dùng";
+  const partnerAvatar = partner?.avatar || "/default.jpg";
+
   return (
-    <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-50">
-      {/* Video remote - Always render to ensure audio plays */}
-      <div className={`relative w-full max-w-3xl aspect-video ${!isVideoCall ? 'hidden' : ''}`}>
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full bg-black rounded-2xl object-cover"
-        />
-        {needsUserInteraction && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-            <button
-              onClick={handleManualPlay}
-              className="px-6 py-3 bg-blue-600 text-white rounded-full font-bold animate-pulse"
-            >
-              Bấm để bật âm thanh
-            </button>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-slate-950 text-white overflow-hidden select-none">
+      {/* Background Ambient Glow */}
+      <div className="absolute inset-0 bg-radial from-indigo-900/30 via-slate-950 to-slate-950 -z-10" />
+
+      {/* Top Header Bar */}
+      <div className="w-full max-w-4xl pt-6 px-6 flex items-center justify-between z-20">
+        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-sm font-semibold tracking-wide text-emerald-300">
+            {formatDuration(duration)}
+          </span>
+          <span className="text-xs text-white/50">•</span>
+          <span className="text-xs text-white/70 flex items-center gap-1">
+            <Shield size={12} className="text-indigo-400" /> Mã hóa P2P
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+          <span className="text-sm font-medium text-white/90 truncate max-w-[160px]">
+            {partnerName}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Call Body */}
+      <div className="relative w-full flex-1 flex items-center justify-center p-4">
+        {/* VIDEO CALL REMOTE VIEW */}
+        {isVideoCall ? (
+          <div className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden bg-slate-900 shadow-2xl border border-white/10">
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
+
+            {/* Unmute prompt if browser blocks autoplay */}
+            {needsUserInteraction && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
+                <button
+                  onClick={handleManualPlay}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2"
+                >
+                  <Volume2 size={20} /> Nhấn để bật âm thanh
+                </button>
+              </div>
+            )}
+
+            {/* Picture-in-Picture Local Video */}
+            <div className="absolute top-4 right-4 z-40 w-36 sm:w-48 aspect-video rounded-2xl overflow-hidden bg-slate-800 border-2 border-white/30 shadow-2xl transition-all hover:scale-105">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover ${!camOn ? "hidden" : ""}`}
+              />
+              {!camOn && (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-white/70 text-xs gap-1">
+                  <VideoOff size={18} className="text-white/40" />
+                  <span>Đã tắt camera</span>
+                </div>
+              )}
+              <div className="absolute bottom-1 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] font-medium text-white/90 backdrop-blur-sm">
+                Bạn
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* VOICE CALL VIEW (Messenger / FaceTime style) */
+          <div className="flex flex-col items-center justify-center text-center">
+            {/* Animated Pulsing Avatar */}
+            <div className="relative flex items-center justify-center mb-6">
+              <div className="absolute w-44 h-44 rounded-full bg-indigo-500/20 animate-ping" />
+              <div className="absolute w-52 h-52 rounded-full bg-indigo-500/10 animate-pulse" />
+              <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-indigo-500/60 shadow-2xl bg-slate-800">
+                <img
+                  src={partnerAvatar}
+                  alt={partnerName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/default.jpg";
+                  }}
+                />
+              </div>
+            </div>
+
+            <h2 className="text-2xl font-bold text-white mb-2 tracking-wide">
+              {partnerName}
+            </h2>
+            <p className="text-sm font-medium text-indigo-300/90 mb-1">
+              Đang trong cuộc gọi thoại
+            </p>
+            <p className="text-xs text-white/50 tracking-wider">
+              {formatDuration(duration)}
+            </p>
+
+            {/* Hidden audio element for voice calls */}
+            <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
+
+            {needsUserInteraction && (
+              <button
+                onClick={handleManualPlay}
+                className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2 animate-bounce"
+              >
+                <Volume2 size={16} /> Bấm để bật loa
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Avatar placeholder for Voice Call */}
-      {!isVideoCall && (
-        <div className="w-40 h-40 rounded-full bg-slate-700 flex items-center justify-center text-white text-3xl mb-4 relative">
-          📞
-          {/* Hidden audio player for voice call if needed manually */}
-          {needsUserInteraction && (
-            <div className="absolute -bottom-16 w-full flex justify-center">
-              <button
-                onClick={handleManualPlay}
-                className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm whitespace-nowrap animate-pulse"
-              >
-                Bật loa
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Video local (góc nhỏ giống Messenger) */}
-      {isVideoCall && (
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          className="w-40 aspect-video bg-black rounded-xl object-cover absolute top-6 right-6 border border-white/40 shadow-lg z-50"
-        />
-      )}
-
-      {/* Thanh control */}
-      <div className="flex items-center gap-6 mt-8 bg-black/40 px-6 py-4 rounded-full">
-        {/* Speaker Toggle */}
-        <button
-          onClick={toggleSpeaker}
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${isSpeakerOn ? "bg-white/10" : "bg-white/10 text-red-500"} text-white`}
-          title={isSpeakerOn ? "Tắt loa ngoài" : "Bật loa ngoài"}
-        >
-          {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
-        </button>
-
-        {/* Mic */}
-        <button
-          onClick={toggleMic}
-          className={`w-12 h-12 rounded-full flex items-center justify-center ${micOn ? "bg-white/10" : "bg-red-600"} text-white`}
-        >
-          {micOn ? <Mic size={20} /> : <MicOff size={20} />}
-        </button>
-
-        {/* Camera (chỉ với video call) */}
-        {isVideoCall && (
+      {/* Bottom Floating Control Bar */}
+      <div className="pb-8 pt-4 z-20">
+        <div className="flex items-center gap-4 sm:gap-6 bg-slate-900/80 backdrop-blur-xl px-6 py-3.5 rounded-full border border-white/10 shadow-2xl">
+          {/* Speaker Button */}
           <button
-            onClick={toggleCam}
-            className={`w-12 h-12 rounded-full flex items-center justify-center ${camOn ? "bg-white/10" : "bg-yellow-500"} text-white`}
+            onClick={toggleSpeaker}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+              isSpeakerOn
+                ? "bg-white/10 hover:bg-white/20 text-white"
+                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+            }`}
+            title={isSpeakerOn ? "Tắt loa ngoài" : "Bật loa ngoài"}
           >
-            {camOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
+            {isSpeakerOn ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
-        )}
 
-        {/* End call */}
-        <button
-          onClick={onEnd}
-          className="w-14 h-14 rounded-full flex items-center justify-center bg-red-600 text-white"
-        >
-          <PhoneOff size={22} />
-        </button>
+          {/* Microphone Toggle */}
+          <button
+            onClick={toggleMic}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+              micOn
+                ? "bg-white/10 hover:bg-white/20 text-white"
+                : "bg-red-500/20 text-red-400 border border-red-500/30"
+            }`}
+            title={micOn ? "Tắt Mic" : "Bật Mic"}
+          >
+            {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+          </button>
+
+          {/* Camera Toggle (Video Call only) */}
+          {isVideoCall && (
+            <button
+              onClick={toggleCam}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                camOn
+                  ? "bg-white/10 hover:bg-white/20 text-white"
+                  : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+              }`}
+              title={camOn ? "Tắt Camera" : "Bật Camera"}
+            >
+              {camOn ? <VideoIcon size={20} /> : <VideoOff size={20} />}
+            </button>
+          )}
+
+          {/* End Call Button */}
+          <button
+            onClick={onEnd}
+            className="w-14 h-14 rounded-full flex items-center justify-center bg-red-600 hover:bg-red-500 text-white shadow-lg transition-transform hover:scale-110 active:scale-95"
+            title="Kết thúc cuộc gọi"
+          >
+            <PhoneOff size={24} />
+          </button>
+        </div>
       </div>
     </div>
   );

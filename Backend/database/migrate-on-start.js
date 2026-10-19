@@ -37,12 +37,23 @@ const client = new pg.Client({
 async function migrate() {
   try {
     await client.connect();
-    console.log('✅ Connected to PostgreSQL');
+    // 1. Kiểm tra nếu Database mới tinh (chưa có bảng users) thì tự động chạy toàn bộ postgres-migration.sql
+    const tableCheck = await client.query(`
+      SELECT 1 FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_name = 'users'
+    `);
 
-    const sqlPath = path.join(__dirname, 'fix-schema.sql');
-    const sql = fs.readFileSync(sqlPath, 'utf8');
+    if (tableCheck.rowCount === 0) {
+      console.log('📦 Phát hiện Database mới! Đang tự động khởi tạo toàn bộ bảng từ postgres-migration.sql...');
+      const initSqlPath = path.join(__dirname, 'postgres-migration.sql');
+      if (fs.existsSync(initSqlPath)) {
+        const initSql = fs.readFileSync(initSqlPath, 'utf8');
+        await client.query(initSql);
+        console.log('✅ Đã khởi tạo thành công toàn bộ bảng cơ sở dữ liệu!');
+      }
+    }
 
-    // Extract only the DO blocks and CREATE statements
+    // 2. Chạy tiếp các bước fix schema bổ sung (nếu database đã có từ trước)
     const statements = [
       // 1. Add privacy to stories
       `DO $$ 
@@ -158,6 +169,20 @@ BEGIN
         RAISE NOTICE 'Added reply columns to messages';
     END IF;
 END $$;`,
+
+      // 11. Create call_history table
+      `CREATE TABLE IF NOT EXISTS call_history (
+    id SERIAL PRIMARY KEY,
+    caller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    call_type VARCHAR(10) NOT NULL CHECK (call_type IN ('video', 'voice')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('completed', 'missed', 'rejected', 'failed', 'busy')),
+    duration INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);`,
+      `CREATE INDEX IF NOT EXISTS idx_call_history_caller ON call_history(caller_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_call_history_receiver ON call_history(receiver_id);`,
+      `CREATE INDEX IF NOT EXISTS idx_call_history_created_at ON call_history(created_at DESC);`,
     ];
 
     for (const stmt of statements) {

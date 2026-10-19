@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { authApi } from '../api';
 import toast from 'react-hot-toast';
 import { Star, Eye, EyeOff } from 'lucide-react';
 import { assets } from '../assets/assets';   // bgImage, logo, group_users
 import { connectSocket } from '../socket';    // hàm connect socket sau login
-import { API_URL } from '../constants/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -23,7 +22,7 @@ export default function Login() {
     }
     try {
       setLoading(true);
-      const res = await axios.post(`${API_URL}/auth/login`, form);
+      const res = await authApi.login(form);
 
       if (res.data?.success) {
         const { token, user } = res.data.data;
