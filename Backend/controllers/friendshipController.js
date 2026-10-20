@@ -2,10 +2,15 @@ import { FriendshipService } from '../services/friendshipService.js';
 import { emitNotification } from '../helpers/notificationHelper.js';
 
 // Send friend request
+// Send friend request
 export const sendFriendRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { friendId } = req.body;
+    const friendId = Number(req.body?.friendId || req.body?.targetUserId || req.params?.friendId);
+
+    if (!friendId) {
+      return res.status(400).json({ success: false, message: 'friendId is required' });
+    }
 
     const result = await FriendshipService.sendFriendRequest(userId, friendId);
 
@@ -31,21 +36,16 @@ export const sendFriendRequest = async (req, res) => {
 export const acceptFriendRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { friendId } = req.body;
+    const friendId = Number(req.body?.friendId || req.body?.requesterId || req.params?.friendId);
+
+    if (!friendId) {
+      return res.status(400).json({ success: false, message: 'friendId is required' });
+    }
 
     const result = await FriendshipService.acceptFriendRequest(userId, friendId);
 
     // Lấy đúng người đã gửi request (sender) từ DB/Service
     const senderId = result?.requester_id || result?.sender_id || friendId;
-
-    console.log(
-      '[ACCEPT] senderId =',
-      senderId,
-      'receiver(userId) =',
-      userId,
-      'type =',
-      'friend_accept'
-    );
 
     await emitNotification(req.app.get('io') || null, {
       userId: senderId,
@@ -70,7 +70,7 @@ export const acceptFriendRequest = async (req, res) => {
 export const rejectFriendRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { friendId } = req.body;
+    const friendId = Number(req.body?.friendId || req.body?.requesterId || req.params?.friendId);
 
     if (!friendId) {
       return res.status(400).json({ message: 'friendId is required' });
@@ -98,7 +98,7 @@ export const rejectFriendRequest = async (req, res) => {
 export const unfriend = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { friendId } = req.body;
+    const friendId = Number(req.body?.friendId || req.params?.friendId);
 
     if (!friendId) {
       return res.status(400).json({ message: 'friendId is required' });
@@ -120,7 +120,7 @@ export const unfriend = async (req, res) => {
 export const cancelFriendRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { friendId } = req.body;
+    const friendId = Number(req.body?.friendId || req.body?.targetUserId || req.params?.friendId);
 
     if (!friendId) {
       return res.status(400).json({ message: 'friendId is required' });

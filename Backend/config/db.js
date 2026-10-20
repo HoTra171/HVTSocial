@@ -97,29 +97,58 @@ if (usePostgreSQL && pool && pool.query) {
 }
 
 // Ensure SQL Server request handles RETURNING clause automatically if written in query
-if (!usePostgreSQL && pool && pool.request) {
-  const origRequest = pool.request.bind(pool);
-  pool.request = function () {
-    const req = origRequest();
-    const origQuery = req.query.bind(req);
-    req.query = async function (command) {
-      let sqlCmd = command;
-      if (typeof sqlCmd === 'string' && /RETURNING\s+/i.test(sqlCmd) && !/OUTPUT\s+INSERTED/i.test(sqlCmd)) {
-        if (/INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\)\s*VALUES/i.test(sqlCmd)) {
-          sqlCmd = sqlCmd
-            .replace(/(INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\))\s*VALUES/i, '$1 OUTPUT INSERTED.* VALUES')
-            .replace(/RETURNING\s+[^;]+/gi, '');
-        } else if (/UPDATE\s+.+WHERE\s+.+RETURNING/is.test(sqlCmd)) {
-          sqlCmd = sqlCmd.replace(
-            /(UPDATE\s+.+SET\s+[^W]+)\s+WHERE\s+(.+)\s+RETURNING\s+[^;]+/is,
-            '$1 OUTPUT INSERTED.* WHERE $2'
-          );
-        }
+if (!usePostgreSQL) {
+  const sqlModule = (await import('mssql')).default;
+  const sanitizeMSSQL = (command) => {
+    if (typeof command !== 'string') return command;
+    let sqlCmd = command;
+    // Replace NOW() with GETDATE()
+    sqlCmd = sqlCmd.replace(/\bNOW\(\)/gi, 'GETDATE()');
+
+    // Automatically convert LIMIT @limit OFFSET @offset to MSSQL OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
+    sqlCmd = sqlCmd.replace(/LIMIT\s+@(\w+)\s+OFFSET\s+@(\w+)/gi, 'OFFSET @$2 ROWS FETCH NEXT @$1 ROWS ONLY');
+    sqlCmd = sqlCmd.replace(/OFFSET\s+@(\w+)\s+LIMIT\s+@(\w+)/gi, 'OFFSET @$1 ROWS FETCH NEXT @$2 ROWS ONLY');
+
+    if (/RETURNING\s+/i.test(sqlCmd) && !/OUTPUT\s+INSERTED/i.test(sqlCmd)) {
+      if (/INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\)\s*VALUES/i.test(sqlCmd)) {
+        sqlCmd = sqlCmd
+          .replace(/(INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\))\s*VALUES/i, '$1 OUTPUT INSERTED.* VALUES')
+          .replace(/RETURNING\s+[^;]+/gi, '');
+      } else if (/UPDATE\s+.+WHERE\s+.+RETURNING/is.test(sqlCmd)) {
+        sqlCmd = sqlCmd.replace(
+          /(UPDATE\s+.+SET\s+[^W]+)\s+WHERE\s+(.+)\s+RETURNING\s+[^;]+/is,
+          '$1 OUTPUT INSERTED.* WHERE $2'
+        );
       }
-      return origQuery(sqlCmd);
-    };
-    return req;
+    }
+    return sqlCmd;
   };
+
+  if (sqlModule && sqlModule.Request && sqlModule.Request.prototype) {
+    const origSqlReqQuery = sqlModule.Request.prototype.query;
+    sqlModule.Request.prototype.query = function (command, ...args) {
+      return origSqlReqQuery.call(this, sanitizeMSSQL(command), ...args);
+    };
+  }
+
+  if (pool && pool.request) {
+    const origRequest = pool.request.bind(pool);
+    pool.request = function () {
+      const req = origRequest();
+      const origQuery = req.query.bind(req);
+      req.query = async function (command) {
+        return origQuery(sanitizeMSSQL(command));
+      };
+      return req;
+    };
+  }
+
+  if (pool && pool.query) {
+    const origPoolQuery = pool.query.bind(pool);
+    pool.query = async function (command, ...args) {
+      return origPoolQuery(sanitizeMSSQL(command), ...args);
+    };
+  }
 }
 
 // Export unified pool and db instances

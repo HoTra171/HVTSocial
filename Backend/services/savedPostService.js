@@ -59,7 +59,7 @@ export const SavedPostService = {
           u.username,
           u.avatar,
           
-          sp.saved_at,
+          sp.created_at AS saved_at,
           
           (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
           (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count,
@@ -69,7 +69,7 @@ export const SavedPostService = {
         JOIN posts p ON p.id = sp.post_id
         JOIN users u ON u.id = p.user_id
         WHERE sp.user_id = @userId
-        ORDER BY sp.saved_at DESC
+        ORDER BY sp.created_at DESC
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY
       `);

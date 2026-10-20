@@ -1,4 +1,4 @@
-﻿import sql from 'mssql';
+import sql from 'mssql';
 
 // Check if using PostgreSQL
 const isPostgres = process.env.DB_DRIVER === 'postgres' || !!process.env.DATABASE_URL;
@@ -212,7 +212,7 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
       INSERT INTO messages (chat_id, sender_id, content, status, message_type, media_url, duration)
       OUTPUT INSERTED.*
       VALUES (@chatId, @senderId, @content, 'sent', @message_type, @media_url, @duration);
-      UPDATE chats SET updated_at = NOW() WHERE id = @chatId;
+      UPDATE chats SET updated_at = GETDATE() WHERE id = @chatId;
     `);
   },
 
@@ -368,7 +368,7 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
       const created = await createReq.query(`
         INSERT INTO chats (name, is_group_chat, created_at, updated_at)
         OUTPUT INSERTED.id AS chat_id
-        VALUES (@name, 0, NOW(), NOW())
+        VALUES (@name, 0, GETDATE(), GETDATE())
       `);
 
       const chatId = created.recordset[0].chat_id;

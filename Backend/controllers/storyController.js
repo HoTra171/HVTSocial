@@ -22,11 +22,11 @@ export const getStories = async (req, res) => {
           u.full_name,
           u.username,
           u.avatar,
-          CASE WHEN sv.id IS NOT NULL THEN 1 ELSE 0 END AS is_viewed
+          CASE WHEN sv.story_id IS NOT NULL THEN 1 ELSE 0 END AS is_viewed
         FROM stories s
         JOIN users u ON u.id = s.user_id
         LEFT JOIN story_views sv ON sv.story_id = s.id AND sv.viewer_id = @userId
-        WHERE s.expires_at > NOW()
+        WHERE s.expires_at > GETDATE()
           AND (
             s.privacy = 'public'
             OR s.user_id = @userId
@@ -100,7 +100,7 @@ export const viewStory = async (req, res) => {
       await db.request().input('storyId', sql.Int, storyId).input('viewerId', sql.Int, viewerId)
         .query(`
           INSERT INTO story_views (story_id, viewer_id, viewed_at)
-          VALUES (@storyId, @viewerId, NOW())
+          VALUES (@storyId, @viewerId, GETDATE())
         `);
     }
 
@@ -187,7 +187,7 @@ export const createStory = async (req, res) => {
         VALUES (
           @userId, @mediaType, @mediaUrl, @caption,
           @bgColor, @privacy,
-          NOW(), DATEADD(HOUR, @hours, NOW())
+          GETDATE(), DATEADD(HOUR, @hours, GETDATE())
         )
       `);
 

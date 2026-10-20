@@ -229,7 +229,8 @@ export const FriendshipService = {
     SELECT *
     FROM friends
     ORDER BY friend_since DESC
-    LIMIT @limit OFFSET @offset;
+    OFFSET @offset ROWS
+    FETCH NEXT @limit ROWS ONLY;
   `;
 
     const rs = await db
@@ -266,7 +267,8 @@ export const FriendshipService = {
         WHERE f.friend_id = @userId 
           AND f.status = 'pending'
         ORDER BY f.created_at DESC
-        LIMIT @limit OFFSET @offset
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY
       `);
 
     return result.recordset;
@@ -296,7 +298,8 @@ export const FriendshipService = {
         WHERE f.user_id = @userId 
           AND f.status = 'pending'
         ORDER BY f.created_at DESC
-        LIMIT @limit OFFSET @offset
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY
       `);
 
     return result.recordset;

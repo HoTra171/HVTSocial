@@ -15,13 +15,16 @@ const __dirname = path.dirname(__filename);
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
-if (!DATABASE_URL) {
-  console.log('⚠️  No DATABASE_URL found, skipping schema migration');
-  process.exit(0);
-}
-
-if (!DATABASE_URL.includes('postgres')) {
-  console.log('⚠️  Not using PostgreSQL, skipping schema migration');
+if (!DATABASE_URL || !DATABASE_URL.includes('postgres')) {
+  console.log('🔧 Local MSSQL detected: verifying schema compatibility...');
+  try {
+    const { patchSchemaCompatibility } = await import('../scripts/patchDbCompatibility.js');
+    if (typeof patchSchemaCompatibility === 'function') {
+      await patchSchemaCompatibility();
+    }
+  } catch (err) {
+    console.warn('⚠️  MSSQL schema check note:', err.message);
+  }
   process.exit(0);
 }
 

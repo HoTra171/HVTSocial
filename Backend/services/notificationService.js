@@ -108,25 +108,24 @@ export const NotificationService = {
       .request()
       .input('userId', userId)
       .input('limit', limit).query(`
-        SELECT
+        SELECT TOP (@limit)
           n.id,
-          n.message AS content,
+          COALESCE(n.message, n.content) AS content,
           n.type,
-          CASE WHEN n.is_read THEN 'read' ELSE 'unread' END AS status,
-          n.target_id AS post_id,
+          CASE WHEN n.is_read = 1 THEN 'read' ELSE 'unread' END AS status,
+          COALESCE(n.target_id, n.post_id) AS post_id,
           n.target_type,
           n.created_at,
           u.full_name AS sender_name,
-          COALESCE(u.avatar, u.profile_picture) AS sender_avatar,
+          u.avatar AS sender_avatar,
           u.id AS sender_id
         FROM notifications n
-        LEFT JOIN users u ON n.actor_id = u.id
+        LEFT JOIN users u ON COALESCE(n.actor_id, n.sender_id) = u.id
         WHERE n.user_id = @userId
         ORDER BY n.created_at DESC
-        LIMIT @limit
       `);
 
-    return result.recordset;
+    return result.recordset || [];
   },
 
   /**
@@ -137,10 +136,10 @@ export const NotificationService = {
         SELECT COUNT(*) AS unread_count
         FROM notifications
         WHERE user_id = @userId
-          AND is_read = false
+          AND (is_read = 0 OR is_read IS NULL)
       `);
 
-    return result.recordset[0].unread_count;
+    return result.recordset[0]?.unread_count || 0;
   },
 
   /**
@@ -149,9 +148,9 @@ export const NotificationService = {
   async markAllRead(userId) {
     await db.request().input('userId', userId).query(`
         UPDATE notifications
-        SET is_read = true
+        SET is_read = 1
         WHERE user_id = @userId
-          AND is_read = false
+          AND (is_read = 0 OR is_read IS NULL)
       `);
 
     // Cập nhật unread count về 0
@@ -169,10 +168,10 @@ export const NotificationService = {
       .input('notificationId', notificationId)
       .input('userId', userId).query(`
         UPDATE notifications
-        SET is_read = true
+        SET is_read = 1
         WHERE id = @notificationId
           AND user_id = @userId
-          AND is_read = false
+          AND (is_read = 0 OR is_read IS NULL)
       `);
 
     // Cập nhật unread count

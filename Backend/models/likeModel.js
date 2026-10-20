@@ -129,7 +129,8 @@ export const LikeModel = {
         JOIN users u ON u.id = p.user_id
         WHERE l.user_id = @userId
         ORDER BY l.created_at DESC
-        LIMIT @limit OFFSET @offset
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY
       `);
     return result.recordset || [];
   },

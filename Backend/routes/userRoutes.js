@@ -173,6 +173,7 @@ router.get('/:userId/connections', authMiddleware, getUserConnections);
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', authMiddleware, getUserProfile);
+router.get('/profile/:id', authMiddleware, getUserProfile);
 
 /**
  * @swagger
