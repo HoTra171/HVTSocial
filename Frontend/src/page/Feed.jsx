@@ -121,10 +121,6 @@ const Feed = () => {
     return <Loading />;
   }
 
-  const handlePostDeleted = (postId) => {
-    setFeeds((prevFeeds) => prevFeeds.filter((post) => post.id !== postId));
-  };
-
   return (
     <div className='min-h-screen flex items-start justify-center xl:gap-8 py-10'>
       <div className="p-4 w-full max-w-[600px]">

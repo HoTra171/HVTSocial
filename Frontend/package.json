@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
+    "@tanstack/react-query": "^5.104.5",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "lucide-react": "^0.545.0",
@@ -23,6 +24,7 @@
     "react-draggable": "^4.5.0",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.4",
+    "react-virtuoso": "^4.18.19",
     "socket.io-client": "^4.8.1",
     "swiper": "^11.2.10",
     "tailwindcss": "^4.1.13",
