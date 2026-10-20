@@ -24,8 +24,8 @@ export const NotificationService = {
       .input('actorId', senderId)
       .input('targetId', postId).query(`
         INSERT INTO notifications (user_id, actor_id, type, target_type, target_id, message, is_read)
-        VALUES (@userId, @actorId, 'like', 'post', @targetId, 'đã thích bài viết của bạn', false)
-        RETURNING *
+        OUTPUT INSERTED.*
+        VALUES (@userId, @actorId, 'like', 'post', @targetId, 'đã thích bài viết của bạn', 0)
       `);
     return result.recordset[0];
   },
@@ -42,8 +42,8 @@ export const NotificationService = {
       .input('targetId', postId)
       .input('message', message).query(`
         INSERT INTO notifications (user_id, actor_id, type, target_type, target_id, message, is_read)
-        VALUES (@userId, @actorId, 'comment', 'post', @targetId, @message, false)
-        RETURNING *
+        OUTPUT INSERTED.*
+        VALUES (@userId, @actorId, 'comment', 'post', @targetId, @message, 0)
       `);
     return result.recordset[0];
   },
@@ -59,8 +59,8 @@ export const NotificationService = {
       .input('actorId', senderId)
       .input('message', message).query(`
         INSERT INTO notifications (user_id, actor_id, type, message, is_read)
-        VALUES (@userId, @actorId, 'friend_request', @message, false)
-        RETURNING *
+        OUTPUT INSERTED.*
+        VALUES (@userId, @actorId, 'friend_request', @message, 0)
       `);
     return result.recordset[0];
   },
@@ -76,8 +76,8 @@ export const NotificationService = {
       .input('actorId', senderId)
       .input('message', message).query(`
         INSERT INTO notifications (user_id, actor_id, type, message, is_read)
-        VALUES (@userId, @actorId, 'message', @message, false)
-        RETURNING *
+        OUTPUT INSERTED.*
+        VALUES (@userId, @actorId, 'message', @message, 0)
       `);
     return result.recordset[0];
   },
@@ -94,8 +94,8 @@ export const NotificationService = {
       .input('targetId', postId || null)
       .input('message', message).query(`
         INSERT INTO notifications (user_id, actor_id, type, target_type, target_id, message, is_read)
-        VALUES (@userId, @actorId, 'share', ${postId ? "'post'" : 'NULL'}, @targetId, @message, false)
-        RETURNING *
+        OUTPUT INSERTED.*
+        VALUES (@userId, @actorId, 'share', ${postId ? "'post'" : 'NULL'}, @targetId, @message, 0)
       `);
     return result.recordset[0];
   },

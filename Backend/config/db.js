@@ -96,6 +96,32 @@ if (usePostgreSQL && pool && pool.query) {
   };
 }
 
+// Ensure SQL Server request handles RETURNING clause automatically if written in query
+if (!usePostgreSQL && pool && pool.request) {
+  const origRequest = pool.request.bind(pool);
+  pool.request = function () {
+    const req = origRequest();
+    const origQuery = req.query.bind(req);
+    req.query = async function (command) {
+      let sqlCmd = command;
+      if (typeof sqlCmd === 'string' && /RETURNING\s+/i.test(sqlCmd) && !/OUTPUT\s+INSERTED/i.test(sqlCmd)) {
+        if (/INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\)\s*VALUES/i.test(sqlCmd)) {
+          sqlCmd = sqlCmd
+            .replace(/(INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\))\s*VALUES/i, '$1 OUTPUT INSERTED.* VALUES')
+            .replace(/RETURNING\s+[^;]+/gi, '');
+        } else if (/UPDATE\s+.+WHERE\s+.+RETURNING/is.test(sqlCmd)) {
+          sqlCmd = sqlCmd.replace(
+            /(UPDATE\s+.+SET\s+[^W]+)\s+WHERE\s+(.+)\s+RETURNING\s+[^;]+/is,
+            '$1 OUTPUT INSERTED.* WHERE $2'
+          );
+        }
+      }
+      return origQuery(sqlCmd);
+    };
+    return req;
+  };
+}
+
 // Export unified pool and db instances
 const db = pool;
 export { pool, db };

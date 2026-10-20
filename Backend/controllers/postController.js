@@ -206,9 +206,9 @@ export const updatePost = async (req, res) => {
       content = @content,
       media_url = @mediaUrl,
       visibility = @visibility,
-      updated_at = NOW()
+      updated_at = GETDATE()
+    OUTPUT INSERTED.*
     WHERE id = @postId
-    RETURNING *
   `);
 
   return res.json(result.recordset[0]);

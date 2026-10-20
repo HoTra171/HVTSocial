@@ -116,8 +116,8 @@ export const register = async (req, res) => {
     // 6. Tạo user mới
     const insertQuery = `
       INSERT INTO users (full_name, username, email, password, date_of_birth, gender)
+      OUTPUT INSERTED.*
       VALUES (@full_name, @username, @email, @password, @date_of_birth, @gender)
-      RETURNING *
     `;
 
     const result = await db
