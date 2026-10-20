@@ -150,6 +150,12 @@ export const register = async (req, res) => {
       accessToken,
       refreshToken,
       user: newUser,
+      data: {
+        user: newUser,
+        token: accessToken,
+        accessToken,
+        refreshToken,
+      },
     });
   } catch (error) {
     console.error(' Register error:', error);

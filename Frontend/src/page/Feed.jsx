@@ -118,7 +118,14 @@ const Feed = () => {
   }, [cursor, hasMore, loadingMore, initialLoading]);
 
   if (initialLoading) {
-    return <Loading />;
+    return (
+      <div className="min-h-screen flex items-start justify-center xl:gap-8 py-10">
+        <div className="p-4 w-full max-w-[600px] space-y-4">
+          <PostSkeleton />
+          <PostSkeleton />
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { assets } from '../assets/assets';
 import { useNavigate } from 'react-router-dom';
-import { authApi } from '../api';
 import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const { currentUser, register } = useAuth();
+
+  // Nếu đã đăng nhập, tự động chuyển đến /feed
+  useEffect(() => {
+    if (currentUser?.id) {
+      navigate('/feed', { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   // State management
   const [form, setForm] = useState({
@@ -77,7 +85,7 @@ const SignUp = () => {
     try {
       const { full_name, username, email, password, date_of_birth, gender } = form;
 
-      const response = await authApi.register({
+      await register({
         full_name,
         username,
         email,
@@ -86,24 +94,13 @@ const SignUp = () => {
         gender,
       });
 
-      const resData = response.data;
-      if (!resData?.success && !resData?.data?.token) {
-        throw new Error(resData?.message || 'Đăng ký thất bại');
-      }
-
-      // Lưu token và thông tin user
-      const { token, user } = resData.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-
       toast.success('Đăng ký thành công! Chào mừng bạn đến với HVTSocial 🎉');
-
-      // Chuyển đến trang feed
       navigate('/feed');
-
     } catch (err) {
-      console.error(' Sign up error:', err);
-      setError(err.message);
+      console.error('Sign up error:', err);
+      const msg = err.response?.data?.message || err.message || 'Đăng ký thất bại';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

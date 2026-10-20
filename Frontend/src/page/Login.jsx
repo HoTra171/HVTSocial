@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { authApi } from '../api';
 import toast from 'react-hot-toast';
 import { Star, Eye, EyeOff } from 'lucide-react';
 import { assets } from '../assets/assets';   // bgImage, logo, group_users
-import { connectSocket } from '../socket';    // hàm connect socket sau login
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { currentUser, login } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Nếu đã đăng nhập, tự động chuyển đến /feed
+  useEffect(() => {
+    if (currentUser?.id) {
+      navigate('/feed', { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -22,24 +29,12 @@ export default function Login() {
     }
     try {
       setLoading(true);
-      const res = await authApi.login(form);
-
-      if (res.data?.success) {
-        const { token, user } = res.data.data;
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-
-        // Kết nối socket sau khi login
-        connectSocket(user.id);
-
-        toast.success('Đăng nhập thành công!');
-        navigate('/feed');
-      } else {
-        toast.error(res.data?.message || 'Đăng nhập thất bại');
-      }
+      await login(form);
+      toast.success('Đăng nhập thành công!');
+      navigate('/feed');
     } catch (err) {
       console.error('Login error:', err);
-      toast.error(err.response?.data?.message || 'Đăng nhập thất bại');
+      toast.error(err.response?.data?.message || err.message || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);
     }

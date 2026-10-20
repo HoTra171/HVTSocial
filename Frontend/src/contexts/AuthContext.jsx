@@ -33,14 +33,20 @@ export const AuthProvider = ({ children }) => {
   // Đăng nhập
   const login = useCallback(async (credentials) => {
     const res = await authApi.login(credentials);
-    if (res.data?.success) {
-      const { token: newToken, user: userData } = res.data.data;
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setToken(newToken);
-      setCurrentUser(userData);
-      connectSocket(userData.id);
-      return userData;
+    const payload = res.data?.data || res.data || {};
+    const token = payload.token || payload.accessToken;
+    const user = payload.user;
+
+    if (res.data?.success && token && user) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      if (payload.refreshToken) {
+        localStorage.setItem('refreshToken', payload.refreshToken);
+      }
+      setToken(token);
+      setCurrentUser(user);
+      connectSocket(user.id);
+      return user;
     }
     throw new Error(res.data?.message || 'Đăng nhập thất bại');
   }, []);
@@ -48,14 +54,20 @@ export const AuthProvider = ({ children }) => {
   // Đăng ký
   const register = useCallback(async (data) => {
     const res = await authApi.register(data);
-    if (res.data?.success && res.data?.data?.token) {
-      const { token: newToken, user: userData } = res.data.data;
-      localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setToken(newToken);
-      setCurrentUser(userData);
-      connectSocket(userData.id);
-      return userData;
+    const payload = res.data?.data || res.data || {};
+    const token = payload.token || payload.accessToken;
+    const user = payload.user;
+
+    if (res.data?.success && token && user) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      if (payload.refreshToken) {
+        localStorage.setItem('refreshToken', payload.refreshToken);
+      }
+      setToken(token);
+      setCurrentUser(user);
+      connectSocket(user.id);
+      return user;
     }
     throw new Error(res.data?.message || 'Đăng ký thất bại');
   }, []);
