@@ -5,15 +5,16 @@ export const userApi = {
    * Lấy thông tin trang cá nhân của người dùng
    * @param {number|string} userId
    */
-  getProfile: (userId) => axiosInstance.get(`/users/profile/${userId}`),
+  getProfile: (userId) => axiosInstance.get(`/users/${userId}`),
 
   /**
    * Cập nhật thông tin trang cá nhân (hỗ trợ FormData cho avatar, cover)
+   * @param {number|string} userId
    * @param {FormData|Object} data
    */
-  updateProfile: (data) => {
+  updateProfile: (userId, data) => {
     const isFormData = data instanceof FormData;
-    return axiosInstance.put('/users/profile', data, {
+    return axiosInstance.put(`/users/${userId}`, data, {
       headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
     });
   },
@@ -31,8 +32,9 @@ export const userApi = {
 
   /**
    * Lấy danh sách kết nối (bạn bè) của user
+   * @param {number|string} userId
    */
-  getConnections: () => axiosInstance.get('/users/connections'),
+  getConnections: (userId) => axiosInstance.get(`/users/${userId}/connections`),
 
   /**
    * Lấy cấu hình quyền riêng tư

@@ -20,6 +20,7 @@ const parseImages = (raw) => {
 export const PostCard = ({
   post,
   currentUser: propUser,
+  initialShowComments = false,
   onPostDeleted,
   onPostUnsaved,
   onPostUnliked,
@@ -31,7 +32,7 @@ export const PostCard = ({
   const [likesCount, setLikesCount] = useState(Number(post?.likes_count) || 0);
   const [saved, setSaved] = useState(false);
 
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(initialShowComments);
   const [loadingComments, setLoadingComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentsCount, setCommentsCount] = useState(Number(post?.comments_count) || 0);
@@ -48,6 +49,42 @@ export const PostCard = ({
     setLikesCount(Number(post?.likes_count) || 0);
     setCommentsCount(Number(post?.comments_count) || 0);
   }, [post?.likes_count, post?.comments_count]);
+
+  // Kiểm tra trạng thái đã Like / Lưu bài viết
+  useEffect(() => {
+    if (!currentUser?.id || !post?.id) return;
+    let isMounted = true;
+    postApi
+      .checkLike(post.id)
+      .then((res) => {
+        if (isMounted) setLiked(Boolean(res.data?.liked));
+      })
+      .catch(() => {});
+    postApi
+      .checkSave(post.id)
+      .then((res) => {
+        if (isMounted) setSaved(Boolean(res.data?.saved));
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, post?.id]);
+
+  // Tải trước bình luận nếu initialShowComments = true
+  useEffect(() => {
+    if (initialShowComments && post?.id && comments.length === 0) {
+      setLoadingComments(true);
+      commentApi
+        .getByPostId(post.id)
+        .then((res) => {
+          const fetched = res.data?.data || res.data?.comments || res.data || [];
+          setComments(Array.isArray(fetched) ? fetched : []);
+        })
+        .catch((err) => console.error('Lỗi khi tải bình luận:', err))
+        .finally(() => setLoadingComments(false));
+    }
+  }, [initialShowComments, post?.id]);
 
   // Toggle Like
   const handleToggleLike = async () => {

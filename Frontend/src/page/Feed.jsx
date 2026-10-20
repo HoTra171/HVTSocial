@@ -1,20 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
 import StoriesBar from '../components/StoriesBar';
 import { assets } from '../assets/assets';
-import Loading from '../components/Loading.jsx';
 import PostCard from '../components/PostCard.jsx';
 import SharedPostCard from '../components/SharedPostCard.jsx';
 import RecentMessages from '../components/RecentMessages.jsx';
-import axios from "axios";
-import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { postApi } from '../api';
+import { useAuth } from '../contexts';
+import { PostSkeleton } from '../components/common/SkeletonLoader';
 import { Link } from 'react-router-dom';
 import { PenSquare, Compass } from 'lucide-react';
 
 const Feed = () => {
+  const { currentUser } = useAuth();
   const [feeds, setFeeds] = useState([]);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -35,13 +35,9 @@ const Feed = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_URL}/posts`, {
-        params: { cursor: cursorToLoad, limit: LIMIT },
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await postApi.getFeed({ cursor: cursorToLoad, limit: LIMIT });
 
-      // Handle new response { posts, nextCursor }
+      // Handle response { posts, nextCursor }
       const data = res.data;
       const newPosts = Array.isArray(data) ? data : (data.posts || []);
       const nextCursor = data.nextCursor;
@@ -81,17 +77,9 @@ const Feed = () => {
     fetchFeeds(null);
   }, []);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setCurrentUser(parsed);
-      } catch (e) {
-        console.error("Parse user error:", e);
-      }
-    }
-  }, []);
+  const handlePostDeleted = (postId) => {
+    setFeeds((prevFeeds) => prevFeeds.filter((post) => post.id !== postId));
+  };
 
   // IntersectionObserver để auto load thêm khi scroll gần cuối
   useEffect(() => {

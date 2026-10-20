@@ -51,19 +51,24 @@ export const postApi = {
    * Thích hoặc bỏ thích bài viết
    * @param {number|string} postId
    */
-  toggleLike: (postId) => axiosInstance.post('/likes/toggle', { post_id: postId }),
+  toggleLike: (postId) => axiosInstance.post(`/likes/post/${postId}`),
 
   /**
-   * Lấy trạng thái like và tổng số like của bài viết
+   * Kiểm tra user đã like bài viết chưa
    * @param {number|string} postId
    */
-  getLikes: (postId) => axiosInstance.get(`/likes/post/${postId}`),
+  checkLike: (postId) => axiosInstance.get(`/likes/check/${postId}`),
 
   /**
    * Lấy danh sách người đã thích bài viết
    * @param {number|string} postId
    */
-  getLikingUsers: (postId) => axiosInstance.get(`/likes/post/${postId}/users`),
+  getLikingUsers: (postId) => axiosInstance.get(`/likes/post/${postId}`),
+
+  /**
+   * Lấy danh sách các bài viết mà user hiện tại đã thích
+   */
+  getLikedPosts: () => axiosInstance.get('/likes/posts'),
 
   // ===== SHARES =====
   /**
@@ -83,7 +88,13 @@ export const postApi = {
    * Lưu hoặc bỏ lưu bài viết
    * @param {number|string} postId
    */
-  toggleSave: (postId) => axiosInstance.post('/saved-posts/toggle', { post_id: postId }),
+  toggleSave: (postId) => axiosInstance.post(`/saved-posts/${postId}`),
+
+  /**
+   * Kiểm tra user đã lưu bài viết chưa
+   * @param {number|string} postId
+   */
+  checkSave: (postId) => axiosInstance.get(`/saved-posts/check/${postId}`),
 
   /**
    * Lấy danh sách bài viết đã lưu
