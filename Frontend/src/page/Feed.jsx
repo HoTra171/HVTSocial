@@ -3,7 +3,8 @@ import StoriesBar from '../components/StoriesBar';
 import { assets } from '../assets/assets';
 import PostCard from '../components/PostCard.jsx';
 import SharedPostCard from '../components/SharedPostCard.jsx';
-import RecentMessages from '../components/RecentMessages.jsx';
+import { CreatePostBox } from '../components/post';
+import RightSidebar from '../components/RightSidebar.jsx';
 import { postApi } from '../api';
 import { useAuth } from '../contexts';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
@@ -15,6 +16,7 @@ const Feed = () => {
   const [feeds, setFeeds] = useState([]);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [openStoryTrigger, setOpenStoryTrigger] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -131,7 +133,17 @@ const Feed = () => {
   return (
     <div className='min-h-screen flex items-start justify-center xl:gap-8 py-10'>
       <div className="p-4 w-full max-w-[600px]">
-        <StoriesBar />
+        <StoriesBar
+          openTrigger={openStoryTrigger}
+          onModalClose={() => setOpenStoryTrigger(false)}
+        />
+
+        {/* Facebook-style quick post creation box */}
+        <CreatePostBox
+          currentUser={currentUser}
+          onPostCreated={(newPost) => setFeeds((prev) => [newPost, ...prev])}
+          onOpenStoryModal={() => setOpenStoryTrigger(true)}
+        />
 
         <div className="space-y-6">
           {feeds.map((post, index) => {
@@ -204,24 +216,8 @@ const Feed = () => {
         </div>
       </div>
 
-      <div className="max-xl:hidden w-72 flex-shrink-0">
-        <div className="sticky top-10 self-start flex flex-col gap-4">
-          <div className="max-w-xs bg-white text-xs p-4 rounded-md inline-flex flex-col gap-2 shadow">
-            <h3 className="text-slate-800 font-semibold">Sponsored</h3>
-            <img
-              src={assets.sponsored_img}
-              alt=""
-              className="w-full h-48 rounded-md object-cover"
-            />
-            <p className="text-slate-600">Email marketing</p>
-            <p className='text-slate-400 text-sm'>
-              Supercharge your marketing with a powerful, easy-to-use platform built for results.
-            </p>
-          </div>
-
-          <RecentMessages />
-        </div>
-      </div>
+      {/* Right Sidebar (Instagram/Facebook style: Suggestions, Online contacts, Sponsored, Footer) */}
+      <RightSidebar currentUser={currentUser} />
     </div>
   );
 };

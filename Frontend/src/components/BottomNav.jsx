@@ -1,100 +1,97 @@
 import React, { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, Search, MessageCircle, Users, Menu } from 'lucide-react'
+import { Home, Users, Plus, MessageCircle } from 'lucide-react'
 import NotificationBadge from './NotificationBadge'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
-import MobileSettingsMenu from './MobileSettingsMenu'
 
 const BottomNav = ({ currentUserId }) => {
-    const [user] = useState(() => {
-        const storedUser = localStorage.getItem('user')
-        return storedUser ? JSON.parse(storedUser) : null
-    })
-
-    const { unreadMessages, pendingFriendRequests } = useUnreadCounts()
-    const [showSettings, setShowSettings] = useState(false)
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const { unreadMessages, pendingFriendRequests } = useUnreadCounts();
 
     return (
-        <>
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 sm:hidden">
-            <div className="flex items-center justify-evenly h-14 w-full px-2">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-50 sm:hidden">
+            <div className="flex items-center justify-around h-14 w-full px-2">
                 {/* Home */}
                 <NavLink
                     to="/feed"
                     className={({ isActive }) =>
-                        `relative flex items-center justify-center w-10 h-10 transition-colors ${isActive
-                            ? 'text-indigo-600'
-                            : 'text-gray-600'
+                        `relative flex items-center justify-center w-11 h-11 transition-colors ${isActive
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
                         }`
                     }
+                    title="Bảng tin"
                 >
-                    <Home size={24} strokeWidth={1.5} />
+                    <Home size={22} strokeWidth={2} />
                 </NavLink>
 
-                {/* Search */}
+                {/* Connections / Friends */}
                 <NavLink
-                    to="/discover"
+                    to="/connections"
                     className={({ isActive }) =>
-                        `relative flex items-center justify-center w-10 h-10 transition-colors ${isActive
-                            ? 'text-indigo-600'
-                            : 'text-gray-600'
+                        `relative flex items-center justify-center w-11 h-11 transition-colors ${isActive
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
                         }`
                     }
+                    title="Bạn bè"
                 >
-                    <Search size={24} strokeWidth={1.5} />
+                    <div className="relative">
+                        <Users size={22} strokeWidth={2} />
+                        <NotificationBadge count={pendingFriendRequests} />
+                    </div>
+                </NavLink>
+
+                {/* Center: Create Post (Instagram/Facebook Style) */}
+                <NavLink
+                    to="/create-post"
+                    className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md active:scale-95 transition-transform"
+                    title="Tạo bài viết"
+                >
+                    <Plus size={22} strokeWidth={2.5} />
                 </NavLink>
 
                 {/* Messages */}
                 <NavLink
                     to="/messages"
                     className={({ isActive }) =>
-                        `relative flex items-center justify-center w-10 h-10 transition-colors ${isActive
-                            ? 'text-indigo-600'
-                            : 'text-gray-600'
+                        `relative flex items-center justify-center w-11 h-11 transition-colors ${isActive
+                            ? 'text-indigo-600 dark:text-indigo-400 font-bold'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
                         }`
                     }
+                    title="Tin nhắn"
                 >
                     <div className="relative">
-                        <MessageCircle size={24} strokeWidth={1.5} />
+                        <MessageCircle size={22} strokeWidth={2} />
                         <NotificationBadge count={unreadMessages} />
                     </div>
                 </NavLink>
 
-                {/* Connections */}
+                {/* Profile */}
                 <NavLink
-                    to="/connections"
+                    to={user?.id ? `/profile/${user.id}` : '/profile'}
                     className={({ isActive }) =>
-                        `relative flex items-center justify-center w-10 h-10 transition-colors ${isActive
-                            ? 'text-indigo-600'
-                            : 'text-gray-600'
-                        }`
+                        `relative flex items-center justify-center w-11 h-11 transition-transform ${isActive ? 'scale-105' : ''}`
                     }
+                    title="Trang cá nhân"
                 >
-                    <div className="relative">
-                        <Users size={24} strokeWidth={1.5} />
-                        <NotificationBadge count={pendingFriendRequests} />
-                    </div>
+                    {({ isActive }) => (
+                        <img
+                            src={user?.avatar || user?.profile_picture || '/default.jpg'}
+                            alt="Profile"
+                            className={`w-7 h-7 rounded-full object-cover transition-all ${
+                                isActive
+                                    ? 'border-2 border-indigo-600 ring-2 ring-indigo-200 dark:ring-indigo-900'
+                                    : 'border border-slate-300 dark:border-slate-700'
+                            }`}
+                            onError={(e) => { e.currentTarget.src = '/default.jpg'; }}
+                        />
+                    )}
                 </NavLink>
-
-                {/* Menu - Opens Settings */}
-                <button
-                    onClick={() => setShowSettings(true)}
-                    className={`relative flex items-center justify-center w-10 h-10 transition-colors ${
-                        showSettings ? 'text-indigo-600' : 'text-gray-600'
-                    } active:scale-95`}
-                >
-                    <Menu size={24} strokeWidth={1.5} />
-                </button>
             </div>
         </div>
-
-        {/* Settings Menu */}
-        <MobileSettingsMenu
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-        />
-        </>
-    )
-}
+    );
+};
 
 export default BottomNav

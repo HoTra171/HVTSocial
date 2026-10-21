@@ -34,7 +34,7 @@ const Layout = () => {
   if (!currentUserId) return <Loading />;
 
   return (
-    <div className="w-full min-h-screen flex bg-slate-50 overflow-hidden touch-pan-y">
+    <div className="w-full min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden touch-pan-y">
 
       {/* ===== MOBILE HEADER (Mobile only) ===== */}
       {!isChatPage && !isStoryPage && <MobileHeader currentUserId={currentUserId} />}

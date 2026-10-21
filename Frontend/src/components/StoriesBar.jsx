@@ -12,10 +12,16 @@ import { API_URL, SERVER_ORIGIN } from '../constants/api';
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
-const StoriesBar = () => {
+const StoriesBar = ({ openTrigger = false, onModalClose }) => {
   const [stories, setStories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [viewStory, setViewStory] = useState(null);
+
+  useEffect(() => {
+    if (openTrigger) {
+      setShowModal(true);
+    }
+  }, [openTrigger]);
 
   const currentUserIdVal = JSON.parse(localStorage.getItem("user") || "{}")?.id;
 
@@ -130,25 +136,37 @@ const StoriesBar = () => {
           ref={containerRef}
           onScroll={updateNavButtons} // Theo dõi scroll để ẩn/hiện nút trái/phải đúng lúc
         >
-          <div className="flex gap-4 pb-5 min-w-max" ref={listRef}>
-            {/* Tạo story mới */}
+          <div className="flex gap-3 pb-4 min-w-max" ref={listRef}>
+            {/* Tạo story mới (Facebook / Instagram Style) */}
             <div
               onClick={() => setShowModal(true)}
-              className="rounded-xl min-w-[110px] h-[180px] aspect-[3/5] border-dashed border-2 border-indigo-300 cursor-pointer flex flex-col items-center justify-center gap-3 hover:bg-indigo-50 transition"
+              className="relative rounded-2xl min-w-[110px] w-[110px] h-[190px] overflow-hidden cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col hover:shadow-md transition-all group"
             >
-              <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                <Plus className="text-white" size={20} />
+              <div className="w-full h-[130px] overflow-hidden bg-slate-100 dark:bg-slate-800 relative">
+                <img
+                  src={JSON.parse(localStorage.getItem("user") || "{}")?.avatar || "/default.jpg"}
+                  alt="User"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { e.currentTarget.src = '/default.jpg'; }}
+                />
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
               </div>
-              <p className="text-sm font-medium">Tạo Story</p>
+
+              {/* Overlaid + button */}
+              <div className="absolute top-[112px] left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <Plus className="text-white" size={16} />
+              </div>
+
+              <div className="flex-1 flex items-end justify-center pb-2 pt-3 px-1 text-center">
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">Tạo tin</p>
+              </div>
             </div>
 
-            {/* Danh sách preview story theo user - Current user first, unseen second, seen last */}
+            {/* Danh sách preview story theo user */}
             {[...stories].sort((a, b) => {
-              // Current user's story always first
               if (a.user.id === currentUserIdVal) return -1;
               if (b.user.id === currentUserIdVal) return 1;
 
-              // Unseen stories before seen stories
               const aHasUnseen = a.stories.some(s => !s.is_viewed);
               const bHasUnseen = b.stories.some(s => !s.is_viewed);
               if (aHasUnseen && !bHasUnseen) return -1;
@@ -160,15 +178,10 @@ const StoriesBar = () => {
               if (!previewStory) return null;
 
               const hasUnseenStories = group.stories.some(s => !s.is_viewed && group.user.id !== currentUserIdVal);
-              // Nếu là currentUser thì luôn xám (hoặc xanh nếu muốn), thường thì mình xem story của mình rồi. 
-              // Logic Facebook: Story mình chưa xem (do mình post) = xám. 
-              // Story người khác chưa xem = xanh.
-
-              const isSeenAll = !hasUnseenStories;
 
               return (
                 <div
-                  key={group.user.id} // Key ổn định theo user
+                  key={group.user.id}
                   onClick={() =>
                     setViewStory({
                       user: group.user,
@@ -176,14 +189,21 @@ const StoriesBar = () => {
                       currentIndex: 0,
                     })
                   }
-                  className="relative rounded-xl min-w-[110px] h-[180px] aspect-[3/5] overflow-hidden cursor-pointer bg-gradient-to-b from-indigo-500 to-purple-600 hover:scale-105 transition-transform"
+                  className="relative rounded-2xl min-w-[110px] w-[110px] h-[190px] overflow-hidden cursor-pointer shadow-sm hover:shadow-lg hover:scale-[1.03] transition-all bg-gradient-to-b from-indigo-500 to-purple-600 group"
                 >
-                  {/* Avatar người đăng */}
-                  <div className={`absolute top-2 left-2 p-[2px] rounded-full z-10 ${hasUnseenStories ? "bg-blue-600" : "bg-gray-300"}`}>
+                  {/* Avatar người đăng with Instagram-style gradient ring */}
+                  <div
+                    className={`absolute top-2.5 left-2.5 p-[2px] rounded-full z-10 transition-transform group-hover:scale-105 ${
+                      hasUnseenStories
+                        ? "bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 shadow-sm"
+                        : "bg-slate-300 dark:bg-slate-700"
+                    }`}
+                  >
                     <img
                       src={group.user.avatar || `/default.jpg`}
                       alt=""
-                      className="w-9 h-9 rounded-full border-2 border-white object-cover"
+                      className="w-8 h-8 rounded-full border-2 border-white dark:border-slate-900 object-cover"
+                      onError={(e) => { e.currentTarget.src = '/default.jpg'; }}
                     />
                   </div>
 
@@ -233,7 +253,13 @@ const StoriesBar = () => {
 
         {/* Modal tạo story */}
         {showModal && (
-          <StoryModal setShowModal={setShowModal} fetchStories={fetchStories} />
+          <StoryModal
+            setShowModal={(val) => {
+              setShowModal(val);
+              if (!val && onModalClose) onModalClose();
+            }}
+            fetchStories={fetchStories}
+          />
         )}
 
         {/* Viewer story */}

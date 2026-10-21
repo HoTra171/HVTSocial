@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 import { SERVER_ORIGIN } from '../../constants/api';
 
 const toAbsoluteUrl = (u) => {
@@ -11,8 +11,9 @@ const toAbsoluteUrl = (u) => {
   return `${SERVER_ORIGIN}/${s}`;
 };
 
-export const PostMediaGrid = ({ images = [] }) => {
+export const PostMediaGrid = ({ images = [], onDoubleTapLike }) => {
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [showHeartAnim, setShowHeartAnim] = useState(false);
 
   if (!images || images.length === 0) return null;
 
@@ -33,10 +34,31 @@ export const PostMediaGrid = ({ images = [] }) => {
     setLightboxIndex((prev) => (prev < count - 1 ? prev + 1 : 0));
   };
 
+  const handleDoubleClick = (e) => {
+    e.stopPropagation();
+    setShowHeartAnim(true);
+    setTimeout(() => setShowHeartAnim(false), 900);
+    if (typeof onDoubleTapLike === 'function') {
+      onDoubleTapLike();
+    }
+  };
+
   return (
     <>
       {/* GRID HIỂN THỊ */}
-      <div className="mt-2 w-full overflow-hidden">
+      <div
+        className="mt-2 w-full overflow-hidden relative select-none"
+        onDoubleClick={handleDoubleClick}
+      >
+        {/* Instagram Double Tap Heart Animation */}
+        {showHeartAnim && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none animate-ping duration-700">
+            <div className="p-4 rounded-full bg-white/20 backdrop-blur-md shadow-2xl">
+              <Heart className="w-20 h-20 text-rose-500 fill-rose-500 drop-shadow-lg" />
+            </div>
+          </div>
+        )}
+
         {count === 1 && (
           <div
             className="w-full max-h-[500px] bg-slate-900 cursor-pointer flex items-center justify-center overflow-hidden"

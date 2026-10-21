@@ -208,7 +208,7 @@ export const PostCard = ({
       <PostContent content={post?.content} />
 
       {/* 3. Lưới hình ảnh / Media */}
-      <PostMediaGrid images={images} />
+      <PostMediaGrid images={images} onDoubleTapLike={handleToggleLike} />
 
       {/* 4. Thống kê & Nút hành động (Like, Comment, Share, Bookmark) */}
       <PostActions

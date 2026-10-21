@@ -17,7 +17,7 @@ const MenuItems = ({ setSidebarOpen, collapsed }) => {
   };
 
   return (
-    <div className="md:px-2 xl:px-6 text-gray-600 space-y-1 font-medium">
+    <div className="md:px-2 xl:px-6 text-slate-600 dark:text-slate-300 space-y-1 font-medium">
       {menuItemsData.map(({ to, label, Icon }) => {
         const badgeCount = getBadgeCount(to);
         const isNotif = to === '/notifications';
@@ -28,10 +28,12 @@ const MenuItems = ({ setSidebarOpen, collapsed }) => {
               <button
                 type="button"
                 onClick={() => setShowNotifDropdown((prev) => !prev)}
-                className={`py-2 flex items-center gap-3 rounded-xl relative justify-center w-full ${
+                className={`py-2.5 flex items-center gap-3 rounded-xl relative justify-center w-full ${
                   !collapsed ? 'xl:justify-start xl:px-3.5' : 'xl:justify-center xl:px-2'
                 } ${
-                  showNotifDropdown ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50'
+                  showNotifDropdown
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-semibold'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 } transition-colors`}
                 title={label}
               >
@@ -58,9 +60,13 @@ const MenuItems = ({ setSidebarOpen, collapsed }) => {
             end={to === '/'}
             onClick={() => setSidebarOpen(false)}
             className={({ isActive }) =>
-              `py-2 flex items-center gap-3 rounded-xl relative justify-center w-full ${
+              `py-2.5 flex items-center gap-3 rounded-xl relative justify-center w-full ${
                 !collapsed ? 'xl:justify-start xl:px-3.5' : 'xl:justify-center xl:px-2'
-              } ${isActive ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50'} transition-colors`
+              } ${
+                isActive
+                  ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-semibold'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
+              } transition-colors`
             }
           >
             <div className="relative">

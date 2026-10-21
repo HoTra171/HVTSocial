@@ -206,8 +206,31 @@ export const PostCommentSection = ({
     }
   };
 
+  const QUICK_EMOJIS = ['❤️', '🔥', '👏', '😍', '😂', '😮', '🙌', '🎉'];
+
+  const handleQuickEmoji = (emoji) => {
+    setInput((prev) => prev + emoji);
+  };
+
   return (
     <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 space-y-3">
+      {/* QUICK EMOJI BAR (Instagram / Facebook Style) */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <span className="text-[11px] text-gray-400 font-medium whitespace-nowrap">Bình luận nhanh:</span>
+        <div className="flex items-center gap-1.5">
+          {QUICK_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => handleQuickEmoji(emoji)}
+              className="text-base hover:scale-125 transition-transform p-1 rounded-full hover:bg-white cursor-pointer active:scale-95"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* FORM NHẬP BÌNH LUẬN */}
       <div className="flex items-center gap-2.5">
         <img

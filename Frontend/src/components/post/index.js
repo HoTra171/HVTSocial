@@ -5,3 +5,5 @@ export { PostMediaGrid } from './PostMediaGrid';
 export { PostActions } from './PostActions';
 export { PostCommentSection } from './PostCommentSection';
 export { LikesModal } from './LikesModal';
+export { CreatePostModal } from './CreatePostModal';
+export { CreatePostBox } from './CreatePostBox';

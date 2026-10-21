@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import { X, Send } from "lucide-react";
+import { X, Send, Link as LinkIcon, Check, Search, Share2, MessageCircle } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { API_URL } from '../constants/api';
 
 const ShareModal = ({ post, onClose, onSuccess }) => {
   const [chatList, setChatList] = useState([]);
   const [selected, setSelected] = useState([]);
   const [message, setMessage] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sharingTimeline, setSharingTimeline] = useState(false);
 
   const getAuth = () => {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -18,10 +21,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
 
   const { userId } = getAuth();
 
-  console.log("User Id là: " + userId)
-
   useEffect(() => {
-    // Lấy danh sách chat của user (cần token)
     const { userId, token } = getAuth();
     if (!userId || !token) return;
 
@@ -29,11 +29,24 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
       .get(`${API_URL}/chat/user/${userId}/chats`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then((res) => setChatList(res.data))
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        setChatList(list);
+      })
       .catch(console.error);
   }, []);
 
-
+  const handleCopyLink = async () => {
+    try {
+      const shareUrl = `${window.location.origin}/post/${post?.id || ''}`;
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Đã sao chép liên kết bài viết!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Không thể sao chép liên kết");
+    }
+  };
 
   const handleShare = async () => {
     try {
@@ -75,6 +88,7 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
 
   const handleShareTimeline = async () => {
     try {
+      setSharingTimeline(true);
       const { token } = getAuth();
       if (!token) return toast.error("Bạn chưa đăng nhập");
 
@@ -84,90 +98,159 @@ const ShareModal = ({ post, onClose, onSuccess }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      toast.success("Đã chia sẻ lên trang cá nhân");
+      toast.success("Đã chia sẻ lên bảng tin của bạn!");
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       console.error("Share timeline error:", err);
-      toast.error("Chia sẻ thất bại");
+      toast.error(err?.response?.data?.message || "Chia sẻ thất bại");
+    } finally {
+      setSharingTimeline(false);
     }
   };
 
-  // phần JSX giữ nguyên, chỉ dùng lại 2 hàm trên
+  const filteredChats = chatList.filter((c) =>
+    (c.target_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg w-full max-w-md">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-bold text-lg">Chia sẻ bài viết</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <Share2 size={18} className="text-indigo-600 dark:text-indigo-400" />
+            <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">Chia sẻ bài viết</h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full transition"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 border-b">
+        {/* Quick action buttons: Copy Link & Share Timeline */}
+        <div className="p-4 grid grid-cols-2 gap-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
           <button
-            onClick={handleShareTimeline}
-            className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+            type="button"
+            onClick={handleCopyLink}
+            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 text-xs font-semibold shadow-sm transition"
           >
-            Chia sẻ lên trang cá nhân
+            {copied ? <Check size={16} className="text-emerald-500" /> : <LinkIcon size={16} />}
+            <span>{copied ? "Đã sao chép" : "Sao chép link"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShareTimeline}
+            disabled={sharingTimeline}
+            className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold shadow-sm transition disabled:opacity-50"
+          >
+            <Share2 size={16} />
+            <span>{sharingTimeline ? "Đang chia sẻ..." : "Đăng lên bảng tin"}</span>
           </button>
         </div>
 
-        <div className="p-4">
-          <h4 className="font-semibold mb-3">Gửi qua tin nhắn</h4>
-
-          <div className="max-h-64 overflow-y-auto mb-3 space-y-2">
-            {chatList.map((chat) => (
-              <label
-                key={`chat-${chat.chat_id}`}
-                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.includes(chat.chat_id)}
-                  onChange={(e) => {
-                    // Chọn / bỏ chọn cuộc trò chuyện để gửi bài viết
-                    const checked = e.target.checked;
-                    const id = chat.chat_id;
-
-                    setSelected((prev) =>
-                      checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id)
-                    );
-                  }}
-
-                  className="w-4 h-4"
-                />
-
-                <img
-                  src={chat.avatar || (chat.is_group_chat ? "/group.png" : "/default.jpg")}
-                  className="w-10 h-10 rounded-full"
-                  alt=""
-                />
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{chat.target_name}</p>
-                  <p className="text-xs text-gray-500 truncate">{chat.last_message}</p>
-                </div>
-              </label>
-            ))}
+        {/* Direct Send to Chat */}
+        <div className="p-4 flex-1 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <MessageCircle size={14} className="text-indigo-500" />
+              Gửi qua Messenger
+            </h4>
+            {selected.length > 0 && (
+              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                Đã chọn: {selected.length}
+              </span>
+            )}
           </div>
 
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Thêm tin nhắn (tùy chọn)..."
-            className="w-full p-2 border rounded-lg mb-3"
-          />
+          {/* Search box for chats */}
+          <div className="relative mb-3">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm người nhận..."
+              className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
 
-          <button
-            onClick={handleShare}
-            disabled={selected.length === 0}
-            className="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <Send className="w-4 h-4" />
-            Gửi ({selected.length})
-          </button>
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 max-h-56">
+            {filteredChats.length > 0 ? (
+              filteredChats.map((chat) => {
+                const isChecked = selected.includes(chat.chat_id);
+                return (
+                  <label
+                    key={`chat-${chat.chat_id}`}
+                    className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer transition ${
+                      isChecked
+                        ? "bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        const id = chat.chat_id;
+                        setSelected((prev) =>
+                          checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((x) => x !== id)
+                        );
+                      }}
+                      className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+
+                    <img
+                      src={chat.avatar || (chat.is_group_chat ? "/group.png" : "/default.jpg")}
+                      className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                      alt=""
+                      onError={(e) => { e.currentTarget.src = "/default.jpg"; }}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-xs text-slate-900 dark:text-slate-100 truncate">
+                        {chat.target_name}
+                      </p>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {chat.last_message || "Chưa có tin nhắn"}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })
+            ) : (
+              <p className="text-xs text-slate-400 text-center py-6">
+                Không tìm thấy cuộc trò chuyện nào
+              </p>
+            )}
+          </div>
+
+          {/* Optional Message input */}
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <input
+              type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Viết tin nhắn kèm theo (tùy chọn)..."
+              className="w-full p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 text-xs rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={selected.length === 0}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Gửi đến {selected.length} người</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
