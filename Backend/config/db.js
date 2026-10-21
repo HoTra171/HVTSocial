@@ -86,7 +86,13 @@ if (usePostgreSQL) {
 if (usePostgreSQL && pool && pool.query) {
   const origQuery = pool.query.bind(pool);
   pool.query = async function (text, params) {
-    const res = await origQuery(text, params);
+    let sanitizedText = text;
+    if (typeof sanitizedText === 'string') {
+      sanitizedText = sanitizedText
+        .replace(/\b(\w+\.)?(is_\w+|has_\w+)\s*=\s*0\b/gi, '$1$2 = false')
+        .replace(/\b(\w+\.)?(is_\w+|has_\w+)\s*=\s*1\b/gi, '$1$2 = true');
+    }
+    const res = await origQuery(sanitizedText, params);
     if (res && res.rows && !res.recordset) {
       res.recordset = res.rows;
       res.rowsAffected = [res.rowCount || 0];
@@ -108,6 +114,11 @@ if (!usePostgreSQL) {
     // Automatically convert LIMIT @limit OFFSET @offset to MSSQL OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
     sqlCmd = sqlCmd.replace(/LIMIT\s+@(\w+)\s+OFFSET\s+@(\w+)/gi, 'OFFSET @$2 ROWS FETCH NEXT @$1 ROWS ONLY');
     sqlCmd = sqlCmd.replace(/OFFSET\s+@(\w+)\s+LIMIT\s+@(\w+)/gi, 'OFFSET @$1 ROWS FETCH NEXT @$2 ROWS ONLY');
+
+    // Convert boolean false/true to 0/1 for MSSQL BIT columns
+    sqlCmd = sqlCmd
+      .replace(/\b(\w+\.)?(is_\w+|has_\w+)\s*=\s*false\b/gi, '$1$2 = 0')
+      .replace(/\b(\w+\.)?(is_\w+|has_\w+)\s*=\s*true\b/gi, '$1$2 = 1');
 
     if (/RETURNING\s+/i.test(sqlCmd) && !/OUTPUT\s+INSERTED/i.test(sqlCmd)) {
       if (/INSERT\s+INTO\s+[^\(]+\s*\([^\)]+\)\s*VALUES/i.test(sqlCmd)) {
@@ -215,7 +226,9 @@ if (usePostgreSQL) {
           .replace(
             /OFFSET\s+\$(\d+)\s+ROWS\s+FETCH\s+NEXT\s+\$(\d+)\s+ROWS\s+ONLY/gi,
             'OFFSET $$$1 LIMIT $$$2'
-          ); // OFFSET/FETCH NEXT -> OFFSET/LIMIT
+          ) // OFFSET/FETCH NEXT -> OFFSET/LIMIT
+          .replace(/\b(\w+\.)?(is_\w+|has_\w+)\s*=\s*0\b/gi, '$1$2 = false')
+          .replace(/\b(\w+\.)?(is_\w+|has_\w+)\s*=\s*1\b/gi, '$1$2 = true');
 
         // Handle OUTPUT clause (SQL Server) -> RETURNING clause (PostgreSQL)
         // 1. Remove OUTPUT INSERTED.* / OUTPUT DELETED.* from the middle
