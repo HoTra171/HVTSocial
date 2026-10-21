@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Login from "./page/Login";
 import SignUp from "./page/SignUp";
@@ -19,7 +19,6 @@ import ChangePassword from "./page/ChangePassword";
 import NotificationsPage from "./page/NotificationsPage";
 import PostDetail from "./page/PostDetail";
 import PrivacySettings from "./page/PrivacySettings";
-import SavedPosts from "./page/SavedPosts";
 import { useNavigate } from 'react-router-dom';
 import DebugEnv from "./debug-env";
 import AdminDashboard from "./page/Admin/AdminDashboard";
@@ -307,7 +306,7 @@ function App() {
           />
           <Route
             path="/saved"
-            element={<SavedPosts />}
+            element={<Navigate to="/profile?tab=saved" replace />}
           />
         </Route>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />

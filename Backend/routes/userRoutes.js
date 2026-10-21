@@ -221,5 +221,14 @@ router.put(
   ]),
   updateProfile
 );
+router.put(
+  '/profile/:id',
+  authMiddleware,
+  upload.fields([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'background', maxCount: 1 },
+  ]),
+  updateProfile
+);
 
 export default router;

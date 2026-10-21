@@ -10,14 +10,17 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // PostgreSQL Pool Configuration
+const connectionString = (process.env.DATABASE_URL || '').replace(/^"|"$/g, '');
+const isNeon = connectionString.includes('neon.tech');
+const requiresSsl = isNeon || process.env.NODE_ENV === 'production' || connectionString.includes('sslmode=require');
+
 const poolConfig = {
-  connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? {
-          rejectUnauthorized: false, // Required for Railway/Render
-        }
-      : false,
+  connectionString,
+  ssl: requiresSsl
+    ? {
+        rejectUnauthorized: false,
+      }
+    : false,
   max: 20, // Maximum connections in pool
   min: 2, // Minimum connections
   idleTimeoutMillis: 30000, // Close idle connections after 30s

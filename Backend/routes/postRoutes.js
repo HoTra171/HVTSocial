@@ -12,7 +12,11 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 import { searchPosts } from '../controllers/postController.js';
+import { createComment, getCommentsByPost } from '../controllers/commentController.js';
+
 router.get('/search', authMiddleware, searchPosts);
+router.get('/:postId/comments', getCommentsByPost);
+router.post('/:postId/comments', authMiddleware, createComment);
 
 /**
  * @swagger

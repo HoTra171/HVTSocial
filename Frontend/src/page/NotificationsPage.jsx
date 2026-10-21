@@ -82,7 +82,7 @@ const NotificationsPage = ({ socket, currentUser }) => {
   const unreadCount = notifications.filter((n) => n.status === 'unread').length;
 
   return (
-    <div className="max-w-4xl mx-auto pt-6 pb-10 px-4 sm:px-0">
+    <div className="max-w-3xl mx-auto pt-6 pb-16 px-4 sm:px-6">
       <div className="mb-6">
         <NotificationHeader />
         <NotificationFilters
@@ -96,7 +96,7 @@ const NotificationsPage = ({ socket, currentUser }) => {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-20">
+        <div className="flex justify-center py-24">
           <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
         </div>
       )}
@@ -105,7 +105,7 @@ const NotificationsPage = ({ socket, currentUser }) => {
         <EmptyNotifications filter={filter} />
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {filteredNotifications.map((notif) => (
           <NotificationItem
             key={notif.id}

@@ -49,6 +49,7 @@ const MobileHeader = ({ currentUserId }) => {
                     <NotificationDropdown
                         isOpen={showDropdown}
                         onClose={() => setShowDropdown(false)}
+                        placement="header"
                     />
                 </div>
             </div>

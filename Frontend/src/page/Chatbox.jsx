@@ -860,9 +860,9 @@ const Chatbox = () => {
             content: text,
             message_type: "text",
             reply_to_id: replyingTo.id,
-            reply_content: replyingTo.content,
-            reply_type: replyingTo.message_type,
-            reply_sender: replyingTo.sender_name,
+            reply_content: replyingTo.content || (replyingTo.message_type === "image" ? "📷 Hình ảnh" : replyingTo.message_type === "voice" ? "🎤 Tin nhắn thoại" : ""),
+            reply_type: replyingTo.message_type || "text",
+            reply_sender: replyingTo.sender_id === myId ? "Bạn" : (replyingTo.sender_name || partner?.name || partner?.full_name || "Người dùng"),
           }
           : {
             chatId: Number(chatId),
@@ -1747,16 +1747,30 @@ const Chatbox = () => {
 
           {/* Reply preview */}
           {replyingTo && (
-            <div className="p-3 bg-gray-50 border-t flex items-center justify-between">
-              <div className="flex-1">
-                <p className="text-xs text-gray-500">Đang trả lời</p>
-                <p className="text-sm truncate">
-                  {replyingTo.message_type === 'text' ? replyingTo.content :
-                    replyingTo.message_type === 'image' ? '📷 Hình ảnh' : '🎤 Thoại'}
-                </p>
+            <div className="px-4 py-2.5 bg-blue-50/80 border-t border-b border-blue-100 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                  <Reply size={15} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-blue-600">
+                    Đang trả lời {replyingTo.sender_id === myId ? "chính mình" : (partner?.name || "người dùng")}
+                  </p>
+                  <p className="text-xs text-gray-700 truncate">
+                    {replyingTo.message_type === "text"
+                      ? replyingTo.content
+                      : replyingTo.message_type === "image"
+                        ? "📷 Hình ảnh"
+                        : "🎤 Tin nhắn thoại"}
+                  </p>
+                </div>
               </div>
-              <button onClick={() => setReplyingTo(null)} className="p-2 hover:bg-gray-200 rounded-full">
-                <X size={16} />
+              <button
+                onClick={() => setReplyingTo(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded-full transition ml-2 shadow-sm"
+                title="Hủy trả lời"
+              >
+                <X size={15} />
               </button>
             </div>
           )}

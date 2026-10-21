@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
@@ -20,7 +20,11 @@ dayjs.locale('vi');
 const Profile = () => {
   const { profileId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
+
+  const targetUserId = profileId || currentUser?.id;
+  const isOwnProfile = !profileId || Number(currentUser?.id) === Number(profileId);
 
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -31,18 +35,26 @@ const Profile = () => {
   const [likedPosts, setLikedPosts] = useState([]);
   const [loadingTab, setLoadingTab] = useState(false);
 
-  const tabs = useMemo(
-    () => [
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['posts', 'media', 'likes', 'saved'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const tabs = useMemo(() => {
+    const list = [
       { key: 'posts', icon: FileText, label: 'Bài viết' },
       { key: 'media', icon: Image, label: 'Ảnh & video' },
-      { key: 'likes', icon: Heart, label: 'Lượt thích' },
-      { key: 'saved', icon: Bookmark, label: 'Đã lưu' },
-    ],
-    []
-  );
-
-  const targetUserId = profileId || currentUser?.id;
-  const isOwnProfile = !profileId || Number(currentUser?.id) === Number(profileId);
+    ];
+    if (isOwnProfile) {
+      list.push(
+        { key: 'likes', icon: Heart, label: 'Lượt thích' },
+        { key: 'saved', icon: Bookmark, label: 'Đã lưu' }
+      );
+    }
+    return list;
+  }, [isOwnProfile]);
 
   // Fetch profile user and their posts
   useEffect(() => {

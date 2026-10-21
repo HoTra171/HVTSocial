@@ -42,12 +42,11 @@ const MenuItems = ({ setSidebarOpen, collapsed }) => {
                 <span className={`hidden ${!collapsed ? 'xl:inline' : ''}`}>{label}</span>
               </button>
 
-              <div className="absolute left-full top-0 ml-2 z-50">
-                <NotificationDropdown
-                  isOpen={showNotifDropdown}
-                  onClose={() => setShowNotifDropdown(false)}
-                />
-              </div>
+              <NotificationDropdown
+                isOpen={showNotifDropdown}
+                onClose={() => setShowNotifDropdown(false)}
+                placement="sidebar"
+              />
             </div>
           );
         }

@@ -73,3 +73,6 @@ nul
 Frontend/nul
 Backend/nul
 
+.neon
+.agents/
+mcp_config.json

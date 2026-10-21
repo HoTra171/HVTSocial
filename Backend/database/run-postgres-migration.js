@@ -16,14 +16,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // PostgreSQL connection config
+const connectionString = (process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || '').replace(/^"|"$/g, '');
+const isNeon = connectionString.includes('neon.tech');
+const requiresSsl = isNeon || process.env.NODE_ENV === 'production' || connectionString.includes('sslmode=require');
+
 const config = {
-  connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? {
-          rejectUnauthorized: false, // Railway/Render requires this
-        }
-      : false,
+  connectionString,
+  ssl: requiresSsl
+    ? {
+        rejectUnauthorized: false, // Neon/Railway/Render requires this
+      }
+    : false,
 };
 
 async function runMigration() {

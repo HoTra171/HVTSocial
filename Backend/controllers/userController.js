@@ -3,6 +3,7 @@ import sql from 'mssql';
 import { UserService } from '../services/userService.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
+import { uploadMedia } from '../helpers/uploadHelper.js';
 
 /* ================= CONNECTIONS ================= */
 export const getUserConnections = async (req, res) => {
@@ -33,33 +34,9 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-/* ================= HELPER: UPLOAD TO CLOUDINARY - OPTIMIZED ================= */
-const uploadToCloudinary = async (fileBuffer, folder, transformation = null) => {
-  return new Promise((resolve, reject) => {
-    const stream = Readable.from(fileBuffer);
-
-    const options = {
-      resource_type: 'image',
-      folder: `hvtsocial/${folder}`,
-      // EAGER transformation - Cloudinary xá»­ lÃ½ ngay
-      eager: transformation ? [{ transformation }] : undefined,
-      eager_async: false, // Äá»£i transform xong má»›i return
-    };
-
-    if (transformation) {
-      options.transformation = transformation;
-    }
-
-    const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(result.secure_url);
-      }
-    });
-
-    stream.pipe(uploadStream);
-  });
+/* ================= HELPER: UPLOAD MEDIA (CLOUDINARY / LOCAL FALLBACK) ================= */
+const uploadToCloudinary = async (fileBuffer, folder, transformation = null, originalName = '') => {
+  return uploadMedia(fileBuffer, folder, originalName, transformation);
 };
 
 /* ================= UPDATE PROFILE - OPTIMIZED ================= */

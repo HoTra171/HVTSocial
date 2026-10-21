@@ -11,8 +11,8 @@ export const createComment = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const postId = Number(req.body.post_id);
-    const parentIdRaw = req.body.comment_parent;
+    const postId = Number(req.params.postId || req.body.post_id || req.body.postId);
+    const parentIdRaw = req.body.comment_parent || req.body.parent_id || req.body.parentId || req.body.parent_comment_id;
     const commentParent =
       parentIdRaw === null || parentIdRaw === undefined || parentIdRaw === ''
         ? null

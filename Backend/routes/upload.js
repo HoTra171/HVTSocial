@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
+import { uploadMedia } from '../helpers/uploadHelper.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 import {
   imageUpload,
@@ -88,37 +89,13 @@ router.post(
         resourceType = 'raw';
       }
 
-      const stream = Readable.from(req.file.buffer);
-
-      const uploadPromise = new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: 'hvtsocial/stories',
-            format: resourceType === 'raw' ? 'mp3' : undefined,
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
-
-        stream.pipe(uploadStream);
-      });
-
-      const result = await uploadPromise;
-
-      console.log(' Uploaded to Cloudinary:', result.secure_url);
+      const url = await uploadMedia(req.file.buffer, 'uploads', req.file.originalname);
 
       res.json({
         success: true,
-        url: result.secure_url,
-        publicId: result.public_id,
-        resourceType: result.resource_type,
-        format: result.format,
-        width: result.width,
-        height: result.height,
-        duration: result.duration,
+        url,
+        publicId: url,
+        resourceType,
       });
     } catch (error) {
       console.error(' Upload error:', error);
@@ -181,29 +158,7 @@ router.post(
       }
 
       const uploadPromises = req.files.map(async (file) => {
-        let resourceType = 'image';
-        if (file.mimetype.startsWith('video/')) {
-          resourceType = 'video';
-        } else if (file.mimetype.startsWith('audio/')) {
-          resourceType = 'raw';
-        }
-
-        const stream = Readable.from(file.buffer);
-
-        return new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              resource_type: resourceType,
-              folder: 'hvtsocial/stories',
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result.secure_url);
-            }
-          );
-
-          stream.pipe(uploadStream);
-        });
+        return uploadMedia(file.buffer, 'uploads', file.originalname);
       });
 
       const urls = await Promise.all(uploadPromises);

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, UserCheck, UserMinus, Clock, X, Loader2 } from 'lucide-react';
+import { UserPlus, UserCheck, UserMinus, Clock, X, Loader2, Check } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { API_URL } from '../constants/api';
 
-
-const FriendButton = ({ userId, currentUserId }) => {
+const FriendButton = ({ userId, currentUserId, fullWidth = false, onStatusChange }) => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!userId || !currentUserId || userId === currentUserId) {
@@ -31,7 +31,9 @@ const FriendButton = ({ userId, currentUserId }) => {
     }
   };
 
-  const handleSendRequest = async () => {
+  const handleSendRequest = async (e) => {
+    e?.stopPropagation();
+    setActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       await axios.post(
@@ -41,12 +43,17 @@ const FriendButton = ({ userId, currentUserId }) => {
       );
       toast.success('Đã gửi lời mời kết bạn');
       setStatus('pending_sent');
+      onStatusChange?.('pending_sent');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Không thể gửi lời mời');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleAccept = async () => {
+  const handleAccept = async (e) => {
+    e?.stopPropagation();
+    setActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       await axios.post(
@@ -56,12 +63,17 @@ const FriendButton = ({ userId, currentUserId }) => {
       );
       toast.success('Đã chấp nhận lời mời');
       setStatus('friends');
+      onStatusChange?.('friends');
     } catch (error) {
       toast.error('Không thể chấp nhận lời mời');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleReject = async () => {
+  const handleReject = async (e) => {
+    e?.stopPropagation();
+    setActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       await axios.post(
@@ -71,12 +83,17 @@ const FriendButton = ({ userId, currentUserId }) => {
       );
       toast.success('Đã từ chối lời mời');
       setStatus(null);
+      onStatusChange?.(null);
     } catch (error) {
       toast.error('Không thể từ chối');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleCancel = async () => {
+  const handleCancel = async (e) => {
+    e?.stopPropagation();
+    setActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/friendships/cancel`, {
@@ -85,14 +102,19 @@ const FriendButton = ({ userId, currentUserId }) => {
       });
       toast.success('Đã hủy lời mời');
       setStatus(null);
+      onStatusChange?.(null);
     } catch (error) {
       toast.error('Không thể hủy lời mời');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleUnfriend = async () => {
+  const handleUnfriend = async (e) => {
+    e?.stopPropagation();
     if (!window.confirm('Bạn có chắc muốn hủy kết bạn?')) return;
 
+    setActionLoading(true);
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/friendships/unfriend`, {
@@ -101,8 +123,11 @@ const FriendButton = ({ userId, currentUserId }) => {
       });
       toast.success('Đã hủy kết bạn');
       setStatus(null);
+      onStatusChange?.(null);
     } catch (error) {
       toast.error('Không thể hủy kết bạn');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -111,47 +136,49 @@ const FriendButton = ({ userId, currentUserId }) => {
     return null;
   }
 
-  if (loading) {
+  const baseWidth = fullWidth ? 'w-full' : 'w-auto flex-shrink-0';
+
+  if (loading || actionLoading) {
     return (
       <button
-        className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed font-medium mt-4 md:mt-0 flex items-center gap-2"
+        className={`${baseWidth} h-10 px-4 bg-gray-100 text-gray-400 rounded-xl cursor-not-allowed font-medium text-xs sm:text-sm flex items-center justify-center gap-2 whitespace-nowrap`}
         disabled
       >
-        <Loader2 className="w-5 h-5 animate-spin" />
-        Đang tải...
+        <Loader2 className="w-4 h-4 animate-spin text-indigo-500" />
+        <span>Đang xử lý...</span>
       </button>
     );
   }
 
-  // STATUS: null (không có quan hệ)
+  // STATUS: null (chưa có quan hệ)
   if (!status) {
     return (
       <button
         onClick={handleSendRequest}
-        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mt-4 md:mt-0 transition active:scale-95"
+        className={`${baseWidth} h-10 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white rounded-xl font-semibold text-xs sm:text-sm shadow-sm shadow-indigo-200 transition-all duration-150 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap`}
       >
-        <UserPlus className="w-5 h-5" />
-        Kết bạn
+        <UserPlus className="w-4 h-4" />
+        <span>Kết bạn</span>
       </button>
     );
   }
 
-  // STATUS: friends
+  // STATUS: friends (đã là bạn bè)
   if (status === 'friends') {
     return (
-      <div className="flex gap-2 mt-4 md:mt-0">
+      <div className={`flex items-center gap-1.5 ${baseWidth}`}>
         <button
-          className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 font-medium rounded-lg cursor-default border border-green-200"
+          className="flex-1 h-10 px-3 bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold rounded-xl text-xs sm:text-sm cursor-default flex items-center justify-center gap-1.5 whitespace-nowrap"
         >
-          <UserCheck className="w-5 h-5" />
-          Bạn bè
+          <UserCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>Bạn bè</span>
         </button>
         <button
           onClick={handleUnfriend}
-          className="aspect-square flex items-center justify-center p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition border border-gray-200 active:scale-95"
+          className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-colors border border-gray-200 active:scale-95"
           title="Hủy kết bạn"
         >
-          <UserMinus className="w-5 h-5" />
+          <UserMinus className="w-4 h-4" />
         </button>
       </div>
     );
@@ -162,11 +189,13 @@ const FriendButton = ({ userId, currentUserId }) => {
     return (
       <button
         onClick={handleCancel}
-        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0 transition active:scale-95"
+        className={`${baseWidth} h-10 px-3 bg-amber-50 hover:bg-amber-100/80 border border-amber-200 text-amber-800 rounded-xl font-medium text-xs sm:text-sm transition-all duration-150 active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap group`}
+        title="Nhấn để hủy lời mời"
       >
-        <Clock className="w-5 h-5" />
-        Đã gửi lời mời
-        <X className="w-4 h-4 ml-1" />
+        <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 group-hover:hidden" />
+        <X className="w-4 h-4 text-amber-600 flex-shrink-0 hidden group-hover:inline" />
+        <span className="group-hover:hidden">Đã gửi lời mời</span>
+        <span className="hidden group-hover:inline">Hủy lời mời</span>
       </button>
     );
   }
@@ -174,19 +203,20 @@ const FriendButton = ({ userId, currentUserId }) => {
   // STATUS: pending_received (nhận được lời mời)
   if (status === 'pending_received') {
     return (
-      <div className="flex gap-2 mt-4 md:mt-0">
+      <div className={`flex items-center gap-1.5 ${baseWidth}`}>
         <button
           onClick={handleAccept}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition active:scale-95"
+          className="flex-1 h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs sm:text-sm transition-all duration-150 active:scale-95 flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm shadow-indigo-200"
         >
-          <UserCheck className="w-5 h-5" />
-          Chấp nhận
+          <Check className="w-4 h-4 flex-shrink-0" />
+          <span>Chấp nhận</span>
         </button>
         <button
           onClick={handleReject}
-          className="aspect-square flex items-center justify-center p-2 bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-lg transition border border-gray-200 active:scale-95"
+          className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-gray-100 hover:bg-red-50 text-gray-600 hover:text-red-600 rounded-xl transition-colors border border-gray-200 active:scale-95"
+          title="Từ chối"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
     );
@@ -196,7 +226,7 @@ const FriendButton = ({ userId, currentUserId }) => {
   if (status === 'blocked') {
     return (
       <button
-        className="px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed mt-4 md:mt-0 font-medium"
+        className={`${baseWidth} h-10 px-4 bg-gray-100 text-gray-400 rounded-xl cursor-not-allowed font-medium text-xs sm:text-sm flex items-center justify-center`}
         disabled
       >
         Đã chặn

@@ -53,7 +53,7 @@ export const sendMessage = async (req, res) => {
     const authId = getAuthUserId(req);
     if (!authId) return forbid(res);
 
-    const chatId = Number(req.body?.chatId);
+    const chatId = Number(req.params.chatId || req.body?.chatId);
     if (!chatId) return badRequest(res, 'invalid_chatId');
 
     // senderId lấy từ token, không lấy từ body

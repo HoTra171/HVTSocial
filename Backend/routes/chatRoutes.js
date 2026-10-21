@@ -127,6 +127,8 @@ router.get('/messages/:chatId', authMiddleware, getMessages);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/send', authMiddleware, sendMessage);
+router.post('/:chatId/messages', authMiddleware, sendMessage);
+router.post('/messages/:chatId', authMiddleware, sendMessage);
 
 /**
  * @swagger

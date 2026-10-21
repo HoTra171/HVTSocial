@@ -10,10 +10,13 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = (process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || '').replace(/^"|"$/g, '');
 
 if (!DATABASE_URL || !DATABASE_URL.includes('postgres')) {
   console.log('🔧 Local MSSQL detected: verifying schema compatibility...');

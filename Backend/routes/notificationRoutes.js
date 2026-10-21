@@ -78,6 +78,9 @@ router.get('/unread-count', authMiddleware, getUnreadCount);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.patch('/mark-all-read', authMiddleware, markAllRead);
+router.put('/mark-all-read', authMiddleware, markAllRead);
+router.patch('/read-all', authMiddleware, markAllRead);
+router.put('/read-all', authMiddleware, markAllRead);
 
 /**
  * @swagger
@@ -110,6 +113,7 @@ router.patch('/mark-all-read', authMiddleware, markAllRead);
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.patch('/:id/read', authMiddleware, markAsRead);
+router.put('/:id/read', authMiddleware, markAsRead);
 
 /**
  * @swagger

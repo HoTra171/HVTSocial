@@ -41,6 +41,7 @@ const router = express.Router();
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/post/:postId', getCommentsByPost);
+router.post('/post/:postId', authMiddleware, createComment);
 
 /**
  * @swagger

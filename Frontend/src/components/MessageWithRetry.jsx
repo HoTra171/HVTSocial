@@ -100,11 +100,11 @@ const MessageBubble = ({
         onContextMenu={handleContextMenu}
       >
         <div className={`relative max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-          {/* Icon bar (emoji + menu) - Desktop only (>= 1024px) - Positioning relative to the Group */}
+          {/* Icon bar (emoji + menu) - Visible on hover on all devices */}
           {
             !isRecalled && !msg.failed && (
               <div
-                className={`hidden lg:flex msg-icon-bar absolute top-1/2 -translate-y-1/2 items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10
+                className={`flex msg-icon-bar absolute top-1/2 -translate-y-1/2 items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20
               ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
               >
                 <button
@@ -112,10 +112,10 @@ const MessageBubble = ({
                     e.stopPropagation();
                     onReply && onReply(msg);
                   }}
-                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
-                  title="Trả lời"
+                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all border border-gray-100"
+                  title="Trả lời tin nhắn"
                 >
-                  <Reply size={18} />
+                  <Reply size={16} />
                 </button>
 
                 <button
@@ -124,10 +124,10 @@ const MessageBubble = ({
                     setReactMenuFor(reactMenuFor === msg.id ? null : msg.id);
                     setOpenMenuId(null);
                   }}
-                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-yellow-500 hover:bg-yellow-50 transition-all"
+                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-yellow-500 hover:bg-yellow-50 transition-all border border-gray-100"
                   title="Thả cảm xúc"
                 >
-                  <Smile size={18} />
+                  <Smile size={16} />
                 </button>
 
                 {isMe && (
@@ -137,10 +137,10 @@ const MessageBubble = ({
                       setOpenMenuId(openMenuId === msg.id ? null : msg.id);
                       setReactMenuFor(null);
                     }}
-                    className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                    className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-gray-100"
                     title="Tùy chọn"
                   >
-                    <MoreVertical size={18} />
+                    <MoreVertical size={16} />
                   </button>
                 )}
               </div>
@@ -205,7 +205,7 @@ const MessageBubble = ({
             )
           }
 
-          {/* Reply Context Bubble (Visual Duplicate) */}
+          {/* Reply Context Bubble (Visual Quoted Bubble) */}
           {
             isReply && replyData && !isRecalled && (
               <div
@@ -213,9 +213,16 @@ const MessageBubble = ({
                   e.stopPropagation();
                   if (onReplyClick && replyData.id) onReplyClick(replyData.id);
                 }}
-                className={`mb-[2px] px-3 py-2 rounded-2xl text-xs bg-gray-100 text-gray-500 opacity-90 cursor-pointer hover:bg-gray-200 transition-colors ${isMe ? "self-end" : "self-start"}`}
+                className={`mb-1 px-3 py-1.5 rounded-xl text-xs bg-gray-100/90 text-gray-600 border-l-4 border-blue-500 cursor-pointer hover:bg-gray-200 transition-colors shadow-sm max-w-[280px] ${
+                  isMe ? "self-end text-right border-r-4 border-l-0 border-blue-600" : "self-start text-left"
+                }`}
+                title="Nhấn để xem tin nhắn gốc"
               >
-                <p className="truncate max-w-[200px]">
+                <div className={`flex items-center gap-1 text-[11px] font-semibold text-blue-600 mb-0.5 ${isMe ? "justify-end" : "justify-start"}`}>
+                  <Reply size={12} className={isMe ? "rotate-180" : ""} />
+                  <span className="truncate">{replyData.sender || "Người dùng"}</span>
+                </div>
+                <p className="truncate text-gray-700 text-xs">
                   {replyData.type === "text"
                     ? replyData.content
                     : replyData.type === "image"
@@ -234,10 +241,14 @@ const MessageBubble = ({
               </div>
             ) : msg.message_type === "text" ? (
               <div
-                className={`px-3 py-2 rounded-2xl text-sm shadow ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  onReply && onReply(msg);
+                }}
+                title="Nhấn đúp để trả lời"
+                className={`px-3 py-2 rounded-2xl text-sm shadow cursor-pointer select-text ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
                   } ${msg.failed ? "opacity-60" : ""}`}
               >
-                {/* Removed internal reply context */}
                 <div>{msg.content}</div>
                 <div className="flex items-center justify-end gap-2 mt-1">
                   {renderMessageStatus()}

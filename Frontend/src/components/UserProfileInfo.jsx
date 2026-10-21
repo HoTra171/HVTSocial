@@ -118,36 +118,37 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
 
             {/* Buttons */}
             {isOwnProfile ? (
-              <div className="flex flex-row gap-3">
+              <div className="flex flex-row items-center gap-2.5">
                 {/* Edit button */}
                 <button
                   onClick={() => setShowEdit?.(true)}
-                  className="flex items-center gap-2 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0"
+                  className="h-10 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all flex items-center gap-2 active:scale-95 shadow-sm whitespace-nowrap"
                 >
-                  <PenBox className="w-4 h-4" />
-                  Chỉnh sửa
+                  <PenBox className="w-4 h-4 text-gray-500" />
+                  <span>Chỉnh sửa hồ sơ</span>
                 </button>
 
                 {/* Đổi mật khẩu - Hidden on mobile */}
                 <button
                   onClick={() => navigate("/change-password")}
-                  className="max-sm:hidden flex items-center gap-2 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium mt-4 md:mt-0"
+                  className="max-sm:hidden h-10 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all flex items-center gap-2 active:scale-95 shadow-sm whitespace-nowrap"
                 >
-                  Đổi mật khẩu
+                  <span>Đổi mật khẩu</span>
                 </button>
               </div>
             ) : (
-              <div className="flex flex-row gap-3">
-                <FriendButton userId={user.id} currentUserId={currentUser?.id} />
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <FriendButton userId={user.id} currentUserId={currentUser?.id} fullWidth={false} />
 
                 {/* Message button - Chỉ hiện khi xem profile người khác */}
                 <button
                   onClick={handleSendMessage}
                   disabled={isCreatingChat}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium mt-4 md:mt-0 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  className="h-10 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-sm shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 disabled:opacity-50"
+                  title="Gửi tin nhắn"
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  {isCreatingChat ? "Đang tải..." : "Nhắn tin"}
+                  <MessageCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{isCreatingChat ? "Đang mở..." : "Nhắn tin"}</span>
                 </button>
               </div>
             )}

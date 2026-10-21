@@ -129,7 +129,22 @@ async function main() {
         ALTER TABLE messages ADD reply_sender NVARCHAR(100);
     `);
 
-    // 9. Disable triggers that block OUTPUT INSERTED.* without INTO clause
+    // 9. Add privacy settings columns to users if not exists
+    await db.request().query(`
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'profile_visibility')
+        ALTER TABLE users ADD profile_visibility NVARCHAR(20) DEFAULT 'public';
+
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'post_visibility')
+        ALTER TABLE users ADD post_visibility NVARCHAR(20) DEFAULT 'public';
+
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'allow_friend_requests')
+        ALTER TABLE users ADD allow_friend_requests BIT DEFAULT 1;
+
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'show_online_status')
+        ALTER TABLE users ADD show_online_status BIT DEFAULT 1;
+    `);
+
+    // 10. Disable triggers that block OUTPUT INSERTED.* without INTO clause
     const tables = ['friendships', 'users', 'posts', 'comments', 'likes', 'messages', 'notifications', 'stories', 'roles'];
     for (const table of tables) {
       try {
