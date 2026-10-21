@@ -38,3 +38,6 @@ nul
 Frontend/nul
 Backend/nul
 
+
+.vercel
+.env*

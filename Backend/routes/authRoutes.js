@@ -9,17 +9,8 @@ import {
   logout,
 } from '../controllers/authController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
-import rateLimit from 'express-rate-limit';
+import { authLimiter } from '../middlewares/security.js';
 import { validate, registerSchema, loginSchema } from '../middlewares/validationMiddleware.js';
-
-// Rate limiter: 10 requests per 15 mins for auth endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10, // max 10
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: 'Quá nhiều lần thử, vui lòng quay lại sau 15 phút.' }
-});
 
 const router = express.Router();
 

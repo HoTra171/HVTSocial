@@ -4,16 +4,16 @@ async function main() {
   try {
     const db = await pool;
     const cols = await db.request().query(`
-      SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE
-      FROM INFORMATION_SCHEMA.COLUMNS
-      WHERE TABLE_SCHEMA = 'dbo'
-      ORDER BY TABLE_NAME, ORDINAL_POSITION
+      SELECT table_name, column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+      ORDER BY table_name, ordinal_position
     `);
     
     const tables = {};
     for (const row of cols.recordset) {
-      if (!tables[row.TABLE_NAME]) tables[row.TABLE_NAME] = [];
-      tables[row.TABLE_NAME].push(`${row.COLUMN_NAME} (${row.DATA_TYPE})`);
+      if (!tables[row.table_name]) tables[row.table_name] = [];
+      tables[row.table_name].push(`${row.column_name} (${row.data_type})`);
     }
     
     console.log('Tables and columns:');

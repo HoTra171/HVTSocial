@@ -34,7 +34,8 @@ export default function Login() {
       navigate('/feed');
     } catch (err) {
       console.error('Login error:', err);
-      toast.error(err.response?.data?.message || err.message || 'Đăng nhập thất bại');
+      const msg = err.response?.data?.errors?.[0]?.message || err.response?.data?.message || err.message || 'Đăng nhập thất bại';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

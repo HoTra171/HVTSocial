@@ -73,17 +73,17 @@ export const register = async (req, res) => {
       });
     }
 
-    // 3. Validate password length
-    if (password.length < 6) {
+    // 3. Validate password length & complexity
+    if (password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Mật khẩu phải có ít nhất 6 ký tự',
+        message: 'Mật khẩu phải có ít nhất 8 ký tự',
       });
     }
 
     // 4. Kiểm tra email hoặc username đã tồn tại
     const checkQuery = `
-      SELECT * FROM users
+      SELECT id, email, username FROM users
       WHERE email = @email OR username = @username
     `;
 
@@ -95,16 +95,16 @@ export const register = async (req, res) => {
 
     if (checkResult.recordset.length > 0) {
       const existing = checkResult.recordset[0];
-      if (existing.email === email) {
+      if (existing.email && existing.email.toLowerCase() === email.toLowerCase()) {
         return res.status(400).json({
           success: false,
-          message: 'Email đã được sử dụng',
+          message: 'Email này đã được sử dụng. Vui lòng chọn email khác hoặc đăng nhập.',
         });
       }
-      if (existing.username === username) {
+      if (existing.username && existing.username.toLowerCase() === username.toLowerCase()) {
         return res.status(400).json({
           success: false,
-          message: 'Username đã được sử dụng',
+          message: 'Tên người dùng này đã tồn tại. Vui lòng chọn tên người dùng khác.',
         });
       }
     }

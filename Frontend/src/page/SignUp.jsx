@@ -42,26 +42,50 @@ const SignUp = () => {
     const { full_name, username, email, password, confirmPassword, date_of_birth, gender } = form;
 
     if (!full_name || !username || !email || !password || !date_of_birth || !gender) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc');
+      setError('Vui lòng điền đầy đủ tất cả các trường bắt buộc (*)');
+      return false;
+    }
+
+    if (full_name.trim().length < 2) {
+      setError('Họ và tên phải có ít nhất 2 ký tự');
+      return false;
+    }
+
+    // Validate username: only alphanumeric, 3-30 chars
+    const usernameRegex = /^[a-zA-Z0-9]{3,30}$/;
+    if (!usernameRegex.test(username.trim())) {
+      setError('Tên người dùng từ 3-30 ký tự, chỉ gồm chữ cái và số (không dấu, không khoảng trắng, không ký tự đặc biệt)');
       return false;
     }
 
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Email không hợp lệ');
+    if (!emailRegex.test(email.trim())) {
+      setError('Email không đúng định dạng (ví dụ: ban@gmail.com)');
       return false;
     }
 
-    // Validate password length
-    if (password.length < 6) {
-      setError('Mật khẩu phải có ít nhất 6 ký tự');
+    // Validate password: min 8 chars, uppercase, lowercase, number
+    if (password.length < 8) {
+      setError('Mật khẩu phải có ít nhất 8 ký tự');
+      return false;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+    if (!passwordRegex.test(password)) {
+      setError('Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số');
       return false;
     }
 
     // Validate password match
     if (password !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp');
+      return false;
+    }
+
+    // Validate date of birth
+    if (new Date(date_of_birth) > new Date()) {
+      setError('Ngày sinh không thể ở trong tương lai');
       return false;
     }
 
@@ -86,9 +110,9 @@ const SignUp = () => {
       const { full_name, username, email, password, date_of_birth, gender } = form;
 
       await register({
-        full_name,
-        username,
-        email,
+        full_name: full_name.trim(),
+        username: username.trim(),
+        email: email.trim().toLowerCase(),
         password,
         date_of_birth,
         gender,
@@ -98,7 +122,11 @@ const SignUp = () => {
       navigate('/feed');
     } catch (err) {
       console.error('Sign up error:', err);
-      const msg = err.response?.data?.message || err.message || 'Đăng ký thất bại';
+      const msg =
+        err.response?.data?.errors?.[0]?.message ||
+        err.response?.data?.message ||
+        err.message ||
+        'Đăng ký thất bại, vui lòng thử lại';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -155,12 +183,13 @@ const SignUp = () => {
             <input
               type="text"
               name="username"
-              placeholder="Tên người dùng *"
+              placeholder="Tên người dùng (viết liền, không dấu) *"
               value={form.username}
               onChange={handleChange}
               disabled={loading}
-              className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-70"
+              className="w-full p-3 mb-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 disabled:opacity-70"
             />
+            <p className="text-xs text-gray-500 mb-3 px-1">Chỉ gồm chữ cái và số (ví dụ: nguyenvana123, 3-30 ký tự)</p>
 
             {/* Email */}
             <input
@@ -174,11 +203,11 @@ const SignUp = () => {
             />
 
             {/* Password */}
-            <div className="relative mb-4">
+            <div className="relative mb-1">
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="Mật khẩu (ít nhất 6 ký tự) *"
+                placeholder="Mật khẩu (ít nhất 8 ký tự) *"
                 value={form.password}
                 onChange={handleChange}
                 disabled={loading}
@@ -192,13 +221,14 @@ const SignUp = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            <p className="text-xs text-gray-500 mb-3 px-1">Gồm tối thiểu 8 ký tự, có ít nhất 1 chữ hoa, 1 chữ thường và 1 số</p>
 
             {/* Confirm Password */}
             <div className="relative mb-4">
               <input
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
-                placeholder="Xác nhận mật khẩu *"
+                placeholder="Xác nhận lại mật khẩu *"
                 value={form.confirmPassword}
                 onChange={handleChange}
                 disabled={loading}

@@ -30,7 +30,7 @@ export const validate = (schema) => {
 
       return res.status(400).json({
         success: false,
-        message: 'Validation failed',
+        message: errors[0]?.message || 'Dữ liệu không hợp lệ',
         errors,
       });
     }
@@ -58,7 +58,7 @@ export const validateParams = (schema) => {
 
       return res.status(400).json({
         success: false,
-        message: 'Invalid parameters',
+        message: errors[0]?.message || 'Tham số đường dẫn không hợp lệ',
         errors,
       });
     }
@@ -85,7 +85,7 @@ export const validateQuery = (schema) => {
 
       return res.status(400).json({
         success: false,
-        message: 'Invalid query parameters',
+        message: errors[0]?.message || 'Tham số tìm kiếm không hợp lệ',
         errors,
       });
     }
@@ -102,8 +102,9 @@ export const validateQuery = (schema) => {
  */
 export const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
-    'string.email': 'Email must be a valid email address',
-    'any.required': 'Email is required',
+    'string.empty': 'Vui lòng nhập địa chỉ email',
+    'string.email': 'Email không đúng định dạng (ví dụ: example@gmail.com)',
+    'any.required': 'Email là bắt buộc',
   }),
 
   password: Joi.string()
@@ -111,29 +112,35 @@ export const registerSchema = Joi.object({
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .required()
     .messages({
-      'string.min': 'Password must be at least 8 characters',
-      'string.pattern.base': 'Password must contain uppercase, lowercase, and number',
-      'any.required': 'Password is required',
+      'string.empty': 'Vui lòng nhập mật khẩu',
+      'string.min': 'Mật khẩu phải có ít nhất 8 ký tự',
+      'string.pattern.base': 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 chữ số',
+      'any.required': 'Mật khẩu là bắt buộc',
     }),
 
   full_name: Joi.string().min(2).max(100).required().messages({
-    'string.min': 'Full name must be at least 2 characters',
-    'string.max': 'Full name cannot exceed 100 characters',
-    'any.required': 'Full name is required',
+    'string.empty': 'Vui lòng nhập họ và tên',
+    'string.min': 'Họ và tên phải có ít nhất 2 ký tự',
+    'string.max': 'Họ và tên không được vượt quá 100 ký tự',
+    'any.required': 'Họ và tên là bắt buộc',
   }),
 
   username: Joi.string().alphanum().min(3).max(30).required().messages({
-    'string.alphanum': 'Username must only contain letters and numbers',
-    'string.min': 'Username must be at least 3 characters',
-    'string.max': 'Username cannot exceed 30 characters',
-    'any.required': 'Username is required',
+    'string.empty': 'Vui lòng nhập tên người dùng (username)',
+    'string.alphanum': 'Tên người dùng chỉ được chứa chữ cái và số (không dấu, không khoảng trắng)',
+    'string.min': 'Tên người dùng phải có ít nhất 3 ký tự',
+    'string.max': 'Tên người dùng không được vượt quá 30 ký tự',
+    'any.required': 'Tên người dùng là bắt buộc',
   }),
 
   date_of_birth: Joi.date().max('now').optional().messages({
-    'date.max': 'Date of birth cannot be in the future',
+    'date.base': 'Ngày sinh không hợp lệ',
+    'date.max': 'Ngày sinh không thể là ngày trong tương lai',
   }),
 
-  gender: Joi.string().valid('male', 'female', 'other').optional(),
+  gender: Joi.string().valid('male', 'female', 'other').optional().messages({
+    'any.only': 'Giới tính không hợp lệ (nam, nữ hoặc khác)',
+  }),
 });
 
 /**
@@ -141,12 +148,14 @@ export const registerSchema = Joi.object({
  */
 export const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
-    'string.email': 'Email must be valid',
-    'any.required': 'Email is required',
+    'string.empty': 'Vui lòng nhập email',
+    'string.email': 'Email không đúng định dạng',
+    'any.required': 'Email là bắt buộc',
   }),
 
   password: Joi.string().required().messages({
-    'any.required': 'Password is required',
+    'string.empty': 'Vui lòng nhập mật khẩu',
+    'any.required': 'Mật khẩu là bắt buộc',
   }),
 });
 

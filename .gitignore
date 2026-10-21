@@ -76,3 +76,6 @@ Backend/nul
 .neon
 .agents/
 mcp_config.json
+
+.vercel
+.env*
