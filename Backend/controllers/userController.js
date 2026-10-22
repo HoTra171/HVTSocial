@@ -106,18 +106,18 @@ export const updateProfile = async (req, res) => {
     if (userId !== currentUserId) {
       return res.status(403).json({
         success: false,
-        message: 'Báº¡n khÃ´ng cÃ³ quyá»n chá»‰nh sá»­a profile nÃ y',
+        message: 'Bạn không có quyền chỉnh sửa profile này',
       });
     }
 
-    const { full_name, username, bio, address } = req.body;
+    const { full_name, username, bio, address, date_of_birth, gender } = req.body;
     const db = await pool;
 
-    // UPLOAD SONG SONG (PARALLEL) - Nhanh hÆ¡n 2x
+    // UPLOAD SONG SONG (PARALLEL) - Nhanh hơn 2x
     const uploadPromises = [];
 
     if (req.files?.avatar?.[0]) {
-      console.log('ðŸ“· Uploading avatar...');
+      console.log('📸 Uploading avatar...');
       uploadPromises.push(
         uploadToCloudinary(req.files.avatar[0].buffer, 'avatars', [
           { width: 400, height: 400, crop: 'fill', gravity: 'face' },
@@ -126,7 +126,7 @@ export const updateProfile = async (req, res) => {
     }
 
     if (req.files?.background?.[0]) {
-      console.log('ðŸ–¼ï¸ Uploading background...');
+      console.log('🖼️ Uploading background...');
       uploadPromises.push(
         uploadToCloudinary(req.files.background[0].buffer, 'backgrounds', [
           { width: 1200, height: 400, crop: 'fill' },
@@ -134,7 +134,7 @@ export const updateProfile = async (req, res) => {
       );
     }
 
-    // Äá»¢I Táº¤T Cáº¢ UPLOAD XONG CÃ™NG LÃšC
+    // ĐỢI TẤT CẢ UPLOAD XONG CÙNG LÚC
     const uploadResults = await Promise.all(uploadPromises);
 
     // BUILD UPDATE QUERY
@@ -162,6 +162,16 @@ export const updateProfile = async (req, res) => {
       request.input('address', sql.NVarChar, address);
     }
 
+    if (date_of_birth !== undefined) {
+      updates.push('date_of_birth = @dob');
+      request.input('dob', sql.Date, date_of_birth ? new Date(date_of_birth) : null);
+    }
+
+    if (gender !== undefined) {
+      updates.push('gender = @gender');
+      request.input('gender', sql.VarChar, gender || null);
+    }
+
     // Apply uploaded URLs
     uploadResults.forEach((result) => {
       if (result.type === 'avatar') {
@@ -178,7 +188,7 @@ export const updateProfile = async (req, res) => {
     if (updates.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'KhÃ´ng cÃ³ gÃ¬ Ä‘á»ƒ cáº­p nháº­t',
+        message: 'Không có gì để cập nhật',
       });
     }
 
@@ -190,7 +200,8 @@ export const updateProfile = async (req, res) => {
     const result = await db.request().input('userId', sql.Int, userId).query(`
         SELECT 
           id, full_name, username, email, avatar, cover_photo AS background, 
-          bio, location AS address, created_at
+          bio, location AS address, date_of_birth, gender, created_at,
+          profile_visibility, allow_friend_requests, show_online_status
         FROM users 
         WHERE id = @userId
       `);
@@ -198,9 +209,9 @@ export const updateProfile = async (req, res) => {
     const updatedUser = result.recordset[0];
     console.log('Done in', Date.now());
 
-    res.json({
+    return res.json({
       success: true,
-      message: 'Cáº­p nháº­t profile thÃ nh cÃ´ng',
+      message: 'Cập nhật profile thành công',
       user: updatedUser,
     });
   } catch (err) {

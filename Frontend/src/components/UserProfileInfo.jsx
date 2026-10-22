@@ -1,13 +1,42 @@
-import { Verified, MapPin, Calendar, PenBox, MessageCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Verified,
+  MapPin,
+  Calendar,
+  PenBox,
+  MessageCircle,
+  KeyRound,
+  Eye,
+  Camera,
+  Users,
+  FileText,
+  Image as ImageIcon,
+  Cake,
+  ShieldCheck,
+} from "lucide-react";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { API_URL } from "../constants/api";
-import { useState, useEffect } from "react";
 import FriendButton from "./FriendButton";
 
-const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
+const GENDER_LABELS = {
+  male: "Nam",
+  female: "Nữ",
+  other: "Khác",
+};
+
+const UserProfileInfo = ({
+  user,
+  posts = [],
+  profileId,
+  setShowEdit,
+  onViewAvatar,
+  onTabChange,
+  activeTab,
+  mediaCount = 0,
+}) => {
   const navigate = useNavigate();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [friendsCount, setFriendsCount] = useState(0);
@@ -18,24 +47,22 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
   } catch {
     currentUser = null;
   }
-  // Xác định có phải đang xem profile của chính mình không
-  const isOwnProfile =
-    !profileId || Number(currentUser?.id) === Number(user?.id);
+
+  const isOwnProfile = !profileId || Number(currentUser?.id) === Number(user?.id);
 
   // Fetch số lượng bạn bè
   useEffect(() => {
+    let isMounted = true;
     const fetchFriendsCount = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token || !user?.id) return;
 
-        // Fetch số bạn bè của user đang xem (có thể là mình hoặc người khác)
-        const response = await axios.get(
-          `${API_URL}/friendships/count/${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const response = await axios.get(`${API_URL}/friendships/count/${user.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        if (response.data?.success) {
+        if (response.data?.success && isMounted) {
           setFriendsCount(response.data.count || 0);
         }
       } catch (error) {
@@ -44,9 +71,12 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
     };
 
     fetchFriendsCount();
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id]);
 
-  // Hàm tạo chat và chuyển đến trang nhắn tin
+  // Handle direct message creation
   const handleSendMessage = async () => {
     if (!user?.id || !currentUser?.id) {
       toast.error("Không thể tạo cuộc trò chuyện");
@@ -62,7 +92,6 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
         return;
       }
 
-      // Gọi API tạo hoặc lấy chat
       const response = await axios.post(
         `${API_URL}/chat/dm`,
         { receiverId: user.id },
@@ -70,9 +99,7 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
       );
 
       const chatId = response.data?.chatId;
-
       if (chatId) {
-        // Chuyển đến trang chat với chatId
         navigate(`/messages/${chatId}`);
       } else {
         toast.error("Không thể tạo cuộc trò chuyện");
@@ -85,117 +112,188 @@ const UserProfileInfo = ({ user, posts = [], profileId, setShowEdit }) => {
     }
   };
 
-  return (
-    <div className="relative py-4 px-6 md:px-8 bg-white">
-      <div className="flex flex-col md:flex-row items-start gap-6">
-        {/* Avatar */}
-        <div className="w-32 h-32 border-4 border-white shadow-lg absolute -top-16 rounded-full overflow-hidden">
-          <img
-            src={
-              user.avatar ||
-              `/default.jpg`
-            }
-            alt="avatar"
-            className="w-full h-full object-cover rounded-full"
-          />
+  const avatarUrl = user?.avatar || "/default.jpg";
 
+  return (
+    <div className="relative px-4 sm:px-8 pb-6 bg-white border-b border-slate-100">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
+        {/* Floating Avatar */}
+        <div className="relative -mt-20 sm:-mt-24 flex-shrink-0 group">
+          <div
+            onClick={() => onViewAvatar?.(avatarUrl)}
+            className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100 cursor-pointer relative"
+            title="Nhấn để xem ảnh đại diện"
+          >
+            <img
+              src={avatarUrl}
+              alt={user?.full_name || "avatar"}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+            {/* Hover overlay hint */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+              <Eye className="w-6 h-6 mb-1 drop-shadow" />
+              <span className="text-[11px] font-semibold drop-shadow">Xem ảnh</span>
+            </div>
+          </div>
+
+          {/* Quick Edit Avatar Button for Own Profile */}
+          {isOwnProfile && (
+            <button
+              type="button"
+              onClick={() => setShowEdit?.(true)}
+              className="absolute bottom-1 right-1 p-2 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white shadow-md border-2 border-white transition active:scale-95 cursor-pointer"
+              title="Chỉnh sửa hồ sơ & ảnh đại diện"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        <div className="w-full pt-16 md:pt-0 md:pl-36">
-          <div className="flex flex-col md:flex-row items-start justify-between gap-3">
-            {/* Name + username */}
+        {/* User Information */}
+        <div className="w-full text-center md:text-left pt-2 md:pt-4">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {user.full_name || "Chưa có tên"}
+              {/* Name & Badges */}
+              <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                  {user?.full_name || user?.name || "Người dùng"}
                 </h1>
-                <Verified className="w-6 h-6 text-blue-500" />
+                <Verified className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500 fill-indigo-50 flex-shrink-0" />
+                {user?.profile_visibility === "private" && (
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 flex items-center gap-1 border border-slate-200">
+                    <ShieldCheck className="w-3 h-3 text-slate-500" />
+                    <span>Riêng tư</span>
+                  </span>
+                )}
               </div>
-              <p className="text-gray-600">
-                {user.username ? `@${user.username}` : "Thêm tên người dùng"}
+
+              {/* Username */}
+              <p className="text-slate-500 text-sm font-medium mt-0.5">
+                {user?.username ? `@${user.username}` : "Chưa đặt username"}
               </p>
             </div>
 
-            {/* Buttons */}
-            {isOwnProfile ? (
-              <div className="flex flex-row items-center gap-2.5">
-                {/* Edit button */}
-                <button
-                  onClick={() => setShowEdit?.(true)}
-                  className="h-10 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all flex items-center gap-2 active:scale-95 shadow-sm whitespace-nowrap"
-                >
-                  <PenBox className="w-4 h-4 text-gray-500" />
-                  <span>Chỉnh sửa hồ sơ</span>
-                </button>
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center md:justify-end gap-2.5 flex-wrap">
+              {isOwnProfile ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowEdit?.(true)}
+                    className="h-10 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-sm transition-all shadow-md shadow-indigo-200 flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                  >
+                    <PenBox className="w-4 h-4" />
+                    <span>Chỉnh sửa hồ sơ</span>
+                  </button>
 
-                {/* Đổi mật khẩu - Hidden on mobile */}
-                <button
-                  onClick={() => navigate("/change-password")}
-                  className="max-sm:hidden h-10 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-all flex items-center gap-2 active:scale-95 shadow-sm whitespace-nowrap"
-                >
-                  <span>Đổi mật khẩu</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <FriendButton userId={user.id} currentUserId={currentUser?.id} fullWidth={false} />
+                  <button
+                    type="button"
+                    onClick={() => navigate("/change-password")}
+                    className="h-10 px-4 rounded-2xl border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-700 font-semibold text-sm transition-all shadow-xs flex items-center gap-2 cursor-pointer whitespace-nowrap"
+                    title="Đổi mật khẩu tài khoản"
+                  >
+                    <KeyRound className="w-4 h-4 text-slate-500" />
+                    <span className="max-xs:hidden">Đổi mật khẩu</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <FriendButton
+                    userId={user?.id}
+                    currentUserId={currentUser?.id}
+                    fullWidth={false}
+                  />
 
-                {/* Message button - Chỉ hiện khi xem profile người khác */}
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isCreatingChat}
-                  className="h-10 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-sm shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 disabled:opacity-50"
-                  title="Gửi tin nhắn"
-                >
-                  <MessageCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{isCreatingChat ? "Đang mở..." : "Nhắn tin"}</span>
-                </button>
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={handleSendMessage}
+                    disabled={isCreatingChat}
+                    className="h-10 px-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-95 text-white font-semibold text-sm shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 disabled:opacity-50 cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{isCreatingChat ? "Đang mở..." : "Nhắn tin"}</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Bio */}
-          <p className="text-gray-700 text-sm max-w-md mt-4">
-            {user.bio || "Chưa có tiểu sử"}
-          </p>
+          {user?.bio && (
+            <p className="text-slate-700 text-sm mt-3 leading-relaxed max-w-2xl font-normal whitespace-pre-line">
+              {user.bio}
+            </p>
+          )}
 
-          {/* Location + joined time */}
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 mt-4">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              {user.address || "Chưa có địa chỉ"}
-            </span>
+          {/* User Details Row */}
+          <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-2 text-xs sm:text-sm text-slate-500 mt-4">
+            {user?.address && (
+              <span className="flex items-center gap-1.5 font-medium">
+                <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <span>{user.address}</span>
+              </span>
+            )}
 
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4" />
-              Tham gia{" "}
-              <span className="font-medium">
-                {user.created_at
-                  ? dayjs(user.created_at).fromNow()
-                  : "không rõ"}
+            {user?.date_of_birth && (
+              <span className="flex items-center gap-1.5 font-medium">
+                <Cake className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <span>
+                  Sinh ngày {dayjs(user.date_of_birth).format("DD/MM/YYYY")}
+                </span>
+              </span>
+            )}
+
+            {user?.gender && GENDER_LABELS[user.gender] && (
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium text-xs border border-slate-200">
+                {GENDER_LABELS[user.gender]}
+              </span>
+            )}
+
+            <span className="flex items-center gap-1.5 font-medium">
+              <Calendar className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              <span>
+                Tham gia {user?.created_at ? dayjs(user.created_at).fromNow() : "gần đây"}
               </span>
             </span>
           </div>
 
-          {/* Stats */}
-          <div className="flex items-center gap-6 mt-6 border-t border-gray-200 pt-4">
-            <div>
-              <span className="sm:text-xl font-bold text-gray-900">
-                {posts.length}
-              </span>
-              <span className="text-xs sm:text-sm text-gray-500 ml-1.5">
-                Bài viết
-              </span>
-            </div>
+          {/* Stats Counters */}
+          <div className="flex items-center justify-center md:justify-start gap-6 sm:gap-8 mt-5 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => onTabChange?.("posts")}
+              className={`flex items-center gap-2 group transition cursor-pointer ${
+                activeTab === "posts" ? "text-indigo-600" : "text-slate-700 hover:text-slate-900"
+              }`}
+            >
+              <FileText className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
+              <span className="text-base sm:text-lg font-bold">{posts.length}</span>
+              <span className="text-xs sm:text-sm text-slate-500 font-normal">Bài viết</span>
+            </button>
 
-            <div>
-              <span className="sm:text-xl font-bold text-gray-900">
-                {friendsCount}
-              </span>
-              <span className="text-xs sm:text-sm text-gray-500 ml-1.5">
-                Bạn bè
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => onTabChange?.("friends")}
+              className={`flex items-center gap-2 group transition cursor-pointer ${
+                activeTab === "friends" ? "text-indigo-600" : "text-slate-700 hover:text-slate-900"
+              }`}
+            >
+              <Users className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
+              <span className="text-base sm:text-lg font-bold">{friendsCount}</span>
+              <span className="text-xs sm:text-sm text-slate-500 font-normal">Bạn bè</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onTabChange?.("media")}
+              className={`flex items-center gap-2 group transition cursor-pointer ${
+                activeTab === "media" ? "text-indigo-600" : "text-slate-700 hover:text-slate-900"
+              }`}
+            >
+              <ImageIcon className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
+              <span className="text-base sm:text-lg font-bold">{mediaCount}</span>
+              <span className="text-xs sm:text-sm text-slate-500 font-normal">Ảnh & Video</span>
+            </button>
           </div>
         </div>
       </div>

@@ -84,6 +84,8 @@ export const UserModel = {
           cover_photo AS background,
           bio,
           location AS address,
+          date_of_birth,
+          gender,
           created_at,
           profile_visibility,
           allow_friend_requests,

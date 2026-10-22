@@ -358,20 +358,28 @@ export const resetPasswordWithOtp = async (req, res) => {
 
 // ĐỔI MẬT KHẨU KHI ĐÃ ĐĂNG NHẬP
 // PUT /api/auth/change-password
-// Body: { currentPassword, newPassword }
+// Body: { currentPassword || oldPassword, newPassword }
 export const changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body || {};
+    const currentPassword = req.body?.currentPassword || req.body?.oldPassword;
+    const newPassword = req.body?.newPassword;
 
-    if (!currentPassword || !newPassword) {
+    if (!newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới',
+        message: 'Vui lòng nhập mật khẩu mới',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mật khẩu mới phải có ít nhất 6 ký tự',
       });
     }
 
     // userId đã được gắn trong authMiddleware từ JWT
-    const userId = req.user?.userId;
+    const userId = req.user?.id || req.user?.userId;
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -394,13 +402,32 @@ export const changePassword = async (req, res) => {
 
     const user = result.recordset[0];
 
-    // 2. So sánh mật khẩu hiện tại
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: 'Mật khẩu hiện tại không đúng',
-      });
+    // 2. So sánh mật khẩu hiện tại (nếu tài khoản đã có mật khẩu trước đó)
+    if (user.password) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng nhập mật khẩu hiện tại',
+        });
+      }
+
+      let isMatch = false;
+      if (
+        user.password.startsWith('$2a$') ||
+        user.password.startsWith('$2b$') ||
+        user.password.startsWith('$2y$')
+      ) {
+        isMatch = await bcrypt.compare(currentPassword, user.password);
+      } else {
+        isMatch = currentPassword === user.password;
+      }
+
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mật khẩu hiện tại không chính xác',
+        });
+      }
     }
 
     // 3. Hash mật khẩu mới
@@ -421,7 +448,7 @@ export const changePassword = async (req, res) => {
     console.error('changePassword error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Có lỗi xảy ra, vui lòng thử lại sau.',
+      message: error.message || 'Có lỗi xảy ra, vui lòng thử lại sau.',
     });
   }
 };
