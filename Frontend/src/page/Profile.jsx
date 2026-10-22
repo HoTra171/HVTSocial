@@ -23,8 +23,10 @@ const Profile = () => {
   const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
 
-  const targetUserId = profileId || currentUser?.id;
-  const isOwnProfile = !profileId || Number(currentUser?.id) === Number(profileId);
+  const validTargetUserId = (profileId && profileId !== 'undefined' && !isNaN(Number(profileId)))
+    ? Number(profileId)
+    : (currentUser?.id || null);
+  const isOwnProfile = !profileId || Number(currentUser?.id) === Number(validTargetUserId);
 
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -60,7 +62,7 @@ const Profile = () => {
   useEffect(() => {
     let isMounted = true;
 
-    if (!targetUserId) {
+    if (!validTargetUserId) {
       if (!currentUser) navigate('/login');
       return;
     }
@@ -69,8 +71,8 @@ const Profile = () => {
       setLoading(true);
       try {
         const [userRes, postsRes] = await Promise.all([
-          userApi.getProfile(targetUserId),
-          postApi.getByUserId(targetUserId),
+          userApi.getProfile(validTargetUserId),
+          postApi.getByUserId(validTargetUserId),
         ]);
 
         const rawUser = userRes.data?.data || userRes.data;

@@ -97,43 +97,40 @@ export const UserModel = {
 
   async getConnections(pool, userId) {
     if (!pool.connected) await pool.connect();
-    const req = pool.request();
-    req.input('userId', sql.Int, userId);
+    const uid = Number(userId);
 
-    const query = `
-      SELECT u.id, u.full_name, u.username, u.avatar, u.bio
-      FROM friendships f
-      JOIN users u ON u.id = f.user_id
-      WHERE f.friend_id = @userId AND f.status = 'accepted';
+    const [followersRes, followingRes, pendingRes, connectionsRes] = await Promise.all([
+      pool.request().input('userId', sql.Int, uid).query(`
+        SELECT u.id, u.full_name, u.username, u.avatar, u.bio
+        FROM friendships f
+        JOIN users u ON u.id = f.user_id
+        WHERE f.friend_id = @userId AND f.status = 'accepted'
+      `),
+      pool.request().input('userId', sql.Int, uid).query(`
+        SELECT u.id, u.full_name, u.username, u.avatar, u.bio
+        FROM friendships f
+        JOIN users u ON u.id = f.friend_id
+        WHERE f.user_id = @userId AND f.status = 'accepted'
+      `),
+      pool.request().input('userId', sql.Int, uid).query(`
+        SELECT u.id, u.full_name, u.username, u.avatar, u.bio
+        FROM friendships f
+        JOIN users u ON u.id = f.user_id
+        WHERE f.friend_id = @userId AND f.status = 'pending'
+      `),
+      pool.request().input('userId', sql.Int, uid).query(`
+        SELECT DISTINCT u.id, u.full_name, u.username, u.avatar, u.bio
+        FROM friendships f
+        JOIN users u ON (u.id = CASE WHEN f.user_id = @userId THEN f.friend_id ELSE f.user_id END)
+        WHERE (f.user_id = @userId OR f.friend_id = @userId) AND f.status = 'accepted'
+      `),
+    ]);
 
-      SELECT u.id, u.full_name, u.username, u.avatar, u.bio
-      FROM friendships f
-      JOIN users u ON u.id = f.friend_id
-      WHERE f.user_id = @userId AND f.status = 'accepted';
-
-      SELECT u.id, u.full_name, u.username, u.avatar, u.bio
-      FROM friendships f
-      JOIN users u ON u.id = f.user_id
-      WHERE f.friend_id = @userId AND f.status = 'pending';
-
-      SELECT DISTINCT
-        u.id, u.full_name, u.username, u.avatar, u.bio
-      FROM friendships f1
-      JOIN friendships f2
-        ON f1.user_id = f2.friend_id
-       AND f1.receiver_id = f2.requester_id
-       AND f1.status = 'accepted'
-       AND f2.status = 'accepted'
-      JOIN users u ON u.id = f1.receiver_id
-      WHERE f1.requester_id = @userId;
-    `;
-
-    const result = await req.query(query);
     return {
-      followers: result.recordsets[0],
-      following: result.recordsets[1],
-      pending: result.recordsets[2],
-      connections: result.recordsets[3],
+      followers: followersRes.recordset || [],
+      following: followingRes.recordset || [],
+      pending: pendingRes.recordset || [],
+      connections: connectionsRes.recordset || [],
     };
   },
 

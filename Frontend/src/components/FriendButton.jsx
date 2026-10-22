@@ -8,6 +8,7 @@ const FriendButton = ({ userId, currentUserId, fullWidth = false, onStatusChange
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showConfirmUnfriend, setShowConfirmUnfriend] = useState(false);
 
   useEffect(() => {
     if (!userId || !currentUserId || userId === currentUserId) {
@@ -112,8 +113,6 @@ const FriendButton = ({ userId, currentUserId, fullWidth = false, onStatusChange
 
   const handleUnfriend = async (e) => {
     e?.stopPropagation();
-    if (!window.confirm('Bạn có chắc muốn hủy kết bạn?')) return;
-
     setActionLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -123,6 +122,7 @@ const FriendButton = ({ userId, currentUserId, fullWidth = false, onStatusChange
       });
       toast.success('Đã hủy kết bạn');
       setStatus(null);
+      setShowConfirmUnfriend(false);
       onStatusChange?.(null);
     } catch (error) {
       toast.error('Không thể hủy kết bạn');
@@ -179,16 +179,44 @@ const FriendButton = ({ userId, currentUserId, fullWidth = false, onStatusChange
 
   // STATUS: friends (đã là bạn bè)
   if (status === 'friends') {
+    if (showConfirmUnfriend) {
+      return (
+        <div className={`flex items-center gap-1.5 ${baseWidth} animate-in fade-in duration-150`}>
+          <button
+            onClick={handleUnfriend}
+            disabled={actionLoading}
+            className="flex-1 h-10 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition whitespace-nowrap"
+          >
+            <Check className="w-4 h-4" />
+            <span>Hủy kết bạn</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowConfirmUnfriend(false);
+            }}
+            className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 text-gray-500 rounded-xl transition"
+            title="Hủy thao tác"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div className={`flex items-center gap-1.5 ${baseWidth}`}>
         <button
-          className="flex-1 h-10 px-3 bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold rounded-xl text-xs sm:text-sm cursor-default flex items-center justify-center gap-1.5 whitespace-nowrap"
+          className="flex-1 h-10 px-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-semibold rounded-xl text-xs sm:text-sm cursor-default flex items-center justify-center gap-1.5 whitespace-nowrap"
         >
-          <UserCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <span>Bạn bè</span>
         </button>
         <button
-          onClick={handleUnfriend}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowConfirmUnfriend(true);
+          }}
           className="h-10 w-10 flex-shrink-0 flex items-center justify-center bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded-xl transition-colors border border-gray-200 active:scale-95"
           title="Hủy kết bạn"
         >

@@ -110,17 +110,17 @@ export const NotificationService = {
       .input('limit', limit).query(`
         SELECT TOP (@limit)
           n.id,
-          COALESCE(n.message, n.content) AS content,
+          n.message AS content,
           n.type,
           CASE WHEN n.is_read = 1 THEN 'read' ELSE 'unread' END AS status,
-          COALESCE(n.target_id, n.post_id) AS post_id,
+          n.target_id AS post_id,
           n.target_type,
           n.created_at,
           u.full_name AS sender_name,
           u.avatar AS sender_avatar,
           u.id AS sender_id
         FROM notifications n
-        LEFT JOIN users u ON COALESCE(n.actor_id, n.sender_id) = u.id
+        LEFT JOIN users u ON n.actor_id = u.id
         WHERE n.user_id = @userId
         ORDER BY n.created_at DESC
       `);

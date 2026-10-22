@@ -17,6 +17,7 @@ import {
   UserIcon,
   Users,
   Bell,
+  Reply,
 } from "lucide-react";
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -717,56 +718,15 @@ const Chatbox = () => {
     if (myId) fetchChatList();
   }, [myId]);
 
-  // Fetch messages
-  const fetchMessages = async () => {
-    // Validate chatId
-    if (!chatId || isNaN(Number(chatId)) || Number(chatId) <= 0) {
-      console.error("Invalid chatId for fetchMessages:", chatId);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(
-        `${API_URL}/chat/messages/${Number(chatId)}`, {
-        headers: { Authorization: `Bearer ${token}` },
+  // Mark messages as read helper
+  const markMessagesRead = () => {
+    if (!chatId || isNaN(Number(chatId)) || Number(chatId) <= 0) return;
+    if (socketRef.current) {
+      socketRef.current.emit("mark_messages_read", {
+        chatId: Number(chatId),
+        userId: myId,
       });
-      const sorted = res.data.sort(
-        (a, b) => new Date(a.created_at) - new Date(b.created_at)
-      );
-
-      setAllMessages(sorted);
-      setMessages(sorted.slice(-PAGE));
-      if (socketRef.current) {
-        socketRef.current.emit("mark_messages_read", {
-          chatId: Number(chatId),
-          userId: myId,
-        });
-      }
-    } catch (err) {
-      console.error("fetchMessages error:", err);
-      console.error("Error details:", err.response?.data);
-
-      // If 403 Forbidden, redirect back to messages list
-      if (err.response?.status === 403) {
-        setHasRedirected(true);
-        toast.error("Bạn không có quyền truy cập cuộc trò chuyện này");
-        setTimeout(() => navigate('/messages'), 100);
-      }
     }
-  };
-
-  // useEffect bị xóa vì trùng lặp với useEffect ở trên (dòng 43-55)
-  // useEffect cũ này không kiểm tra hasRedirected nên gây ra lỗi 403
-
-  // Load more
-  const loadMore = () => {
-    const total = allMessages.length;
-    const current = messages.length;
-    if (current >= total) return;
-
-    const next = Math.min(total, current + PAGE);
-    setMessages(allMessages.slice(total - next));
   };
 
   useEffect(() => {
@@ -936,7 +896,6 @@ const Chatbox = () => {
 
 
   const retryMessage = (failedMsg) => {
-    setMessages((prev) => prev.filter((m) => m.id !== failedMsg.id));
     setFailedMessages((prev) => prev.filter((m) => m.id !== failedMsg.id));
 
     if (failedMsg.message_type === "text") {
@@ -1062,16 +1021,17 @@ const Chatbox = () => {
       chatId: Number(chatId),
     });
 
-    setAllMessages((prev) =>
-      prev.map((m) =>
-        m.id === messageId ? { ...m, recalled: true, content: "" } : m
-      )
-    );
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === messageId ? { ...m, recalled: true, content: "" } : m
-      )
-    );
+    queryClient.setQueryData(queryKey, (oldData) => {
+      if (!oldData?.pages) return oldData;
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page) =>
+          page.map((m) =>
+            m.id === messageId ? { ...m, recalled: true, content: "" } : m
+          )
+        ),
+      };
+    });
   };
 
   const sendReaction = (messageId, emoji) => {
@@ -1083,12 +1043,17 @@ const Chatbox = () => {
       chatId: Number(chatId),
     });
 
-    setAllMessages((prev) =>
-      prev.map((m) => (m.id === messageId ? { ...m, reaction: emoji } : m))
-    );
-    setMessages((prev) =>
-      prev.map((m) => (m.id === messageId ? { ...m, reaction: emoji } : m))
-    );
+    queryClient.setQueryData(queryKey, (oldData) => {
+      if (!oldData?.pages) return oldData;
+      return {
+        ...oldData,
+        pages: oldData.pages.map((page) =>
+          page.map((m) =>
+            m.id === messageId ? { ...m, reaction: emoji } : m
+          )
+        ),
+      };
+    });
   };
 
   // Parse reply data

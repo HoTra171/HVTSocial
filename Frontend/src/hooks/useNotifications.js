@@ -92,8 +92,6 @@ export const useNotifications = (socket, currentUser) => {
   };
 
   const deleteNotification = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa thông báo này?')) return;
-
     try {
       const token = localStorage.getItem('token');
       if (!token) return;

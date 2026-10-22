@@ -45,6 +45,9 @@ export const getPost = async (req, res) => {
 export const getPostsByUser = async (req, res) => {
   try {
     const userId = Number(req.params.userId);
+    if (!userId || isNaN(userId)) {
+      return res.status(400).json({ message: 'Invalid userId' });
+    }
     const viewerId = req.user.id;
     const posts = await PostService.getPostsByUser(userId, viewerId);
     res.json(posts);

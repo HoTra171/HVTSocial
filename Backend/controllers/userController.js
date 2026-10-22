@@ -21,6 +21,9 @@ export const getUserConnections = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   try {
     const targetUserId = Number(req.params.id);
+    if (!targetUserId || isNaN(targetUserId)) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
     const viewerId = req.user?.id ? Number(req.user.id) : null;
     const user = await UserService.getUserProfile(targetUserId);
 

@@ -39,6 +39,7 @@ const Connections = () => {
 
   const [currentTab, setCurrentTab] = useState('friends');
   const [loading, setLoading] = useState(true);
+  const [unfriendConfirmId, setUnfriendConfirmId] = useState(null);
 
   // Get current user
   useEffect(() => {
@@ -164,8 +165,6 @@ const Connections = () => {
 
   // HỦY KẾT BẠN
   const handleUnfriend = async (friendId) => {
-    if (!window.confirm('Bạn có chắc muốn hủy kết bạn với người dùng này?')) return;
-
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`${API_URL}/friendships/unfriend`, {
@@ -464,13 +463,33 @@ const Connections = () => {
                         <span>Nhắn tin</span>
                       </button>
 
-                      <button
-                        onClick={() => handleUnfriend(user.id)}
-                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors border border-gray-200 active:scale-95"
-                        title="Hủy kết bạn"
-                      >
-                        <UserMinus className="w-4 h-4" />
-                      </button>
+                      {unfriendConfirmId === user.id ? (
+                        <div className="flex items-center gap-1 animate-in fade-in duration-150">
+                          <button
+                            onClick={() => {
+                              handleUnfriend(user.id);
+                              setUnfriendConfirmId(null);
+                            }}
+                            className="h-10 px-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-95 whitespace-nowrap"
+                          >
+                            Xác nhận hủy?
+                          </button>
+                          <button
+                            onClick={() => setUnfriendConfirmId(null)}
+                            className="h-10 w-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 text-gray-500 rounded-xl text-xs transition"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setUnfriendConfirmId(user.id)}
+                          className="h-10 w-10 flex items-center justify-center rounded-xl bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors border border-gray-200 active:scale-95"
+                          title="Hủy kết bạn"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                      )}
                     </>
                   )}
 
