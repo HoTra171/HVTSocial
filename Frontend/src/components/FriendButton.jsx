@@ -150,6 +150,20 @@ const FriendButton = ({ userId, currentUserId, fullWidth = false, onStatusChange
     );
   }
 
+  // STATUS: cannot_send (người nhận tắt nhận lời mời kết bạn)
+  if (status === 'cannot_send') {
+    return (
+      <button
+        disabled
+        className={`${baseWidth} h-10 px-3 bg-gray-100 text-gray-400 border border-gray-200 rounded-xl font-medium text-xs sm:text-sm cursor-not-allowed flex items-center justify-center gap-1.5 whitespace-nowrap`}
+        title="Người dùng này hiện không nhận lời mời kết bạn"
+      >
+        <UserPlus className="w-4 h-4 opacity-50" />
+        <span>Không nhận kết bạn</span>
+      </button>
+    );
+  }
+
   // STATUS: null (chưa có quan hệ)
   if (!status) {
     return (

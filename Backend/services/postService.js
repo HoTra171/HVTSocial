@@ -5,22 +5,34 @@ import sql from 'mssql';
 // Check if using PostgreSQL
 const isPostgres = process.env.DB_DRIVER === 'postgres' || !!process.env.DATABASE_URL;
 
-const formatPost = (row) => ({
-  id: row.id,
-  content: row.content,
-  image_urls: row.media_url ? row.media_url.split(';') : [],
-  createdAt: row.created_at,
-  likes_count: row.likes_count,
-  comments_count: row.comments_count,
-  status: row.status,
-  share_count: row.share_count,
-  user: {
-    id: row.user_id,
-    full_name: row.full_name,
-    username: row.username,
-    profile_picture: row.avatar,
-  },
-});
+const formatPost = (row) => {
+  let poll = null;
+  if (row.poll_data) {
+    try {
+      poll = typeof row.poll_data === 'string' ? JSON.parse(row.poll_data) : row.poll_data;
+    } catch {
+      poll = null;
+    }
+  }
+
+  return {
+    id: row.id,
+    content: row.content,
+    image_urls: row.media_url ? row.media_url.split(';') : [],
+    createdAt: row.created_at,
+    likes_count: row.likes_count,
+    comments_count: row.comments_count,
+    status: row.status,
+    share_count: row.share_count,
+    poll,
+    user: {
+      id: row.user_id,
+      full_name: row.full_name,
+      username: row.username,
+      profile_picture: row.avatar,
+    },
+  };
+};
 
 export const PostService = {
   async getFeed(cursor = null, limit = 10, viewerId) {
@@ -56,6 +68,7 @@ export const PostService = {
           p.media_url,
           p.created_at,
           p.visibility AS status,
+          p.poll_data,
           (SELECT COUNT(*) FROM shares WHERE post_id = p.id) AS share_count,
 
           u.id        AS user_id,
@@ -76,23 +89,104 @@ export const PostService = {
       throw new Error('Bài viết không tồn tại');
     }
 
-    return formatPost(result.recordset[0]);
+    const row = result.recordset[0];
+    const isAuthor = viewerId && Number(row.user_id) === Number(viewerId);
+
+    if (!isAuthor) {
+      // 1. Bài viết riêng tư
+      if (row.status === 'private') {
+        throw new Error('Bài viết này là riêng tư');
+      }
+
+      // 2. Bài viết hoặc hồ sơ ở chế độ bạn bè
+      if (row.status === 'friends' || row.profile_visibility === 'friends') {
+        const friendCheck = await db
+          .request()
+          .input('authorId', sql.Int, row.user_id)
+          .input('viewerId', sql.Int, viewerId)
+          .query(`
+            SELECT 1 FROM friendships
+            WHERE status = 'accepted'
+              AND ((user_id = @authorId AND friend_id = @viewerId)
+                OR (user_id = @viewerId AND friend_id = @authorId))
+          `);
+
+        if (friendCheck.recordset.length === 0) {
+          throw new Error('Bài viết này chỉ hiển thị với bạn bè');
+        }
+      }
+
+      // 3. Hồ sơ người đăng ở chế độ riêng tư
+      if (row.profile_visibility === 'private') {
+        throw new Error('Tài khoản này là riêng tư');
+      }
+    }
+
+    return formatPost(row);
   },
 
-  async createPost(userId, content, media, status) {
+  async createPost(userId, content, media, status, pollData = null) {
     const db = await pool;
+    const pollJson = pollData ? JSON.stringify(pollData) : null;
+
     const result = await db
       .request()
       .input('user_id', userId)
       .input('content', content)
       .input('mediaUrl', media)
-      .input('status', sql.NVarChar(10), status).query(`
-        INSERT INTO posts (user_id, content, media_url, visibility)
+      .input('status', sql.NVarChar(10), status)
+      .input('pollData', sql.NVarChar, pollJson)
+      .query(`
+        INSERT INTO posts (user_id, content, media_url, visibility, poll_data)
         OUTPUT INSERTED.*
-        VALUES (@user_id, @content, @mediaUrl, @status)
+        VALUES (@user_id, @content, @mediaUrl, @status, @pollData)
       `);
 
-    return result.recordset[0];
+    return formatPost(result.recordset[0]);
+  },
+
+  async votePoll(postId, userId, optionId) {
+    const db = await pool;
+    const postRes = await db
+      .request()
+      .input('postId', sql.Int, postId)
+      .query('SELECT id, poll_data FROM posts WHERE id = @postId');
+
+    if (postRes.recordset.length === 0) {
+      throw new Error('Bài viết không tồn tại');
+    }
+
+    const post = postRes.recordset[0];
+    if (!post.poll_data) {
+      throw new Error('Bài viết không có cuộc thăm dò ý kiến');
+    }
+
+    let poll = typeof post.poll_data === 'string' ? JSON.parse(post.poll_data) : post.poll_data;
+    if (!poll || !Array.isArray(poll.options)) {
+      throw new Error('Dữ liệu thăm dò không hợp lệ');
+    }
+
+    // Xóa vote cũ của user trên tất cả các option
+    poll.options.forEach((opt) => {
+      if (!Array.isArray(opt.votes)) opt.votes = [];
+      opt.votes = opt.votes.filter((id) => Number(id) !== Number(userId));
+    });
+
+    // Thêm user vào option được chọn
+    const targetOpt = poll.options.find((opt) => String(opt.id) === String(optionId));
+    if (targetOpt) {
+      targetOpt.votes.push(Number(userId));
+    }
+
+    const updatedPollJson = JSON.stringify(poll);
+
+    await db
+      .request()
+      .input('postId', sql.Int, postId)
+      .input('pollData', sql.NVarChar, updatedPollJson)
+      .query('UPDATE posts SET poll_data = @pollData WHERE id = @postId');
+
+    return poll;
   },
 
   async deletePost(postId, userId) {

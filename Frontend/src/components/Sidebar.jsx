@@ -2,14 +2,15 @@ import { assets } from '../assets/assets'
 import { useNavigate } from 'react-router-dom'
 import MenuItems from './MenuItems.jsx'
 import { Link } from 'react-router-dom'
-import { CirclePlus } from 'lucide-react'
-import { LogOut, ShieldAlert } from 'lucide-react'
+import { CirclePlus, LogOut, ShieldAlert, Sun, Moon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false, relative = false }) => {
     const navigate = useNavigate();
     const { currentUser: user, logout } = useAuth();
+    const { isDark, toggleTheme } = useTheme();
 
     const handleLogout = async () => {
         try {
@@ -85,14 +86,30 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false
                     </div>
                 </div>
 
-                {/* Logout Button */}
-                <button
-                    onClick={handleLogout}
-                    className="p-2 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition group flex-shrink-0"
-                    title="Đăng xuất"
-                >
-                    <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-500 transition" />
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Theme Toggle Button */}
+                    <button
+                        onClick={toggleTheme}
+                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400"
+                        title={isDark ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
+                        aria-label="Toggle theme"
+                    >
+                        {isDark ? (
+                            <Sun className="w-4 h-4 text-amber-400 animate-spin-once" />
+                        ) : (
+                            <Moon className="w-4 h-4 text-slate-600" />
+                        )}
+                    </button>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={handleLogout}
+                        className="p-2 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition group"
+                        title="Đăng xuất"
+                    >
+                        <LogOut className="w-4 h-4 text-slate-400 group-hover:text-red-500 transition" />
+                    </button>
+                </div>
             </div>
         </div>
     )

@@ -10,6 +10,7 @@ import PostActions from './PostActions';
 import PostCommentSection from './PostCommentSection';
 import LikesModal from './LikesModal';
 import ShareModal from '../ShareModal';
+import PostPoll from './PostPoll';
 
 const parseImages = (raw) => {
   if (Array.isArray(raw)) return raw.map(String).map((s) => s.trim()).filter(Boolean);
@@ -192,7 +193,7 @@ export const PostCard = ({
   };
 
   return (
-    <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-4 transition-all hover:shadow-md">
+    <article className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden mb-4 transition-all hover:shadow-md">
       {/* 1. Header bài viết */}
       <PostHeader
         post={post}
@@ -206,6 +207,15 @@ export const PostCard = ({
 
       {/* 2. Nội dung text */}
       <PostContent content={post?.content} />
+
+      {/* 2.5. Thăm dò ý kiến (Poll) nếu có */}
+      {post?.poll && (
+        <PostPoll
+          poll={post.poll}
+          postId={post.id}
+          currentUser={currentUser}
+        />
+      )}
 
       {/* 3. Lưới hình ảnh / Media */}
       <PostMediaGrid images={images} onDoubleTapLike={handleToggleLike} />

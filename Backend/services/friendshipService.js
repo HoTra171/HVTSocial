@@ -9,6 +9,23 @@ export const FriendshipService = {
   async sendFriendRequest(userId, friendId) {
     const db = await pool;
 
+    // Kiểm tra cài đặt quyền riêng tư của người nhận
+    const targetUserCheck = await db
+      .request()
+      .input('friendId', sql.Int, friendId)
+      .query(`
+        SELECT allow_friend_requests FROM users WHERE id = @friendId
+      `);
+
+    if (targetUserCheck.recordset.length === 0) {
+      throw new Error('Người dùng không tồn tại');
+    }
+
+    const targetUser = targetUserCheck.recordset[0];
+    if (targetUser.allow_friend_requests === false || targetUser.allow_friend_requests === 0) {
+      throw new Error('Người dùng này hiện không nhận lời mời kết bạn');
+    }
+
     // Kiểm tra đã có request chưa
     const checkResult = await db
       .request()
@@ -161,7 +178,19 @@ export const FriendshipService = {
       `);
 
     if (result.recordset.length === 0) {
-      return { status: null, canSendRequest: true };
+      // Kiểm tra quyền nhận lời mời kết bạn của người đó
+      const userCheck = await db
+        .request()
+        .input('friendId', sql.Int, friendId)
+        .query('SELECT allow_friend_requests FROM users WHERE id = @friendId');
+      const allowReq = userCheck.recordset.length > 0
+        ? (userCheck.recordset[0].allow_friend_requests !== false && userCheck.recordset[0].allow_friend_requests !== 0)
+        : true;
+
+      return {
+        status: allowReq ? null : 'cannot_send',
+        canSendRequest: allowReq,
+      };
     }
 
     const record = result.recordset[0];

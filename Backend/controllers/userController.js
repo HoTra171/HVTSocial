@@ -20,11 +20,63 @@ export const getUserConnections = async (req, res) => {
 /* ================= PROFILE ================= */
 export const getUserProfile = async (req, res) => {
   try {
-    const userId = Number(req.params.id);
-    const user = await UserService.getUserProfile(userId);
+    const targetUserId = Number(req.params.id);
+    const viewerId = req.user?.id ? Number(req.user.id) : null;
+    const user = await UserService.getUserProfile(targetUserId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isOwner = viewerId && viewerId === targetUserId;
+    const visibility = user.profile_visibility || 'public';
+
+    if (!isOwner) {
+      // 1. Chế độ riêng tư: chỉ chính chủ mới xem được thông tin chi tiết
+      if (visibility === 'private') {
+        return res.json({
+          id: user.id,
+          full_name: user.full_name,
+          username: user.username,
+          avatar: user.avatar,
+          background: user.background,
+          created_at: user.created_at,
+          profile_visibility: 'private',
+          allow_friend_requests: user.allow_friend_requests,
+          is_private: true,
+          is_locked: true,
+        });
+      }
+
+      // 2. Chế độ bạn bè: chỉ bạn bè đã kết bạn mới xem được thông tin chi tiết
+      if (visibility === 'friends') {
+        const db = await pool;
+        const friendCheck = await db.request()
+          .input('viewerId', sql.Int, viewerId)
+          .input('targetId', sql.Int, targetUserId)
+          .query(`
+            SELECT 1 FROM friendships
+            WHERE status = 'accepted'
+              AND ((user_id = @viewerId AND friend_id = @targetId)
+                OR (user_id = @targetId AND friend_id = @viewerId))
+          `);
+
+        const isFriend = friendCheck.recordset.length > 0;
+        if (!isFriend) {
+          return res.json({
+            id: user.id,
+            full_name: user.full_name,
+            username: user.username,
+            avatar: user.avatar,
+            background: user.background,
+            created_at: user.created_at,
+            profile_visibility: 'friends',
+            allow_friend_requests: user.allow_friend_requests,
+            is_friend_only: true,
+            is_locked: true,
+          });
+        }
+      }
     }
 
     res.json(user);
@@ -475,6 +527,21 @@ export const updatePrivacySettings = async (req, res) => {
     `;
 
     await request.query(query);
+
+    // Phát socket event ngay lập tức nếu thay đổi trạng thái online
+    if (show_online_status !== undefined) {
+      const io = req.app.get('io');
+      if (io) {
+        io.setUserOnlinePrivacy?.(userId, !!show_online_status);
+        if (show_online_status) {
+          if (io.isUserOnline?.(userId)) {
+            io.emit('user_status_changed', { userId, status: 'online' });
+          }
+        } else {
+          io.emit('user_status_changed', { userId, status: 'offline' });
+        }
+      }
+    }
 
     return res.json({ message: 'Privacy settings updated successfully' });
   } catch (err) {

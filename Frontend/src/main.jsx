@@ -24,17 +24,19 @@ const queryClient = new QueryClient({
   },
 });
 
-import { AuthProvider, SocketProvider } from './contexts';
+import { AuthProvider, SocketProvider, ThemeProvider } from './contexts';
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <QueryClientProvider client={queryClient}>
       <StrictMode>
-        <AuthProvider>
-          <SocketProvider>
-            <App />
-          </SocketProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <SocketProvider>
+              <App />
+            </SocketProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </StrictMode>
     </QueryClientProvider>
   </BrowserRouter>

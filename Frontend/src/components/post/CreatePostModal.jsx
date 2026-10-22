@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Image, Smile, MapPin, Globe, Users, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { X, Image, Smile, MapPin, Globe, Users, Lock, Sparkles, Loader2, BarChart2, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { postApi, uploadApi } from '../../api';
 
@@ -14,16 +14,32 @@ const MOODS = [
   { emoji: '💪', label: 'Quyết tâm' },
 ];
 
-export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser }) => {
+export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser, initialPollOpen = false }) => {
+  const getDefaultStatus = () => {
+    try {
+      const saved = localStorage.getItem('privacySettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.post_visibility) return parsed.post_visibility;
+      }
+    } catch {}
+    return currentUser?.post_visibility || 'public';
+  };
+
   const [content, setContent] = useState('');
   const [images, setImages] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('public');
+  const [status, setStatus] = useState(getDefaultStatus);
   const [selectedMood, setSelectedMood] = useState(null);
   const [showMoodPicker, setShowMoodPicker] = useState(false);
   const [locationName, setLocationName] = useState('');
   const [showLocationInput, setShowLocationInput] = useState(false);
+
+  // Poll state
+  const [showPoll, setShowPoll] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
 
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -37,12 +53,16 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
     };
   }, [images]);
 
-  // Focus textarea when modal opens
+  // Focus textarea and sync default privacy status when modal opens
   useEffect(() => {
     if (isOpen) {
+      setStatus(getDefaultStatus());
+      if (initialPollOpen) {
+        setShowPoll(true);
+      }
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [isOpen, initialPollOpen]);
 
   if (!isOpen) return null;
 
@@ -50,8 +70,41 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
     setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
+  const handleAddOption = () => {
+    if (pollOptions.length < 5) {
+      setPollOptions((prev) => [...prev, '']);
+    }
+  };
+
+  const handleRemoveOption = (index) => {
+    if (pollOptions.length > 2) {
+      setPollOptions((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleOptionChange = (index, value) => {
+    setPollOptions((prev) => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
   const handleSubmit = async () => {
-    if (!content.trim() && images.length === 0) {
+    const validPollOptions = pollOptions.map((o) => o.trim()).filter(Boolean);
+    const hasPoll = showPoll;
+
+    if (hasPoll) {
+      const question = pollQuestion.trim() || content.trim();
+      if (!question) {
+        toast.error('Vui lòng nhập câu hỏi cho cuộc thăm dò ý kiến');
+        return;
+      }
+      if (validPollOptions.length < 2) {
+        toast.error('Vui lòng nhập ít nhất 2 lựa chọn bình chọn');
+        return;
+      }
+    } else if (!content.trim() && images.length === 0) {
       toast.error('Vui lòng nhập nội dung hoặc chọn ảnh để đăng');
       return;
     }
@@ -79,11 +132,29 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
         fullContent = fullContent ? `${fullContent}\n\n— ${metaAddons.join(' • ')}` : metaAddons.join(' • ');
       }
 
-      // 2. Tạo bài viết
+      // 2. Poll data nếu có
+      let pollData = null;
+      if (hasPoll) {
+        const question = pollQuestion.trim() || content.trim();
+        if (!fullContent) {
+          fullContent = question;
+        }
+        pollData = {
+          question,
+          options: validPollOptions.map((text, idx) => ({
+            id: idx + 1,
+            text,
+            votes: [],
+          })),
+        };
+      }
+
+      // 3. Tạo bài viết
       const res = await postApi.create({
         content: fullContent,
         media: mediaUrls.join(';'),
         status,
+        poll: pollData,
       });
 
       const newPost = res.data?.post || res.data?.data || res.data;
@@ -109,6 +180,9 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
       setImages([]);
       setSelectedMood(null);
       setLocationName('');
+      setShowPoll(false);
+      setPollQuestion('');
+      setPollOptions(['', '']);
       onClose();
     } catch (err) {
       console.error('Lỗi khi tạo bài viết:', err);
@@ -256,6 +330,71 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
             </div>
           )}
 
+          {/* Poll Builder Box */}
+          {showPoll && (
+            <div className="p-4 bg-indigo-50/60 dark:bg-slate-800/80 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 space-y-3 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                  <BarChart2 size={16} />
+                  <span>Cuộc thăm dò ý kiến</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPoll(false)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full transition"
+                  title="Hủy thăm dò ý kiến"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div>
+                <input
+                  type="text"
+                  placeholder="Đặt câu hỏi khảo sát... (ví dụ: Cuối tuần này đi đâu chơi?)"
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                />
+              </div>
+
+              <div className="space-y-2">
+                {pollOptions.map((opt, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder={`Lựa chọn ${idx + 1}`}
+                      value={opt}
+                      onChange={(e) => handleOptionChange(idx, e.target.value)}
+                      className="flex-1 px-3 py-1.5 text-xs sm:text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    />
+                    {pollOptions.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveOption(idx)}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 transition"
+                        title="Xóa lựa chọn"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {pollOptions.length < 5 && (
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 pt-1"
+                >
+                  <Plus size={14} />
+                  <span>Thêm lựa chọn ({pollOptions.length}/5)</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Image Previews */}
           {previewUrls.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
@@ -289,6 +428,20 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
                 title="Ảnh / Video"
               >
                 <Image size={20} />
+              </button>
+
+              {/* Poll button */}
+              <button
+                type="button"
+                onClick={() => setShowPoll((prev) => !prev)}
+                className={`p-2 rounded-full transition ${
+                  showPoll
+                    ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
+                    : 'hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-500'
+                }`}
+                title="Thăm dò ý kiến / Khảo sát"
+              >
+                <BarChart2 size={20} />
               </button>
 
               {/* Mood button */}
@@ -331,7 +484,12 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser })
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={loading || (!content.trim() && images.length === 0)}
+            disabled={
+              loading ||
+              (!content.trim() &&
+                images.length === 0 &&
+                (!showPoll || pollOptions.filter((o) => o.trim()).length < 2))
+            }
             className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (

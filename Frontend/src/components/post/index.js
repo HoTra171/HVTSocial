@@ -7,3 +7,5 @@ export { PostCommentSection } from './PostCommentSection';
 export { LikesModal } from './LikesModal';
 export { CreatePostModal } from './CreatePostModal';
 export { CreatePostBox } from './CreatePostBox';
+export { PostPoll } from './PostPoll';
+

@@ -5,11 +5,22 @@ import { postApi, uploadApi } from '../api';
 import { SERVER_ORIGIN } from '../constants/api';
 
 const CreatePost = ({ onPostCreated }) => {
+  const getDefaultStatus = () => {
+    try {
+      const saved = localStorage.getItem('privacySettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.post_visibility) return parsed.post_visibility;
+      }
+    } catch {}
+    return 'public';
+  };
+
   const [content, setContent] = useState('');
   const [images, setImages] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('public'); // Trạng thái hiển thị bài viết
+  const [status, setStatus] = useState(getDefaultStatus); // Trạng thái hiển thị bài viết mặc định
 
   const user = JSON.parse(localStorage.getItem('user'));
 

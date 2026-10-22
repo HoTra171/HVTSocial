@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, Sun, Moon } from 'lucide-react';
 import { assets } from '../assets/assets';
 import NotificationBadge from './NotificationBadge';
 import { useUnreadCounts } from '../hooks/useUnreadCounts';
+import { useTheme } from '../contexts/ThemeContext';
 import NotificationDropdown from './Notification/NotificationDropdown';
 import MobileSettingsMenu from './MobileSettingsMenu';
 
 const MobileHeader = ({ currentUserId }) => {
     const navigate = useNavigate();
     const { unreadNotifications } = useUnreadCounts();
+    const { isDark, toggleTheme } = useTheme();
     const [showDropdown, setShowDropdown] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
 
@@ -32,8 +34,22 @@ const MobileHeader = ({ currentUserId }) => {
                         </span>
                     </div>
 
-                    {/* Right: Search, Notifications, Menu */}
+                    {/* Right: Theme Toggle, Search, Notifications, Menu */}
                     <div className="flex items-center gap-1">
+                        {/* Theme Toggle Button */}
+                        <button
+                            onClick={toggleTheme}
+                            className="flex items-center justify-center w-9 h-9 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                            title={isDark ? "Giao diện sáng" : "Giao diện tối"}
+                            aria-label="Toggle theme"
+                        >
+                            {isDark ? (
+                                <Sun size={20} className="text-amber-400" />
+                            ) : (
+                                <Moon size={20} className="text-slate-600" />
+                            )}
+                        </button>
+
                         {/* Search Button */}
                         <button
                             onClick={() => navigate('/discover')}

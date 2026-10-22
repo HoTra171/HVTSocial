@@ -142,6 +142,9 @@ async function main() {
 
       IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'show_online_status')
         ALTER TABLE users ADD show_online_status BIT DEFAULT 1;
+
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'posts' AND COLUMN_NAME = 'poll_data')
+        ALTER TABLE posts ADD poll_data NVARCHAR(MAX);
     `);
 
     // 10. Disable triggers that block OUTPUT INSERTED.* without INTO clause

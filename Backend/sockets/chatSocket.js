@@ -1,16 +1,21 @@
 import { ChatService } from '../services/chatService.js';
 import { NotificationService } from '../services/notificationService.js'; // <-- THÊM
+import { pool } from '../config/db.js';
+import sql from 'mssql';
 
 // Lưu trạng thái online của users
 const onlineUsers = new Map(); // userId -> Set(socketId)
+// Lưu cấu hình quyền riêng tư online: userId -> boolean (true: show, false: hide)
+const userOnlinePrivacy = new Map();
 
 export default function chatSocket(io) {
   io.on('connection', (socket) => {
     console.log('Socket connected:', socket.id);
 
     // đăng ký user và thông báo online
-    socket.on('register_user', (userId) => {
+    socket.on('register_user', async (userId) => {
       const uid = Number(userId);
+      if (!uid) return;
       socket.userId = uid;
       socket.join(`user_${uid}`);
 
@@ -19,8 +24,33 @@ export default function chatSocket(io) {
       set.add(socket.id);
       onlineUsers.set(uid, set);
 
-      // chỉ báo online khi chuyển từ offline -> online
-      if (wasOffline) io.emit('user_status_changed', { userId: uid, status: 'online' });
+      // Lấy quyền riêng tư show_online_status
+      let showOnline = true;
+      try {
+        const db = await pool;
+        const res = await db.request()
+          .input('uid', sql.Int, uid)
+          .query('SELECT show_online_status FROM users WHERE id = @uid');
+        if (res.recordset.length > 0) {
+          showOnline = res.recordset[0].show_online_status !== false && res.recordset[0].show_online_status !== 0;
+        }
+      } catch (err) {
+        console.error('Error fetching show_online_status:', err);
+      }
+      userOnlinePrivacy.set(uid, showOnline);
+
+      // chỉ báo online khi chuyển từ offline -> online và user cho phép hiển thị
+      if (wasOffline && showOnline) {
+        io.emit('user_status_changed', { userId: uid, status: 'online' });
+      }
+    });
+
+    // lấy danh sách user đang online cho phép hiển thị
+    socket.on('get_online_users', (callback) => {
+      const visibleUsers = Array.from(onlineUsers.keys()).filter((uid) => {
+        return userOnlinePrivacy.get(uid) !== false;
+      });
+      callback?.(visibleUsers);
     });
 
     // thông báo offline
@@ -34,8 +64,13 @@ export default function chatSocket(io) {
 
       // chỉ báo offline khi không còn socket nào
       if (set.size === 0) {
-        onlineUsers.delete(socket.userId);
-        io.emit('user_status_changed', { userId: socket.userId, status: 'offline' });
+        const uid = socket.userId;
+        onlineUsers.delete(uid);
+        const showOnline = userOnlinePrivacy.get(uid) !== false;
+        userOnlinePrivacy.delete(uid);
+        if (showOnline) {
+          io.emit('user_status_changed', { userId: uid, status: 'offline' });
+        }
       }
     });
 
@@ -242,13 +277,22 @@ export default function chatSocket(io) {
 
   // -------- Helper trên io --------
   io.isUserOnline = (userId) => {
-    const set = onlineUsers.get(Number(userId));
-    return !!set && set.size > 0;
+    const uid = Number(userId);
+    const set = onlineUsers.get(uid);
+    const showOnline = userOnlinePrivacy.get(uid) !== false;
+    return !!set && set.size > 0 && showOnline;
   };
 
   io.getOnlineUsers = () => {
-    return Array.from(onlineUsers.keys());
+    return Array.from(onlineUsers.keys()).filter((uid) => {
+      return userOnlinePrivacy.get(uid) !== false;
+    });
+  };
+
+  io.setUserOnlinePrivacy = (userId, showStatus) => {
+    const uid = Number(userId);
+    userOnlinePrivacy.set(uid, showStatus);
   };
 }
 
-export { onlineUsers };
+export { onlineUsers, userOnlinePrivacy };

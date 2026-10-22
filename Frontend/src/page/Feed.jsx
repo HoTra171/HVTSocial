@@ -9,11 +9,13 @@ import { postApi } from '../api';
 import { useAuth } from '../contexts';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
 import { Link } from 'react-router-dom';
-import { PenSquare, Compass } from 'lucide-react';
+import { PenSquare, Compass, Sparkles, Users, Image as ImageIcon, ArrowUp } from 'lucide-react';
 
 const Feed = () => {
   const { currentUser } = useAuth();
   const [feeds, setFeeds] = useState([]);
+  const [feedTab, setFeedTab] = useState('all'); // 'all', 'friends', 'media'
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [openStoryTrigger, setOpenStoryTrigger] = useState(false);
@@ -83,6 +85,33 @@ const Feed = () => {
     setFeeds((prevFeeds) => prevFeeds.filter((post) => post.id !== postId));
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const filteredFeeds = feeds.filter((post) => {
+    if (feedTab === 'friends') {
+      return post.visibility === 'friends' || post.status === 'friends';
+    }
+    if (feedTab === 'media') {
+      const hasImg = (Array.isArray(post.image_urls) && post.image_urls.length > 0) || !!post.media_url;
+      return hasImg;
+    }
+    return true;
+  });
+
   // IntersectionObserver để auto load thêm khi scroll gần cuối
   useEffect(() => {
     if (!hasMore || initialLoading || loadingMore) return;
@@ -145,8 +174,47 @@ const Feed = () => {
           onOpenStoryModal={() => setOpenStoryTrigger(true)}
         />
 
+        {/* Feed Filter Tabs */}
+        <div className="flex items-center gap-2 mb-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <button
+            onClick={() => setFeedTab('all')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+              feedTab === 'all'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Sparkles size={16} />
+            <span>Dành cho bạn</span>
+          </button>
+
+          <button
+            onClick={() => setFeedTab('friends')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+              feedTab === 'friends'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Users size={16} />
+            <span>Bạn bè</span>
+          </button>
+
+          <button
+            onClick={() => setFeedTab('media')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+              feedTab === 'media'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <ImageIcon size={16} />
+            <span>Ảnh & Video</span>
+          </button>
+        </div>
+
         <div className="space-y-6">
-          {feeds.map((post, index) => {
+          {filteredFeeds.map((post, index) => {
             // Nếu post có originalPost thì đây là bài share
             if (post.originalPost) {
               return (
@@ -218,6 +286,18 @@ const Feed = () => {
 
       {/* Right Sidebar (Instagram/Facebook style: Suggestions, Online contacts, Sponsored, Footer) */}
       <RightSidebar currentUser={currentUser} />
+
+      {/* Floating Scroll to Top button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-20 right-6 z-40 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-xl shadow-indigo-500/30 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer animate-fade-in"
+          title="Lên đầu trang"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp size={20} />
+        </button>
+      )}
     </div>
   );
 };

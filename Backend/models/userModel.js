@@ -1,4 +1,4 @@
-﻿import sql from 'mssql';
+import sql from 'mssql';
 import { pool } from '../config/db.js';
 
 const getPool = async () => {
@@ -84,7 +84,10 @@ export const UserModel = {
           cover_photo AS background,
           bio,
           location AS address,
-          created_at
+          created_at,
+          profile_visibility,
+          allow_friend_requests,
+          show_online_status
         FROM users
         WHERE id = @userId
       `);

@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
 import 'dayjs/locale/vi';
-import { Heart, FileText, Image, Bookmark } from 'lucide-react';
+import { Heart, FileText, Image, Bookmark, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { userApi } from '../api/userApi';
 import { postApi } from '../api/postApi';
@@ -91,6 +91,11 @@ const Profile = () => {
             created_at: rawUser.created_at,
             followers: rawUser.followers || [],
             following: rawUser.following || [],
+            profile_visibility: rawUser.profile_visibility,
+            allow_friend_requests: rawUser.allow_friend_requests,
+            is_locked: rawUser.is_locked,
+            is_private: rawUser.is_private,
+            is_friend_only: rawUser.is_friend_only,
           });
           setPosts(rawPosts);
         }
@@ -183,33 +188,50 @@ const Profile = () => {
             setShowEdit={setShowEdit}
           />
 
-          {/* TABS */}
-          <div className="px-6 pt-6">
-            <div className="bg-gray-50 rounded-2xl p-1.5 flex max-w-2xl mx-auto shadow-inner border border-gray-200">
-              {tabs.map(({ key, icon: Icon, label }) => (
-                <button
-                  key={`tab-${key}`}
-                  onClick={() => setActiveTab(key)}
-                  className={`flex-1 px-3 py-3 text-sm font-semibold rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 relative ${
-                    activeTab === key
-                      ? 'bg-white text-indigo-600 shadow-md scale-105'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
-                  }`}
-                  title={label}
-                >
-                  <Icon className={`w-5 h-5 ${activeTab === key ? 'animate-pulse' : ''}`} />
-                  <span className="max-sm:hidden">{label}</span>
-                  {activeTab === key && (
-                    <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
-                  )}
-                </button>
-              ))}
+          {/* PROFILE LOCKED STATE */}
+          {user.is_locked && !isOwnProfile ? (
+            <div className="py-20 px-6 text-center border-t border-gray-100 mt-6 bg-gradient-to-b from-gray-50/50 to-white">
+              <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600 shadow-sm">
+                <Lock className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {user.is_private ? 'Tài khoản này là riêng tư' : 'Tài khoản ở chế độ chỉ bạn bè'}
+              </h3>
+              <p className="text-sm text-gray-500 max-w-md mx-auto">
+                {user.is_private
+                  ? 'Chủ tài khoản đã cài đặt chế độ riêng tư cho hồ sơ cá nhân.'
+                  : 'Chỉ bạn bè mới có thể xem thông tin chi tiết và bài viết của người này.'}
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* TABS */}
+              <div className="px-6 pt-6">
+                <div className="bg-gray-50 rounded-2xl p-1.5 flex max-w-2xl mx-auto shadow-inner border border-gray-200">
+                  {tabs.map(({ key, icon: Icon, label }) => (
+                    <button
+                      key={`tab-${key}`}
+                      onClick={() => setActiveTab(key)}
+                      className={`flex-1 px-3 py-3 text-sm font-semibold rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2 relative ${
+                        activeTab === key
+                          ? 'bg-white text-indigo-600 shadow-md scale-105'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
+                      }`}
+                      title={label}
+                    >
+                      <Icon className={`w-5 h-5 ${activeTab === key ? 'animate-pulse' : ''}`} />
+                      <span className="max-sm:hidden">{label}</span>
+                      {activeTab === key && (
+                        <div className="absolute -bottom-1.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-indigo-600 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* TAB 1: POSTS */}
-          {activeTab === 'posts' && (
-            <div className="mt-8 px-4 pb-6 flex flex-col items-center gap-6">
+              {/* TAB 1: POSTS */}
+              {activeTab === 'posts' && (
+                <div className="mt-8 px-4 pb-6 flex flex-col items-center gap-6">
               {posts.map((post) => (
                 <div key={`post-${post.id}`} className="w-full max-w-2xl">
                   <PostCard
@@ -378,6 +400,8 @@ const Profile = () => {
                 </div>
               )}
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

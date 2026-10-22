@@ -46,6 +46,14 @@ export const postApi = {
    */
   delete: (postId) => axiosInstance.delete(`/posts/${postId}`),
 
+  /**
+   * Bình chọn thăm dò ý kiến (Poll vote)
+   * @param {number|string} postId
+   * @param {number|string} optionId
+   */
+  votePoll: (postId, optionId) =>
+    axiosInstance.post(`/posts/${postId}/poll/vote`, { optionId }),
+
   // ===== LIKES & REACTIONS =====
   /**
    * Thích hoặc bỏ thích bài viết

@@ -189,6 +189,7 @@ END $$;`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_caller ON call_history(caller_id);`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_receiver ON call_history(receiver_id);`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_created_at ON call_history(created_at DESC);`,
+      `ALTER TABLE posts ADD COLUMN IF NOT EXISTS poll_data TEXT;`,
     ];
 
     for (const stmt of statements) {

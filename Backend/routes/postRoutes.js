@@ -6,10 +6,13 @@ import {
   getPost,
   updatePost,
   deletePost,
+  votePoll,
 } from '../controllers/postController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
+
+router.post('/:id/poll/vote', authMiddleware, votePoll);
 
 import { searchPosts } from '../controllers/postController.js';
 import { createComment, getCommentsByPost } from '../controllers/commentController.js';

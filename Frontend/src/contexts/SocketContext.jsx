@@ -14,6 +14,11 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(true);
       if (currentUser?.id) {
         socket.emit('register_user', currentUser.id);
+        socket.emit('get_online_users', (onlineList) => {
+          if (Array.isArray(onlineList)) {
+            setOnlineUserIds(new Set(onlineList.map(Number)));
+          }
+        });
       }
     };
 
@@ -42,6 +47,11 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(true);
       if (currentUser?.id) {
         socket.emit('register_user', currentUser.id);
+        socket.emit('get_online_users', (onlineList) => {
+          if (Array.isArray(onlineList)) {
+            setOnlineUserIds(new Set(onlineList.map(Number)));
+          }
+        });
       }
     }
 

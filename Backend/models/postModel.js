@@ -26,6 +26,7 @@ export const PostModel = {
         p.media_type,
         p.created_at,
         p.visibility AS status,
+        p.poll_data,
 
         u.id        AS user_id,
         u.full_name,
@@ -81,6 +82,7 @@ export const PostModel = {
         p.media_type,
         p.created_at,
         p.visibility AS status,
+        p.poll_data,
 
         u.id        AS user_id,
         u.full_name,
@@ -96,19 +98,41 @@ export const PostModel = {
       WHERE
         p.user_id = @userId
         AND (
-          p.visibility = 'public'
-          OR p.user_id = @viewerId
+          p.user_id = @viewerId
           OR (
-            p.visibility = 'friends'
-            AND EXISTS (
-              SELECT 1
-              FROM friendships f
-              WHERE f.status = 'accepted'
-                AND (
-                  (f.user_id = @viewerId AND f.friend_id = p.user_id)
-                  OR
-                  (f.friend_id = @viewerId AND f.user_id = p.user_id)
+            -- Quyền riêng tư hồ sơ
+            (
+              u.profile_visibility = 'public'
+              OR (
+                u.profile_visibility = 'friends'
+                AND EXISTS (
+                  SELECT 1
+                  FROM friendships f1
+                  WHERE f1.status = 'accepted'
+                    AND (
+                      (f1.user_id = @viewerId AND f1.friend_id = p.user_id)
+                      OR
+                      (f1.friend_id = @viewerId AND f1.user_id = p.user_id)
+                    )
                 )
+              )
+            )
+            -- Quyền riêng tư từng bài viết
+            AND (
+              p.visibility = 'public'
+              OR (
+                p.visibility = 'friends'
+                AND EXISTS (
+                  SELECT 1
+                  FROM friendships f2
+                  WHERE f2.status = 'accepted'
+                    AND (
+                      (f2.user_id = @viewerId AND f2.friend_id = p.user_id)
+                      OR
+                      (f2.friend_id = @viewerId AND f2.user_id = p.user_id)
+                    )
+                )
+              )
             )
           )
         )

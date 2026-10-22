@@ -150,13 +150,23 @@ export const createPost = async (req, res) => {
     }
     const { content } = req.body;
     const media = req.body.media || null;
+    const pollData = req.body.poll || req.body.poll_data || null;
 
-    // Validate status để tránh lỗi CHECK constraint trong DB
+    // Validate status hoặc lấy default post_visibility từ cài đặt riêng tư của user
     const allowedStatus = new Set(['public', 'friends', 'private']);
-    const statusRaw = (req.body.status || 'public').toString().trim();
-    const status = allowedStatus.has(statusRaw) ? statusRaw : 'public';
+    let status = req.body.status ? req.body.status.toString().trim() : null;
 
-    const newPost = await PostService.createPost(user_id, content, media, status);
+    if (!status || !allowedStatus.has(status)) {
+      const db = await pool;
+      const userRes = await db
+        .request()
+        .input('userId', sql.Int, user_id)
+        .query('SELECT post_visibility FROM users WHERE id = @userId');
+      const defaultVis = userRes.recordset[0]?.post_visibility;
+      status = allowedStatus.has(defaultVis) ? defaultVis : 'public';
+    }
+
+    const newPost = await PostService.createPost(user_id, content, media, status, pollData);
     res.json({
       message: 'Đăng bài thành công',
       post: newPost,
@@ -164,6 +174,29 @@ export const createPost = async (req, res) => {
   } catch (err) {
     console.error('createPost error:', err);
     res.status(500).json({ message: 'Lỗi server', error: err.message });
+  }
+};
+
+// POST /api/posts/:id/poll/vote
+export const votePoll = async (req, res) => {
+  try {
+    const postId = Number(req.params.id);
+    const userId = req.user.id;
+    const { optionId } = req.body;
+
+    if (!postId || optionId === undefined) {
+      return res.status(400).json({ success: false, message: 'Thiếu postId hoặc optionId' });
+    }
+
+    const updatedPoll = await PostService.votePoll(postId, userId, optionId);
+    res.json({
+      success: true,
+      message: 'Bình chọn thành công',
+      poll: updatedPoll,
+    });
+  } catch (err) {
+    console.error('votePoll error:', err);
+    res.status(500).json({ success: false, message: err.message || 'Lỗi server' });
   }
 };
 

@@ -298,14 +298,6 @@ const PrivacySettings = () => {
             </div>
           </div>
         </div>
-
-        {/* Info Card */}
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Lưu ý:</strong> Một số cài đặt có thể cần thời gian để có hiệu
-            lực trên toàn hệ thống.
-          </p>
-        </div>
       </div>
     </div>
   );

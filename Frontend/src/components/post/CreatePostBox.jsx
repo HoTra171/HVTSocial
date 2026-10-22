@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import { Image, Smile, Video, Sparkles } from 'lucide-react';
+import { Image, Smile, Sparkles, BarChart2 } from 'lucide-react';
 import { CreatePostModal } from './CreatePostModal';
 
 export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) => {
   const [showModal, setShowModal] = useState(false);
+  const [openWithPoll, setOpenWithPoll] = useState(false);
 
   const firstName = currentUser?.full_name?.split(' ').pop() || 'bạn';
+
+  const handleOpenModal = (withPoll = false) => {
+    setOpenWithPoll(withPoll);
+    setShowModal(true);
+  };
 
   return (
     <>
@@ -22,20 +28,20 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
           />
           <button
             type="button"
-            onClick={() => setShowModal(true)}
+            onClick={() => handleOpenModal(false)}
             className="flex-1 text-left px-4 py-2.5 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs sm:text-sm rounded-full transition cursor-pointer select-none"
           >
             {`${firstName} ơi, bạn đang nghĩ gì thế?`}
           </button>
         </div>
 
-        {/* Bottom: Quick Action Shortcuts (Facebook Style) */}
+        {/* Bottom: Quick Action Shortcuts */}
         <div className="flex items-center justify-between pt-2">
           {/* Ảnh / Video */}
           <button
             type="button"
-            onClick={() => setShowModal(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            onClick={() => handleOpenModal(false)}
+            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
           >
             <span className="text-emerald-500">
               <Image size={18} />
@@ -43,28 +49,40 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
             <span className="hidden sm:inline">Ảnh / Video</span>
           </button>
 
+          {/* Thăm dò ý kiến / Khảo sát */}
+          <button
+            type="button"
+            onClick={() => handleOpenModal(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+          >
+            <span className="text-indigo-500">
+              <BarChart2 size={18} />
+            </span>
+            <span className="hidden sm:inline">Khảo sát</span>
+          </button>
+
           {/* Cảm xúc / Hoạt động */}
           <button
             type="button"
-            onClick={() => setShowModal(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            onClick={() => handleOpenModal(false)}
+            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
           >
             <span className="text-amber-500">
               <Smile size={18} />
             </span>
-            <span className="hidden sm:inline">Cảm xúc / Hoạt động</span>
+            <span className="hidden sm:inline">Cảm xúc</span>
           </button>
 
           {/* Tạo tin nhanh (Story) */}
           <button
             type="button"
             onClick={onOpenStoryModal}
-            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
           >
             <span className="text-purple-500">
               <Sparkles size={18} />
             </span>
-            <span className="hidden sm:inline">Tạo tin (Story)</span>
+            <span className="hidden sm:inline">Tạo tin</span>
           </button>
         </div>
       </div>
@@ -72,9 +90,13 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
       {/* Modal tạo bài viết */}
       <CreatePostModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {
+          setShowModal(false);
+          setOpenWithPoll(false);
+        }}
         currentUser={currentUser}
         onPostCreated={onPostCreated}
+        initialPollOpen={openWithPoll}
       />
     </>
   );
