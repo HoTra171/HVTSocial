@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import StoriesBar from '../components/StoriesBar';
-import { assets } from '../assets/assets';
 import PostCard from '../components/PostCard.jsx';
 import SharedPostCard from '../components/SharedPostCard.jsx';
 import { CreatePostBox } from '../components/post';
@@ -9,12 +8,28 @@ import { postApi } from '../api';
 import { useAuth } from '../contexts';
 import { PostSkeleton } from '../components/common/SkeletonLoader';
 import { Link } from 'react-router-dom';
-import { PenSquare, Compass, Sparkles, Users, Image as ImageIcon, ArrowUp } from 'lucide-react';
+import {
+  PenSquare,
+  Compass,
+  Sparkles,
+  Users,
+  Image as ImageIcon,
+  Flame,
+  ArrowUp,
+  RefreshCw,
+} from 'lucide-react';
+
+const FEED_TABS = [
+  { key: 'all', label: 'Dành cho bạn', icon: Sparkles },
+  { key: 'friends', label: 'Bạn bè', icon: Users },
+  { key: 'media', label: 'Ảnh & Video', icon: ImageIcon },
+  { key: 'trending', label: 'Thịnh hành', icon: Flame },
+];
 
 const Feed = () => {
   const { currentUser } = useAuth();
   const [feeds, setFeeds] = useState([]);
-  const [feedTab, setFeedTab] = useState('all'); // 'all', 'friends', 'media'
+  const [feedTab, setFeedTab] = useState('all'); // 'all', 'friends', 'media', 'trending'
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
@@ -22,14 +37,14 @@ const Feed = () => {
 
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
 
-  const LIMIT = 10; // số post / trang
+  const LIMIT = 10;
 
   const fetchFeeds = async (cursorToLoad = null) => {
-    // Prevent duplicate calls
     if (loadingMore) return;
 
     if (cursorToLoad === null) {
@@ -40,20 +55,16 @@ const Feed = () => {
 
     try {
       const res = await postApi.getFeed({ cursor: cursorToLoad, limit: LIMIT });
-
-      // Handle response { posts, nextCursor }
       const data = res.data;
-      const newPosts = Array.isArray(data) ? data : (data.posts || []);
+      const newPosts = Array.isArray(data) ? data : data.posts || [];
       const nextCursor = data.nextCursor;
 
       if (cursorToLoad === null) {
-        // Initial load or refresh
         setFeeds(newPosts);
       } else {
-        // Append
         setFeeds((prev) => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+          const existingIds = new Set(prev.map((p) => p.id));
+          const uniqueNewPosts = newPosts.filter((p) => !existingIds.has(p.id));
           return [...prev, ...uniqueNewPosts];
         });
       }
@@ -65,26 +76,32 @@ const Feed = () => {
         setCursor(nextCursor);
       }
     } catch (err) {
-      console.error("Lỗi load feed:", err);
+      console.error('Lỗi load feed:', err);
       setHasMore(false);
     } finally {
       if (cursorToLoad === null) {
         setInitialLoading(false);
+        setRefreshing(false);
       } else {
         setLoadingMore(false);
       }
     }
   };
 
-  // load trang 1 khi vừa vào
   useEffect(() => {
     fetchFeeds(null);
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchFeeds(null);
+  };
 
   const handlePostDeleted = (postId) => {
     setFeeds((prevFeeds) => prevFeeds.filter((post) => post.id !== postId));
   };
 
+  // Scroll to top listener
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 400) {
@@ -101,22 +118,30 @@ const Feed = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Filter posts based on active tab
   const filteredFeeds = feeds.filter((post) => {
     if (feedTab === 'friends') {
-      return post.visibility === 'friends' || post.status === 'friends';
+      return (
+        post.visibility === 'friends' ||
+        post.status === 'friends' ||
+        (post.user && post.user.is_friend)
+      );
     }
     if (feedTab === 'media') {
-      const hasImg = (Array.isArray(post.image_urls) && post.image_urls.length > 0) || !!post.media_url;
+      const hasImg =
+        (Array.isArray(post.image_urls) && post.image_urls.length > 0) || !!post.media_url;
       return hasImg;
+    }
+    if (feedTab === 'trending') {
+      return (Number(post.likes_count) || 0) >= 1 || (Number(post.comments_count) || 0) >= 1;
     }
     return true;
   });
 
-  // IntersectionObserver để auto load thêm khi scroll gần cuối
+  // IntersectionObserver for infinite scroll
   useEffect(() => {
     if (!hasMore || initialLoading || loadingMore) return;
 
-    // clear observer cũ nếu có
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
@@ -125,13 +150,12 @@ const Feed = () => {
       (entries) => {
         const first = entries[0];
         if (first.isIntersecting && !loadingMore && hasMore && cursor) {
-          // đang thấy element sentinel -> gọi page tiếp theo
           fetchFeeds(cursor);
         }
       },
       {
-        root: null,         // viewport hiện tại
-        rootMargin: '0px 0px 200px 0px', // chạm trước 200px là load
+        root: null,
+        rootMargin: '0px 0px 250px 0px',
         threshold: 0.1,
       }
     );
@@ -150,8 +174,10 @@ const Feed = () => {
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-start justify-center xl:gap-8 py-10">
-        <div className="p-4 w-full max-w-[600px] space-y-4">
+      <div className="min-h-screen flex items-start justify-center xl:gap-8 py-6 sm:py-10 bg-slate-50 dark:bg-slate-950 transition-colors">
+        <div className="p-3 sm:p-4 w-full max-w-[620px] space-y-4">
+          <div className="h-44 bg-white dark:bg-slate-900 rounded-3xl animate-pulse border border-slate-100 dark:border-slate-800" />
+          <div className="h-32 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />
           <PostSkeleton />
           <PostSkeleton />
         </div>
@@ -160,62 +186,59 @@ const Feed = () => {
   }
 
   return (
-    <div className='min-h-screen flex items-start justify-center xl:gap-8 py-10'>
-      <div className="p-4 w-full max-w-[600px]">
-        <StoriesBar
-          openTrigger={openStoryTrigger}
-          onModalClose={() => setOpenStoryTrigger(false)}
-        />
+    <div className="min-h-screen flex items-start justify-center xl:gap-8 py-4 sm:py-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <div className="px-2 sm:px-4 w-full max-w-[620px]">
+        {/* STORIES RAIL */}
+        <div className="mb-4">
+          <StoriesBar
+            openTrigger={openStoryTrigger}
+            onModalClose={() => setOpenStoryTrigger(false)}
+          />
+        </div>
 
-        {/* Facebook-style quick post creation box */}
+        {/* QUICK POST CREATION BOX */}
         <CreatePostBox
           currentUser={currentUser}
           onPostCreated={(newPost) => setFeeds((prev) => [newPost, ...prev])}
           onOpenStoryModal={() => setOpenStoryTrigger(true)}
         />
 
-        {/* Feed Filter Tabs */}
-        <div className="flex items-center gap-2 mb-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <button
-            onClick={() => setFeedTab('all')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-              feedTab === 'all'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Sparkles size={16} />
-            <span>Dành cho bạn</span>
-          </button>
+        {/* FEED FILTER TABS PILL BAR */}
+        <div className="flex items-center gap-1.5 mb-5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs sticky top-2 z-10">
+          {FEED_TABS.map(({ key, label, icon: Icon }) => {
+            const isActive = feedTab === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFeedTab(key)}
+                className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/25'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <Icon size={15} className={isActive ? 'animate-pulse' : ''} />
+                <span className="max-xs:hidden">{label}</span>
+              </button>
+            );
+          })}
 
+          {/* Quick Refresh Feed Button */}
           <button
-            onClick={() => setFeedTab('friends')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-              feedTab === 'friends'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+            type="button"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            title="Làm mới bảng tin"
           >
-            <Users size={16} />
-            <span>Bạn bè</span>
-          </button>
-
-          <button
-            onClick={() => setFeedTab('media')}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-              feedTab === 'media'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <ImageIcon size={16} />
-            <span>Ảnh & Video</span>
+            <RefreshCw size={15} className={refreshing ? 'animate-spin text-indigo-500' : ''} />
           </button>
         </div>
 
-        <div className="space-y-6">
-          {filteredFeeds.map((post, index) => {
-            // Nếu post có originalPost thì đây là bài share
+        {/* POSTS STREAM */}
+        <div className="space-y-5">
+          {filteredFeeds.map((post) => {
             if (post.originalPost) {
               return (
                 <SharedPostCard
@@ -223,10 +246,9 @@ const Feed = () => {
                   currentUser={currentUser}
                   key={`shared-${post.id}`}
                 />
-              )
+              );
             }
 
-            // Bài viết thường
             return (
               <PostCard
                 post={post}
@@ -234,49 +256,65 @@ const Feed = () => {
                 onPostDeleted={handlePostDeleted}
                 key={`post-${post.id}`}
               />
-            )
+            );
           })}
 
-          {/* sentinel để IntersectionObserver bắt khi scroll gần cuối */}
+          {/* INFINITE SCROLL SENTINEL */}
           {hasMore && (
-            <div ref={loadMoreRef} className="h-8 flex items-center justify-center">
-              {loadingMore && (
-                <span className="text-xs text-slate-400">
-                  Đang tải thêm...
-                </span>
+            <div ref={loadMoreRef} className="py-6 flex items-center justify-center">
+              {loadingMore ? (
+                <div className="flex items-center gap-2 text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                  <div className="w-4 h-4 border-2 border-indigo-600 dark:border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  <span>Đang tải thêm bài viết...</span>
+                </div>
+              ) : (
+                <div className="h-4" />
               )}
             </div>
           )}
 
           {!hasMore && feeds.length > 0 && (
-            <p className="text-center text-xs text-slate-400 mt-4">
-              Bạn đã xem hết bài viết.
-            </p>
+            <div className="text-center py-8">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-medium">
+                <Sparkles size={14} className="text-amber-500" />
+                <span>Bạn đã xem hết tất cả bài viết mới nhất!</span>
+              </div>
+            </div>
           )}
 
-          {!initialLoading && feeds.length === 0 && (
-            <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 text-center my-6">
-              <div className="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4 shadow-inner">
+          {/* EMPTY STATE */}
+          {!initialLoading && filteredFeeds.length === 0 && (
+            <div className="flex flex-col items-center justify-center p-8 sm:p-12 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 text-center my-4 animate-in fade-in">
+              <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4 shadow-inner">
                 <PenSquare size={28} />
               </div>
               <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1">
-                Chưa có bài viết nào trên bảng tin
+                {feedTab === 'friends'
+                  ? 'Chưa có bài viết nào từ bạn bè'
+                  : feedTab === 'media'
+                  ? 'Chưa có bài viết kèm hình ảnh hoặc video'
+                  : feedTab === 'trending'
+                  ? 'Chưa có bài viết thịnh hành'
+                  : 'Bảng tin chưa có bài viết'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
-                Hãy là người đầu tiên chia sẻ khoảnh khắc thú vị hoặc kết nối thêm bạn bè để bảng tin luôn rộn ràng!
+                Hãy là người đầu tiên chia sẻ khoảnh khắc thú vị hoặc kết nối thêm bạn bè để bảng tin
+                luôn rộn ràng!
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap justify-center">
                 <Link
                   to="/create-post"
-                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold rounded-xl shadow-md transition-all hover:scale-105 flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <PenSquare size={14} /> Tạo bài viết ngay
+                  <PenSquare size={14} />
+                  <span>Tạo bài viết ngay</span>
                 </Link>
                 <Link
                   to="/discover"
-                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-all hover:scale-105 flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-2xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Compass size={14} /> Khám phá bạn bè
+                  <Compass size={14} />
+                  <span>Khám phá cộng đồng</span>
                 </Link>
               </div>
             </div>
@@ -284,16 +322,16 @@ const Feed = () => {
         </div>
       </div>
 
-      {/* Right Sidebar (Instagram/Facebook style: Suggestions, Online contacts, Sponsored, Footer) */}
+      {/* RIGHT SIDEBAR (SUGGESTIONS & CONTACTS) */}
       <RightSidebar currentUser={currentUser} />
 
-      {/* Floating Scroll to Top button */}
+      {/* FLOATING SCROLL TO TOP BUTTON */}
       {showScrollTop && (
         <button
+          type="button"
           onClick={scrollToTop}
-          className="fixed bottom-20 right-6 z-40 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-xl shadow-indigo-500/30 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer animate-fade-in"
+          className="fixed bottom-20 md:bottom-8 right-6 z-40 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-full shadow-xl shadow-indigo-500/30 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center cursor-pointer"
           title="Lên đầu trang"
-          aria-label="Scroll to top"
         >
           <ArrowUp size={20} />
         </button>

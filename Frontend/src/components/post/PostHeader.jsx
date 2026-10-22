@@ -90,14 +90,14 @@ export const PostHeader = ({
 
         <div>
           <div className="flex items-center gap-1.5">
-            <h3 className="font-semibold text-sm text-gray-900 group-hover:text-indigo-600 transition-colors">
+            <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               {pickName(postUser)}
             </h3>
             {postUser?.is_verified && (
               <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-500" />
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>{safeFromNow(post?.created_at || post?.createdAt)}</span>
             <span>•</span>
             <span className="flex items-center">{renderPrivacyIcon()}</span>
@@ -109,21 +109,21 @@ export const PostHeader = ({
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setShowMenu((prev) => !prev)}
-          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+          className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
           title="Tùy chọn bài viết"
         >
           <MoreHorizontal className="w-5 h-5" />
         </button>
 
         {showMenu && (
-          <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-20 animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-1.5 z-20 animate-in fade-in zoom-in-95 duration-100">
             {/* Lưu bài viết */}
             <button
               onClick={() => {
                 onToggleSave?.();
                 setShowMenu(false);
               }}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-gray-700 hover:bg-gray-50 text-left transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
             >
               <Bookmark className={`w-4 h-4 ${saved ? 'text-indigo-600 fill-indigo-600' : ''}`} />
               <span>{saved ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}</span>
@@ -135,7 +135,7 @@ export const PostHeader = ({
                 onCopyLink?.();
                 setShowMenu(false);
               }}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-gray-700 hover:bg-gray-50 text-left transition-colors"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
             >
               <Share2 className="w-4 h-4" />
               <span>Sao chép liên kết</span>
@@ -144,15 +144,15 @@ export const PostHeader = ({
             {/* Chỉnh sửa / Xóa (nếu là chủ sở hữu) */}
             {isPostOwner && (
               <>
-                <div className="h-px bg-gray-100 my-1" />
+                <div className="h-px bg-slate-100 dark:bg-slate-700/80 my-1" />
                 <button
                   onClick={() => {
                     onEdit?.();
                     setShowMenu(false);
                   }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-gray-700 hover:bg-gray-50 text-left transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left transition-colors cursor-pointer"
                 >
-                  <Edit className="w-4 h-4 text-blue-600" />
+                  <Edit className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   <span>Chỉnh sửa bài viết</span>
                 </button>
                 <button
@@ -160,9 +160,9 @@ export const PostHeader = ({
                     onDelete?.();
                     setShowMenu(false);
                   }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-red-600 hover:bg-red-50 text-left transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 text-left transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-4 h-4 text-red-600" />
+                  <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                   <span>Xóa bài viết</span>
                 </button>
               </>
