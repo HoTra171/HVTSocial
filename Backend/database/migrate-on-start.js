@@ -16,7 +16,17 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DATABASE_URL = (process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || '').replace(/^"|"$/g, '');
+const sanitizeConnectionString = (rawUrl) => {
+  if (!rawUrl) return '';
+  let url = rawUrl.trim().replace(/^"|"$/g, '').replace(/^'|'$/g, '');
+  url = url.replace(/([?&])channel_binding=[^&]+(&|$)/g, (match, p1, p2) => {
+    return p2 === '&' ? p1 : '';
+  }).replace(/\?$/, '');
+  return url;
+};
+
+const rawUrl = (process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || '');
+const DATABASE_URL = sanitizeConnectionString(rawUrl);
 
 if (!DATABASE_URL || !DATABASE_URL.includes('postgres')) {
   console.log('🔧 Local MSSQL detected: verifying schema compatibility...');
@@ -38,11 +48,32 @@ const client = new pg.Client({
   ssl: {
     rejectUnauthorized: false,
   },
+  connectionTimeoutMillis: 15000,
 });
 
 async function migrate() {
+  let connected = false;
   try {
-    await client.connect();
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await client.connect();
+        connected = true;
+        break;
+      } catch (connErr) {
+        console.warn(`⚠️ Migration DB connection attempt ${attempt}/3 failed:`, connErr.message);
+        if (attempt < 3) {
+          console.log('⏳ Retrying DB connection in 2s...');
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    }
+
+    if (!connected) {
+      console.warn('⚠️ Could not connect to PostgreSQL for schema migration (database may be sleeping).');
+      console.log('⚠️ Continuing with server start...');
+      return;
+    }
+
     // 1. Kiểm tra nếu Database mới tinh (chưa có bảng users) thì tự động chạy toàn bộ postgres-migration.sql
     const tableCheck = await client.query(`
       SELECT 1 FROM information_schema.tables 
@@ -190,6 +221,30 @@ END $$;`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_receiver ON call_history(receiver_id);`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_created_at ON call_history(created_at DESC);`,
       `ALTER TABLE posts ADD COLUMN IF NOT EXISTS poll_data TEXT;`,
+      // 12. Privacy settings & cross-database compatibility columns
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_visibility VARCHAR(20) DEFAULT 'public';`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_visibility VARCHAR(20) DEFAULT 'public';`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_friend_requests BOOLEAN DEFAULT TRUE;`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS show_online_status BOOLEAN DEFAULT TRUE;`,
+      `ALTER TABLE users ADD COLUMN IF NOT EXISTS background TEXT;`,
+      `UPDATE users SET background = cover_photo WHERE background IS NULL AND cover_photo IS NOT NULL;`,
+      `UPDATE users SET cover_photo = background WHERE cover_photo IS NULL AND background IS NOT NULL;`,
+      `UPDATE users SET profile_visibility = 'public' WHERE profile_visibility IS NULL;`,
+      `UPDATE users SET post_visibility = 'public' WHERE post_visibility IS NULL;`,
+      `UPDATE users SET allow_friend_requests = TRUE WHERE allow_friend_requests IS NULL;`,
+      `UPDATE users SET show_online_status = TRUE WHERE show_online_status IS NULL;`,
+      `ALTER TABLE posts ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'public';`,
+      `UPDATE posts SET status = visibility WHERE status IS NULL AND visibility IS NOT NULL;`,
+      `UPDATE posts SET visibility = status WHERE visibility IS NULL AND status IS NOT NULL;`,
+      `ALTER TABLE saved_posts ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();`,
+      `UPDATE saved_posts SET created_at = saved_at WHERE created_at IS NULL AND saved_at IS NOT NULL;`,
+      `UPDATE saved_posts SET saved_at = created_at WHERE saved_at IS NULL AND created_at IS NOT NULL;`,
+      `ALTER TABLE comments ADD COLUMN IF NOT EXISTS comment_parent INTEGER;`,
+      `UPDATE comments SET comment_parent = parent_comment_id WHERE comment_parent IS NULL AND parent_comment_id IS NOT NULL;`,
+      `UPDATE comments SET parent_comment_id = comment_parent WHERE parent_comment_id IS NULL AND comment_parent IS NOT NULL;`,
+      `ALTER TABLE comments ADD COLUMN IF NOT EXISTS image_url TEXT;`,
+      `ALTER TABLE stories ALTER COLUMN background_color TYPE TEXT;`,
+      `ALTER TABLE stories ADD COLUMN IF NOT EXISTS music_url TEXT;`,
     ];
 
     for (const stmt of statements) {
@@ -202,7 +257,11 @@ END $$;`,
     // Don't fail deployment on migration errors
     console.log('⚠️  Continuing with server start...');
   } finally {
-    await client.end();
+    if (connected) {
+      try {
+        await client.end();
+      } catch {}
+    }
   }
 }
 

@@ -211,7 +211,7 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
                   {previewStory.media_type === "text" ? (
                     <div
                       className="absolute inset-0 flex items-center justify-center text-white p-3 text-sm text-center font-medium"
-                      style={{ backgroundColor: previewStory.background_color }}
+                      style={{ background: previewStory.background_color || '#6366f1' }}
                     >
                       {previewStory.caption}
                     </div>

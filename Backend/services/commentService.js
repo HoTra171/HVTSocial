@@ -14,6 +14,7 @@ export const CommentService = {
           c.post_id,
           c.user_id,
           c.content,
+          c.image_url,
           c.parent_comment_id AS comment_parent,
           c.created_at,
 
@@ -34,10 +35,11 @@ export const CommentService = {
       post_id: row.post_id,
       user_id: row.user_id,
       content: row.content,
+      image_url: row.image_url,
       comment_parent: row.comment_parent,
       created_at: row.created_at,
-      replies_count: row.replies_count,
-      likes_count: row.likes_count,
+      replies_count: Number(row.replies_count || 0),
+      likes_count: Number(row.likes_count || 0),
       user: {
         id: row.user_id,
         full_name: row.full_name,
@@ -59,6 +61,7 @@ export const CommentService = {
           c.post_id,
           c.user_id,
           c.content,
+          c.image_url,
           c.parent_comment_id AS comment_parent,
           c.created_at,
 
@@ -78,9 +81,10 @@ export const CommentService = {
       post_id: row.post_id,
       user_id: row.user_id,
       content: row.content,
+      image_url: row.image_url,
       comment_parent: row.comment_parent,
       created_at: row.created_at,
-      likes_count: row.likes_count,
+      likes_count: Number(row.likes_count || 0),
       user: {
         id: row.user_id,
         full_name: row.full_name,
@@ -91,21 +95,21 @@ export const CommentService = {
   },
 
   /**
-   * Tạo comment (comment hoặc reply)
+   * Tạo comment (comment hoặc reply, kèm ảnh nếu có)
    */
-  async createComment(postId, userId, content, commentParent = null) {
+  async createComment(postId, userId, content, commentParent = null, imageUrl = null) {
     const db = await pool;
 
     const result = await db
       .request()
       .input('postId', sql.Int, postId)
       .input('userId', sql.Int, userId)
-      // FIX: luôn dùng NVARCHAR(MAX) để tránh lỗi 500 khi content dài
-      .input('content', sql.NVarChar(sql.MAX), content)
-      .input('commentParent', sql.Int, commentParent).query(`
-        INSERT INTO comments (post_id, user_id, content, parent_comment_id, created_at)
+      .input('content', sql.NVarChar(sql.MAX), content || '')
+      .input('commentParent', sql.Int, commentParent)
+      .input('imageUrl', sql.NVarChar(sql.MAX), imageUrl).query(`
+        INSERT INTO comments (post_id, user_id, content, parent_comment_id, image_url, created_at)
         OUTPUT INSERTED.*
-        VALUES (@postId, @userId, @content, @commentParent, NOW())
+        VALUES (@postId, @userId, @content, @commentParent, @imageUrl, NOW())
       `);
 
     const newComment = result.recordset[0];
@@ -124,6 +128,7 @@ export const CommentService = {
       post_id: newComment.post_id,
       user_id: newComment.user_id,
       content: newComment.content,
+      image_url: newComment.image_url,
       comment_parent: newComment.parent_comment_id,
       created_at: newComment.created_at,
       likes_count: 0,

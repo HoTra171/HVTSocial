@@ -506,7 +506,7 @@ const StoryViewer = ({ viewStory, setViewStory, allStories }) => {
         {currentStory.media_type === "text" && (
           <div
             className="w-full h-full flex items-center justify-center p-10"
-            style={{ backgroundColor: currentStory.background_color || '#6366f1' }}
+            style={{ background: currentStory.background_color || '#6366f1' }}
           >
             <div
               className={`${currentStory.show_frame ? 'bg-black/30 p-6 rounded-lg' : ''}`}

@@ -98,7 +98,7 @@ async function main() {
       UPDATE saved_posts SET saved_at = created_at WHERE saved_at IS NULL AND created_at IS NOT NULL;
     `);
 
-    // 7. Add parent_comment_id to comments if not exists
+    // 7. Add parent_comment_id & image_url to comments if not exists
     await db.request().query(`
       IF NOT EXISTS (
         SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
@@ -107,6 +107,15 @@ async function main() {
       BEGIN
         ALTER TABLE comments ADD parent_comment_id INT;
         PRINT 'Added parent_comment_id column to comments';
+      END
+
+      IF NOT EXISTS (
+        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'comments' AND COLUMN_NAME = 'image_url'
+      )
+      BEGIN
+        ALTER TABLE comments ADD image_url NVARCHAR(MAX);
+        PRINT 'Added image_url column to comments';
       END
     `);
     await db.request().query(`
@@ -145,6 +154,12 @@ async function main() {
 
       IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'posts' AND COLUMN_NAME = 'poll_data')
         ALTER TABLE posts ADD poll_data NVARCHAR(MAX);
+
+      IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'stories' AND COLUMN_NAME = 'background_color')
+        ALTER TABLE stories ALTER COLUMN background_color NVARCHAR(MAX);
+
+      IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'stories' AND COLUMN_NAME = 'music_url')
+        ALTER TABLE stories ADD music_url NVARCHAR(MAX);
     `);
 
     // 10. Disable triggers that block OUTPUT INSERTED.* without INTO clause

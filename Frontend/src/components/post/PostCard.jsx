@@ -180,9 +180,24 @@ export const PostCard = ({
       .catch(() => toast.error('Không thể sao chép liên kết'));
   };
 
-  // Thêm bình luận mới vào danh sách
+  // Thêm bình luận mới vào danh sách (phân biệt cấp 1 và câu trả lời)
   const handleCommentAdded = (newComment) => {
-    setComments((prev) => [newComment, ...prev]);
+    const parentId = newComment?.comment_parent || newComment?.parent_comment_id;
+    if (!parentId) {
+      setComments((prev) => [newComment, ...prev]);
+    } else {
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === parentId
+            ? {
+                ...c,
+                replies_count: (Number(c.replies_count) || 0) + 1,
+                replies: c.replies ? [...c.replies, newComment] : [newComment],
+              }
+            : c
+        )
+      );
+    }
     setCommentsCount((prev) => prev + 1);
   };
 

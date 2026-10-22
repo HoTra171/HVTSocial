@@ -18,6 +18,13 @@ export const commentApi = {
     axiosInstance.post(`/comments/post/${postId}`, data),
 
   /**
+   * Lấy danh sách câu trả lời của 1 bình luận
+   * @param {number|string} commentId
+   */
+  getReplies: (commentId) =>
+    axiosInstance.get(`/comments/${commentId}/replies`),
+
+  /**
    * Cập nhật bình luận
    * @param {number|string} commentId
    * @param {Object} data { content }

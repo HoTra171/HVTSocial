@@ -19,13 +19,14 @@ export const createComment = async (req, res) => {
         : Number(parentIdRaw);
 
     const text = (req.body.content || '').trim();
+    const imageUrl = req.body.image_url || req.body.imageUrl || req.body.media_url || null;
 
     // Validate input để tránh bắn lỗi SQL -> 500
     if (!Number.isFinite(postId) || postId <= 0) {
       return res.status(400).json({ message: 'Invalid post_id' });
     }
-    if (!text) {
-      return res.status(400).json({ message: 'Content is required' });
+    if (!text && !imageUrl) {
+      return res.status(400).json({ message: 'Vui lòng nhập nội dung hoặc đính kèm ảnh' });
     }
     if (commentParent !== null && (!Number.isFinite(commentParent) || commentParent <= 0)) {
       return res.status(400).json({ message: 'Invalid comment_parent' });
@@ -34,7 +35,7 @@ export const createComment = async (req, res) => {
     // Tạo comment trong DB
     const post = await PostService.getPostById(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
-    const comment = await CommentService.createComment(postId, userId, text, commentParent);
+    const comment = await CommentService.createComment(postId, userId, text, commentParent, imageUrl);
 
     // Tạo notification record; nếu có socket thì emit realtime
     const io = req.app.get('io') || null;
