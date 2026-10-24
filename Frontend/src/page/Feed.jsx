@@ -101,6 +101,26 @@ const Feed = () => {
     setFeeds((prevFeeds) => prevFeeds.filter((post) => post.id !== postId));
   };
 
+  const handlePostCreated = (post) => {
+    if (post.replaceTempId) {
+      setFeeds((prev) =>
+        prev.map((p) => (p.id === post.replaceTempId ? { ...p, ...post, replaceTempId: undefined } : p))
+      );
+    } else {
+      setFeeds((prev) => [post, ...prev]);
+    }
+  };
+
+  const handlePostUpdated = (updatedPost) => {
+    setFeeds((prev) =>
+      prev.map((p) => (p.id === updatedPost.id ? { ...p, ...updatedPost } : p))
+    );
+  };
+
+  const handleCancelUpload = (postId) => {
+    setFeeds((prev) => prev.filter((p) => p.id !== postId));
+  };
+
   // Scroll to top listener
   useEffect(() => {
     const handleScroll = () => {
@@ -199,7 +219,7 @@ const Feed = () => {
         {/* QUICK POST CREATION BOX */}
         <CreatePostBox
           currentUser={currentUser}
-          onPostCreated={(newPost) => setFeeds((prev) => [newPost, ...prev])}
+          onPostCreated={handlePostCreated}
           onOpenStoryModal={() => setOpenStoryTrigger(true)}
         />
 
@@ -254,6 +274,8 @@ const Feed = () => {
                 post={post}
                 currentUser={currentUser}
                 onPostDeleted={handlePostDeleted}
+                onPostUpdated={handlePostUpdated}
+                onCancelUpload={handleCancelUpload}
                 key={`post-${post.id}`}
               />
             );

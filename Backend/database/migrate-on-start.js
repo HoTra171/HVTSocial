@@ -221,6 +221,7 @@ END $$;`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_receiver ON call_history(receiver_id);`,
       `CREATE INDEX IF NOT EXISTS idx_call_history_created_at ON call_history(created_at DESC);`,
       `ALTER TABLE posts ADD COLUMN IF NOT EXISTS poll_data TEXT;`,
+      `ALTER TABLE posts ADD COLUMN IF NOT EXISTS shared_post_id INTEGER;`,
       // 12. Privacy settings & cross-database compatibility columns
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_visibility VARCHAR(20) DEFAULT 'public';`,
       `ALTER TABLE users ADD COLUMN IF NOT EXISTS post_visibility VARCHAR(20) DEFAULT 'public';`,

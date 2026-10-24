@@ -109,87 +109,130 @@ export const CreatePostModal = ({ isOpen, onClose, onPostCreated, currentUser, i
       return;
     }
 
-    setLoading(true);
-
-    try {
-      // 1. Upload ảnh nếu có
-      let mediaUrls = [];
-      if (images.length > 0) {
-        const uploadRes = await uploadApi.uploadMultiple(images);
-        mediaUrls = uploadRes.data?.urls || [];
-      }
-
-      // Ghép mood và location vào nội dung nếu có
-      let fullContent = content.trim();
-      const metaAddons = [];
-      if (selectedMood) {
-        metaAddons.push(`${selectedMood.emoji} Đang cảm thấy ${selectedMood.label}`);
-      }
-      if (locationName.trim()) {
-        metaAddons.push(`📍 Tại ${locationName.trim()}`);
-      }
-      if (metaAddons.length > 0) {
-        fullContent = fullContent ? `${fullContent}\n\n— ${metaAddons.join(' • ')}` : metaAddons.join(' • ');
-      }
-
-      // 2. Poll data nếu có
-      let pollData = null;
-      if (hasPoll) {
-        const question = pollQuestion.trim() || content.trim();
-        if (!fullContent) {
-          fullContent = question;
-        }
-        pollData = {
-          question,
-          options: validPollOptions.map((text, idx) => ({
-            id: idx + 1,
-            text,
-            votes: [],
-          })),
-        };
-      }
-
-      // 3. Tạo bài viết
-      const res = await postApi.create({
-        content: fullContent,
-        media: mediaUrls.join(';'),
-        status,
-        poll: pollData,
-      });
-
-      const newPost = res.data?.post || res.data?.data || res.data;
-
-      // Đảm bảo gắn thông tin user hiện tại vào post để hiển thị tức thì
-      if (newPost && currentUser) {
-        newPost.user = {
-          id: currentUser.id,
-          full_name: currentUser.full_name,
-          username: currentUser.username,
-          avatar: currentUser.avatar || currentUser.profile_picture || '/default.jpg',
-        };
-      }
-
-      toast.success('Đã đăng bài viết mới thành công! 🎉');
-
-      if (typeof onPostCreated === 'function') {
-        onPostCreated(newPost);
-      }
-
-      // Reset form & đóng modal
-      setContent('');
-      setImages([]);
-      setSelectedMood(null);
-      setLocationName('');
-      setShowPoll(false);
-      setPollQuestion('');
-      setPollOptions(['', '']);
-      onClose();
-    } catch (err) {
-      console.error('Lỗi khi tạo bài viết:', err);
-      toast.error(err.response?.data?.message || err.message || 'Không thể đăng bài viết');
-    } finally {
-      setLoading(false);
+    // Ghép mood và location vào nội dung nếu có
+    let fullContent = content.trim();
+    const metaAddons = [];
+    if (selectedMood) {
+      metaAddons.push(`${selectedMood.emoji} Đang cảm thấy ${selectedMood.label}`);
     }
+    if (locationName.trim()) {
+      metaAddons.push(`📍 Tại ${locationName.trim()}`);
+    }
+    if (metaAddons.length > 0) {
+      fullContent = fullContent ? `${fullContent}\n\n— ${metaAddons.join(' • ')}` : metaAddons.join(' • ');
+    }
+
+    // Poll data nếu có
+    let pollData = null;
+    if (hasPoll) {
+      const question = pollQuestion.trim() || content.trim();
+      if (!fullContent) {
+        fullContent = question;
+      }
+      pollData = {
+        question,
+        options: validPollOptions.map((text, idx) => ({
+          id: idx + 1,
+          text,
+          votes: [],
+        })),
+      };
+    }
+
+    // Cache parameters & local image blob URLs for background upload
+    const tempId = `temp-${Date.now()}`;
+    const filesToUpload = [...images];
+    const localPreviews = [...previewUrls];
+    const postStatus = status;
+
+    // 1. Tạo bài viết optimistic xuất hiện tức thì trên Feed
+    const optimisticPost = {
+      id: tempId,
+      tempId,
+      isUploading: true,
+      uploadFailed: false,
+      content: fullContent,
+      image_urls: localPreviews,
+      media_url: localPreviews.join(';'),
+      status: postStatus,
+      poll: pollData,
+      likes_count: 0,
+      comments_count: 0,
+      shares_count: 0,
+      created_at: new Date().toISOString(),
+      user: {
+        id: currentUser?.id,
+        full_name: currentUser?.full_name || 'Bạn',
+        username: currentUser?.username || 'user',
+        avatar: currentUser?.avatar || currentUser?.profile_picture || '/default.jpg',
+      },
+    };
+
+    // 2. Đóng modal ngay lập tức và đưa post vào feed
+    if (typeof onPostCreated === 'function') {
+      onPostCreated(optimisticPost);
+    }
+
+    // Reset form
+    setContent('');
+    setImages([]);
+    setSelectedMood(null);
+    setLocationName('');
+    setShowPoll(false);
+    setPollQuestion('');
+    setPollOptions(['', '']);
+    onClose();
+
+    // 3. Tiến hành upload ảnh và tạo bài viết ngầm trong background (như Facebook/Threads)
+    (async () => {
+      try {
+        let mediaUrls = [];
+        if (filesToUpload.length > 0) {
+          const uploadRes = await uploadApi.uploadMultiple(filesToUpload);
+          mediaUrls = uploadRes.data?.urls || [];
+        }
+
+        const res = await postApi.create({
+          content: fullContent,
+          media: mediaUrls.join(';'),
+          status: postStatus,
+          poll: pollData,
+        });
+
+        const serverPost = res.data?.post || res.data?.data || res.data;
+
+        if (serverPost && currentUser) {
+          serverPost.user = {
+            id: currentUser.id,
+            full_name: currentUser.full_name,
+            username: currentUser.username,
+            avatar: currentUser.avatar || currentUser.profile_picture || '/default.jpg',
+          };
+        }
+
+        // Thay thế bài viết optimistic bằng bài viết từ server
+        if (typeof onPostCreated === 'function') {
+          onPostCreated({
+            ...serverPost,
+            replaceTempId: tempId,
+            isUploading: false,
+            uploadFailed: false,
+          });
+        }
+        toast.success('Đã đăng bài viết mới thành công! 🎉');
+      } catch (err) {
+        console.error('Lỗi khi tải bài viết ngầm:', err);
+        toast.error('Đăng bài viết không thành công');
+        if (typeof onPostCreated === 'function') {
+          onPostCreated({
+            ...optimisticPost,
+            replaceTempId: tempId,
+            isUploading: false,
+            uploadFailed: true,
+          });
+        }
+      }
+    })();
   };
 
   return (

@@ -82,38 +82,40 @@ const NotificationsPage = ({ socket, currentUser }) => {
   const unreadCount = notifications.filter((n) => n.status === 'unread').length;
 
   return (
-    <div className="max-w-3xl mx-auto pt-6 pb-16 px-4 sm:px-6">
-      <div className="mb-6">
-        <NotificationHeader />
-        <NotificationFilters
-          filter={filter}
-          setFilter={setFilter}
-          totalCount={notifications.length}
-          unreadCount={unreadCount}
-          marking={marking}
-          onMarkAllRead={markAllRead}
-        />
-      </div>
-
-      {loading && (
-        <div className="flex justify-center py-24">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-        </div>
-      )}
-
-      {!loading && filteredNotifications.length === 0 && (
-        <EmptyNotifications filter={filter} />
-      )}
-
-      <div className="space-y-3">
-        {filteredNotifications.map((notif) => (
-          <NotificationItem
-            key={notif.id}
-            notif={notif}
-            onRead={() => handleClickNotification(notif)}
-            onDelete={deleteNotification}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <div className="max-w-3xl mx-auto pt-6 pb-16 px-4 sm:px-6">
+        <div className="mb-6">
+          <NotificationHeader />
+          <NotificationFilters
+            filter={filter}
+            setFilter={setFilter}
+            totalCount={notifications.length}
+            unreadCount={unreadCount}
+            marking={marking}
+            onMarkAllRead={markAllRead}
           />
-        ))}
+        </div>
+
+        {loading && (
+          <div className="flex justify-center py-24">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        )}
+
+        {!loading && filteredNotifications.length === 0 && (
+          <EmptyNotifications filter={filter} />
+        )}
+
+        <div className="space-y-3">
+          {filteredNotifications.map((notif) => (
+            <NotificationItem
+              key={notif.id}
+              notif={notif}
+              onRead={() => handleClickNotification(notif)}
+              onDelete={deleteNotification}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

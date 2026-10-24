@@ -53,7 +53,7 @@ const QUICK_COLORS = [
   '#FFFFFF', '#000000', '#FDE047', '#F87171', '#34D399', '#60A5FA', '#C084FC', '#F472B6'
 ];
 
-const StoryModal = ({ setShowModal, fetchStories }) => {
+const StoryModal = ({ setShowModal, fetchStories, onUploadStart, onUploadEnd }) => {
   // Mode: 'text' or 'media'
   const [activeTab, setActiveTab] = useState('text');
 
@@ -214,7 +214,7 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
     );
   };
 
-  // Publish Story
+  // Publish Story (Background optimistic upload like Instagram/Facebook)
   const handleSubmit = async () => {
     if (activeTab === 'text' && !textContent.trim()) {
       toast.error('Vui lòng nhập nội dung cho tin của bạn');
@@ -226,77 +226,95 @@ const StoryModal = ({ setShowModal, fetchStories }) => {
       return;
     }
 
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      const currentBg = IG_GRADIENTS[gradientIdx].value;
+    // Cache parameters for background upload
+    const currentActiveTab = activeTab;
+    const currentTextContent = textContent.trim();
+    const currentMediaFile = mediaFile;
+    const currentMediaType = mediaType;
+    const currentMusicFile = musicFile;
+    const currentBg = IG_GRADIENTS[gradientIdx]?.value || IG_GRADIENTS[0].value;
+    const currentTextColor = textColor;
+    const currentFontSize = Number(fontSize);
+    const currentShowFrame = textStyleIdx > 0;
+    const currentPrivacy = privacy;
+    const currentAllowedViewers = privacy === 'custom' ? selectedFriends : null;
 
-      if (activeTab === 'text') {
-        // Text story
-        await axios.post(
-          `${API_URL}/stories`,
-          {
-            media_type: 'text',
-            media_url: 'text',
-            expires_at: expiresAt,
-            caption: textContent.trim(),
-            background_color: currentBg,
-            text_color: textColor,
-            font_size: Number(fontSize),
-            show_frame: textStyleIdx > 0,
-            privacy,
-            allowed_viewers: privacy === 'custom' ? selectedFriends : null,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } else {
-        // Media story (Image / Video)
-        const formData = new FormData();
-        formData.append('file', mediaFile);
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
 
-        const uploadRes = await axios.post(`${API_URL}/upload`, formData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const mediaUrl = uploadRes.data.url;
+    // Notify start of upload & close modal immediately
+    onUploadStart?.();
+    setShowModal(false);
+    toast.loading('Đang tải lên tin của bạn...', { id: 'story-bg-upload' });
 
-        // Music upload if present
-        let musicUploadUrl = null;
-        if (musicFile) {
-          const musicFormData = new FormData();
-          musicFormData.append('file', musicFile);
-          const musicUploadRes = await axios.post(`${API_URL}/upload`, musicFormData, {
+    // Background upload process
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        if (currentActiveTab === 'text') {
+          await axios.post(
+            `${API_URL}/stories`,
+            {
+              media_type: 'text',
+              media_url: 'text',
+              expires_at: expiresAt,
+              caption: currentTextContent,
+              background_color: currentBg,
+              text_color: currentTextColor,
+              font_size: currentFontSize,
+              show_frame: currentShowFrame,
+              privacy: currentPrivacy,
+              allowed_viewers: currentAllowedViewers,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        } else {
+          const formData = new FormData();
+          formData.append('file', currentMediaFile);
+
+          const uploadRes = await axios.post(`${API_URL}/upload`, formData, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          musicUploadUrl = musicUploadRes.data.url;
+          const mediaUrl = uploadRes.data?.url || uploadRes.data;
+
+          let musicUploadUrl = null;
+          if (currentMusicFile) {
+            const musicFormData = new FormData();
+            musicFormData.append('file', currentMusicFile);
+            const musicUploadRes = await axios.post(`${API_URL}/upload`, musicFormData, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            musicUploadUrl = musicUploadRes.data?.url || musicUploadRes.data;
+          }
+
+          await axios.post(
+            `${API_URL}/stories`,
+            {
+              media_type: currentMediaType,
+              media_url: mediaUrl,
+              music_url: musicUploadUrl,
+              expires_at: expiresAt,
+              caption: currentTextContent || null,
+              background_color: currentBg,
+              privacy: currentPrivacy,
+              allowed_viewers: currentAllowedViewers,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
         }
 
-        await axios.post(
-          `${API_URL}/stories`,
-          {
-            media_type: mediaType,
-            media_url: mediaUrl,
-            music_url: musicUploadUrl,
-            expires_at: expiresAt,
-            caption: textContent.trim() || null,
-            background_color: currentBg,
-            privacy,
-            allowed_viewers: privacy === 'custom' ? selectedFriends : null,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        toast.success('Đã chia sẻ lên tin của bạn! ✨', { id: 'story-bg-upload' });
+        await fetchStories?.();
+      } catch (err) {
+        console.error('Lỗi khi chia sẻ tin nền:', err);
+        toast.error(err.response?.data?.message || 'Không thể đăng tin, vui lòng thử lại', { id: 'story-bg-upload' });
+      } finally {
+        onUploadEnd?.();
       }
-
-      toast.success('Đã chia sẻ lên tin của bạn!');
-      if (audioRef.current) audioRef.current.pause();
-      await fetchStories();
-      setShowModal(false);
-    } catch (err) {
-      console.error('Create story error:', err);
-      toast.error(err.response?.data?.message || 'Không thể đăng tin, vui lòng thử lại');
-    } finally {
-      setLoading(false);
-    }
+    })();
   };
 
   const filteredFriends = friends.filter((f) =>

@@ -571,6 +571,9 @@ const Profile = () => {
                       onPostDeleted={(postId) => {
                         setPosts((prev) => prev.filter((p) => p.id !== postId));
                       }}
+                      onPostUpdated={(updated) => {
+                        setPosts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+                      }}
                     />
                   ))}
 

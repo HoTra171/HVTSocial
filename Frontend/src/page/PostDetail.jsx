@@ -79,6 +79,7 @@ const PostDetail = () => {
             currentUser={currentUser}
             initialShowComments={true}
             onPostDeleted={handlePostDeleted}
+            onPostUpdated={(updated) => setPost((prev) => ({ ...prev, ...updated }))}
           />
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">

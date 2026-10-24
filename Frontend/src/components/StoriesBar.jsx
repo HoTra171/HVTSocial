@@ -16,6 +16,7 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
   const [stories, setStories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [viewStory, setViewStory] = useState(null);
+  const [isUploadingStory, setIsUploadingStory] = useState(false);
 
   useEffect(() => {
     if (openTrigger) {
@@ -140,16 +141,26 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
             {/* Tạo story mới (Facebook / Instagram Style) */}
             <div
               onClick={() => setShowModal(true)}
-              className="relative rounded-2xl min-w-[110px] w-[110px] h-[190px] overflow-hidden cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col hover:shadow-md transition-all group"
+              className={`relative rounded-2xl min-w-[110px] w-[110px] h-[190px] overflow-hidden cursor-pointer bg-white dark:bg-slate-900 border shadow-sm flex flex-col hover:shadow-md transition-all group ${
+                isUploadingStory ? 'border-indigo-500 ring-2 ring-indigo-400/40 animate-pulse' : 'border-slate-200 dark:border-slate-800'
+              }`}
             >
               <div className="w-full h-[130px] overflow-hidden bg-slate-100 dark:bg-slate-800 relative">
                 <img
                   src={JSON.parse(localStorage.getItem("user") || "{}")?.avatar || "/default.jpg"}
                   alt="User"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                    isUploadingStory ? 'opacity-70 blur-[1px]' : ''
+                  }`}
                   onError={(e) => { e.currentTarget.src = '/default.jpg'; }}
                 />
                 <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+
+                {isUploadingStory && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+                    <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </div>
 
               {/* Overlaid + button */}
@@ -158,7 +169,9 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
               </div>
 
               <div className="flex-1 flex items-end justify-center pb-2 pt-3 px-1 text-center">
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">Tạo tin</p>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">
+                  {isUploadingStory ? 'Đang tải lên...' : 'Tạo tin'}
+                </p>
               </div>
             </div>
 
@@ -259,6 +272,8 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
               if (!val && onModalClose) onModalClose();
             }}
             fetchStories={fetchStories}
+            onUploadStart={() => setIsUploadingStory(true)}
+            onUploadEnd={() => setIsUploadingStory(false)}
           />
         )}
 

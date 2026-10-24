@@ -189,6 +189,95 @@ export const PostService = {
     return poll;
   },
 
+  async updatePost(postId, userId, { content, media, status }) {
+    const safeStatus = ['public', 'friends', 'private'].includes(String(status || '').toLowerCase())
+      ? String(status).toLowerCase()
+      : 'public';
+
+    if (isPostgres) {
+      const client = await pool.connect();
+      try {
+        const ownResult = await client.query(
+          'SELECT id, media_url, visibility, content FROM posts WHERE id = $1 AND user_id = $2',
+          [postId, userId]
+        );
+        if (ownResult.rows.length === 0) {
+          throw new Error('Bạn không có quyền chỉnh sửa bài viết này');
+        }
+
+        const currentPost = ownResult.rows[0];
+        const newContent = content !== undefined ? content : currentPost.content;
+        const newMedia = media !== undefined ? media : currentPost.media_url;
+
+        await client.query(
+          `UPDATE posts
+           SET content = $1,
+               media_url = $2,
+               visibility = $3,
+               updated_at = NOW()
+           WHERE id = $4`,
+          [newContent, newMedia, safeStatus, postId]
+        );
+
+        const fullPostQuery = await client.query(
+          `SELECT p.*, p.visibility AS status,
+                  u.id AS user_id, u.full_name, u.username, u.avatar
+           FROM posts p
+           JOIN users u ON u.id = p.user_id
+           WHERE p.id = $1`,
+          [postId]
+        );
+
+        return formatPost(fullPostQuery.rows[0] || { ...currentPost, content: newContent, media_url: newMedia, visibility: safeStatus });
+      } finally {
+        client.release();
+      }
+    } else {
+      const db = await pool;
+      const own = await db
+        .request()
+        .input('postId', sql.Int, postId)
+        .input('userId', sql.Int, userId)
+        .query('SELECT id, media_url, visibility, content FROM posts WHERE id = @postId AND user_id = @userId');
+
+      if (own.recordset.length === 0) {
+        throw new Error('Bạn không có quyền chỉnh sửa bài viết này');
+      }
+
+      const currentPost = own.recordset[0];
+      const newContent = content !== undefined ? content : currentPost.content;
+      const newMedia = media !== undefined ? media : currentPost.media_url;
+
+      await db
+        .request()
+        .input('postId', sql.Int, postId)
+        .input('content', sql.NVarChar(sql.MAX), newContent)
+        .input('mediaUrl', sql.NVarChar(sql.MAX), newMedia)
+        .input('visibility', sql.NVarChar(20), safeStatus)
+        .query(`
+          UPDATE posts
+          SET content = @content,
+              media_url = @mediaUrl,
+              visibility = @visibility,
+              updated_at = GETDATE()
+          WHERE id = @postId
+        `);
+
+      const fullPost = await db
+        .request()
+        .input('postId', sql.Int, postId)
+        .query(`
+          SELECT p.*, p.visibility AS status,
+                 u.id AS user_id, u.full_name, u.username, u.avatar
+          FROM posts p
+          JOIN users u ON u.id = p.user_id
+          WHERE p.id = @postId
+        `);
+
+      return formatPost(fullPost.recordset[0]);
+    }
+  },
+
   async deletePost(postId, userId) {
     if (isPostgres) {
       // PostgreSQL version - use native transactions
@@ -205,14 +294,20 @@ export const PostService = {
           throw new Error('Bạn không có quyền xóa bài viết này');
         }
 
-        // Clear shared_post_id references
-        await client.query('UPDATE posts SET shared_post_id = NULL WHERE shared_post_id = $1', [postId]);
+        // Clear shared_post_id references if column exists
+        try {
+          await client.query('UPDATE posts SET shared_post_id = NULL WHERE shared_post_id = $1', [postId]);
+        } catch {
+          // Column shared_post_id may not exist, safe to continue
+        }
 
-        // Delete related data
-        await client.query('DELETE FROM saved_posts WHERE post_id = $1', [postId]);
-        await client.query('DELETE FROM notifications WHERE post_id = $1', [postId]);
-        await client.query('DELETE FROM likes WHERE post_id = $1', [postId]);
-        await client.query('DELETE FROM comments WHERE post_id = $1', [postId]);
+        // Delete related data safely
+        try { await client.query('DELETE FROM saved_posts WHERE post_id = $1', [postId]); } catch {}
+        try { await client.query('DELETE FROM notifications WHERE post_id = $1', [postId]); } catch {}
+        try { await client.query('DELETE FROM likes WHERE post_id = $1', [postId]); } catch {}
+        try { await client.query('DELETE FROM comments WHERE post_id = $1', [postId]); } catch {}
+        try { await client.query('DELETE FROM post_reactions WHERE post_id = $1', [postId]); } catch {}
+        try { await client.query('DELETE FROM post_tags WHERE post_id = $1', [postId]); } catch {}
 
         // Delete the post
         await client.query('DELETE FROM posts WHERE id = $1', [postId]);

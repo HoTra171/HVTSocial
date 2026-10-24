@@ -205,49 +205,29 @@ export const votePoll = async (req, res) => {
 
 // PUT /api/posts/:id
 export const updatePost = async (req, res) => {
-  const db = await pool;
+  try {
+    const postId = Number(req.params.id);
+    const userId = Number(req.user?.id || req.body?.user_id);
+    const { content, media, status } = req.body;
 
-  const postId = req.params.id;
-  const userId = req.user.id;
-  const { content, media, status } = req.body;
+    if (!postId) {
+      return res.status(400).json({ message: 'Thiếu postId' });
+    }
 
-  const allowedStatus = new Set(['public', 'friends', 'private']);
-  const statusRaw = String(status || 'public')
-    .trim()
-    .toLowerCase();
-  const safeStatus = allowedStatus.has(statusRaw) ? statusRaw : 'public';
+    const updatedPost = await PostService.updatePost(postId, userId, { content, media, status });
 
-  // Kiểm tra quyền sở hữu bài viết
-  const checkOwnership = await db
-    .request()
-    .input('postId', sql.Int, postId)
-    .input('userId', sql.Int, userId).query(`
-      SELECT id FROM posts 
-      WHERE id = @postId AND user_id = @userId
-    `);
-
-  if (checkOwnership.recordset.length === 0) {
-    return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa bài viết này' });
+    return res.json({
+      success: true,
+      message: 'Cập nhật bài viết thành công',
+      post: updatedPost,
+    });
+  } catch (err) {
+    console.error('updatePost error:', err);
+    if (err.message && err.message.includes('không có quyền')) {
+      return res.status(403).json({ message: err.message });
+    }
+    return res.status(500).json({ message: err.message || 'Lỗi server khi chỉnh sửa bài viết' });
   }
-
-  // Cập nhật bài viết
-  const result = await db
-    .request()
-    .input('postId', sql.Int, postId)
-    .input('content', sql.NVarChar(sql.MAX), content)
-    .input('mediaUrl', sql.NVarChar(sql.MAX), media)
-    .input('visibility', sql.NVarChar(10), safeStatus).query(`
-    UPDATE posts
-    SET
-      content = @content,
-      media_url = @mediaUrl,
-      visibility = @visibility,
-      updated_at = GETDATE()
-    OUTPUT INSERTED.*
-    WHERE id = @postId
-  `);
-
-  return res.json(result.recordset[0]);
 };
 
 // DELETE /api/posts/:id
