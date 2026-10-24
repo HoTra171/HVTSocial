@@ -174,8 +174,8 @@ const Feed = () => {
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-start justify-center xl:gap-8 py-6 sm:py-10 bg-slate-50 dark:bg-slate-950 transition-colors">
-        <div className="p-3 sm:p-4 w-full max-w-[620px] space-y-4">
+      <div className="min-h-screen flex items-start justify-center xl:justify-start xl:pl-6 2xl:pl-10 xl:gap-8 2xl:gap-10 py-6 sm:py-10 bg-slate-50 dark:bg-slate-950 transition-colors">
+        <div className="p-3 sm:p-4 w-full min-w-0 max-w-[680px] lg:max-w-[720px] xl:max-w-[760px] space-y-4">
           <div className="h-44 bg-white dark:bg-slate-900 rounded-3xl animate-pulse border border-slate-100 dark:border-slate-800" />
           <div className="h-32 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />
           <PostSkeleton />
@@ -186,8 +186,8 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center xl:gap-8 py-4 sm:py-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <div className="px-2 sm:px-4 w-full max-w-[620px]">
+    <div className="min-h-screen flex items-start justify-center xl:justify-start xl:pl-6 2xl:pl-10 xl:gap-8 2xl:gap-10 py-4 sm:py-8 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <div className="px-2 sm:px-4 w-full min-w-0 max-w-[680px] lg:max-w-[720px] xl:max-w-[760px]">
         {/* STORIES RAIL */}
         <div className="mb-4">
           <StoriesBar

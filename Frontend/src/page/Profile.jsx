@@ -256,7 +256,21 @@ const Profile = () => {
         {/* PROFILE HEADER CARD */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-6">
           {/* COVER PHOTO BANNER */}
-          <div className="h-48 sm:h-64 md:h-80 w-full relative group bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 overflow-hidden">
+          <div
+            onClick={
+              coverUrl
+                ? () =>
+                    setLightbox({
+                      src: coverUrl,
+                      title: `Ảnh bìa của ${user.full_name || user.username}`,
+                    })
+                : undefined
+            }
+            className={`h-48 sm:h-64 md:h-80 w-full relative group bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 overflow-hidden ${
+              coverUrl ? 'cursor-pointer' : ''
+            }`}
+            title={coverUrl ? 'Nhấn để xem ảnh bìa' : undefined}
+          >
             {coverUrl ? (
               <img
                 src={coverUrl}
@@ -272,30 +286,15 @@ const Profile = () => {
             {/* Gradient Dark Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent pointer-events-none" />
 
-            {/* View Cover Photo Button (Always Available) */}
-            {coverUrl && (
-              <button
-                type="button"
-                onClick={() =>
-                  setLightbox({
-                    src: coverUrl,
-                    title: `Ảnh bìa của ${user.full_name || user.username}`,
-                  })
-                }
-                className="absolute top-4 right-4 px-3.5 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 text-white backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-lg border border-white/20 cursor-pointer"
-                title="Xem ảnh bìa kích thước đầy đủ"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                <span>Xem ảnh bìa</span>
-              </button>
-            )}
-
             {/* Change Cover Photo Button (Own Profile) */}
             {isOwnProfile && (
               <button
                 type="button"
-                onClick={() => setShowEdit(true)}
-                className="absolute bottom-4 right-4 px-4 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-900 backdrop-blur-md text-xs font-semibold flex items-center gap-2 transition active:scale-95 shadow-lg cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowEdit(true);
+                }}
+                className="absolute bottom-4 right-4 px-4 py-2 rounded-xl bg-white/90 hover:bg-white text-slate-900 backdrop-blur-md text-xs font-semibold flex items-center gap-2 transition active:scale-95 shadow-lg cursor-pointer z-10"
                 title="Thay đổi ảnh bìa"
               >
                 <Camera className="w-4 h-4 text-slate-700" />
