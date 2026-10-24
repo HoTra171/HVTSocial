@@ -323,102 +323,62 @@ const Connections = () => {
         </div>
 
         {/* ============================================================== */}
-        {/* 4 INTERACTIVE KPI STAT CARDS (RESPONSIVE & MOBILE-OPTIMIZED) */}
+        {/* CONNECTIONS SEGMENT BUTTON TABS (DISCOVER STYLE) */}
         {/* ============================================================== */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-5">
-          {tabs.map((tab) => {
-            const isActive = currentTab === tab.key;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => goTab(tab.key)}
-                className={`relative p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group active:scale-[0.98] ${
-                  isActive
-                    ? 'bg-white dark:bg-slate-900 border-indigo-500 dark:border-indigo-500 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/25'
-                    : 'bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md'
-                }`}
-              >
-                {/* Active Indicator Top Accent Bar */}
-                {isActive && (
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-                )}
-
-                <div className="flex items-center justify-between gap-1.5 mb-2 sm:mb-3">
-                  <div
-                    className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center transition-colors flex-shrink-0 ${
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          {/* Segment Button Tabs (like Discover) */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 sm:pb-0 scrollbar-none no-scrollbar">
+            {tabs.map((tab) => {
+              const isActive = currentTab === tab.key;
+              const Icon = tab.icon;
+              const count = tab.value.length;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => goTab(tab.key)}
+                  className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white dark:text-slate-900' : 'text-slate-400 dark:text-slate-500'}`} />
+                  <span>{tab.label}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
                       isActive
-                        ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/20'
-                        : tab.badgeColor
+                        ? 'bg-white/20 dark:bg-slate-900/20 text-white dark:text-slate-900'
+                        : tab.hasAlert
+                          ? 'bg-rose-500 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-
-                  {tab.hasAlert && (
-                    <span className="px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded-full bg-rose-500 text-white animate-pulse flex-shrink-0">
-                      Mới
-                    </span>
+                    {count}
+                  </span>
+                  {tab.hasAlert && !isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
                   )}
-                  {isActive && !tab.hasAlert && (
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-indigo-100 dark:ring-indigo-950 flex-shrink-0" />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
-                      {tab.value.length}
-                    </span>
-                  </div>
-                  <p
-                    className={`text-xs sm:text-sm font-semibold truncate mt-0.5 transition-colors ${
-                      isActive
-                        ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-                        : 'text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200'
-                    }`}
-                  >
-                    <span>{tab.label}</span>
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ============================================================== */}
-        {/* TOOLBAR: ACTIVE FILTER STATUS, SEARCH & REFRESH */}
-        {/* ============================================================== */}
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-2.5 sm:p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sticky top-3 z-20">
-          {/* Active Tab Info */}
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-              Đang xem:
-            </span>
-            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-              <span className="text-indigo-600 dark:text-indigo-400">{currentTabObj?.label}</span>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40">
-                {filteredList.length}
-              </span>
-            </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Search bar */}
-          <div className="relative w-full sm:w-80">
+          <div className="relative w-full sm:w-72 flex-shrink-0">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder={`Tìm trong ${currentTabObj?.label}...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-9 py-2 bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 rounded-xl text-xs sm:text-sm font-medium border border-transparent focus:border-indigo-400 dark:focus:border-indigo-500 focus:outline-none focus:ring-3 focus:ring-indigo-500/10 transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+              className="w-full pl-9 pr-9 py-2 bg-white dark:bg-slate-900 rounded-xl text-xs sm:text-sm font-medium border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-2xs"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-200/60 dark:hover:bg-slate-700 transition cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
