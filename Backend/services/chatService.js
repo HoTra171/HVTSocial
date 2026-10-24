@@ -44,4 +44,28 @@ export const ChatService = {
     usePostgreSQL
       ? ChatModelPG.checkChatAccess(userId, chatId)
       : ChatModel.checkChatAccess(pool, userId, chatId),
+
+  // Group chat methods
+  createGroupChat: (creatorId, name, memberIds, avatar) =>
+    usePostgreSQL
+      ? ChatModelPG.createGroupChat(creatorId, name, memberIds, avatar)
+      : ChatModel.createGroupChat(pool, creatorId, name, memberIds, avatar),
+
+  getGroupDetails: (chatId) =>
+    usePostgreSQL ? ChatModelPG.getGroupDetails(chatId) : ChatModel.getGroupDetails(pool, chatId),
+
+  addGroupMembers: (chatId, memberIds, actorId) =>
+    usePostgreSQL
+      ? ChatModelPG.addGroupMembers(chatId, memberIds, actorId)
+      : ChatModel.addGroupMembers(pool, chatId, memberIds, actorId),
+
+  removeGroupMember: (chatId, userId, actorId) =>
+    usePostgreSQL
+      ? ChatModelPG.removeGroupMember(chatId, userId, actorId)
+      : ChatModel.removeGroupMember(pool, chatId, userId, actorId),
+
+  updateGroupInfo: (chatId, actorId, data) =>
+    usePostgreSQL
+      ? ChatModelPG.updateGroupInfo(chatId, actorId, data)
+      : ChatModel.updateGroupInfo(pool, chatId, actorId, data),
 };

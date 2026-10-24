@@ -183,3 +183,166 @@ export const getOrCreateDm = async (req, res) => {
     return res.status(500).json({ error: 'getOrCreateDm_failed' });
   }
 };
+
+// ===================== GROUP CHAT CONTROLLERS =====================
+
+export const createGroup = async (req, res) => {
+  try {
+    const authId = getAuthUserId(req);
+    if (!authId) return forbid(res);
+
+    const { name, memberIds = [], avatar } = req.body;
+    if (!name || !name.trim()) return badRequest(res, 'Tên nhóm không được để trống');
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      return badRequest(res, 'Vui lòng chọn ít nhất một thành viên cho nhóm');
+    }
+
+    const newChat = await ChatService.createGroupChat(authId, name.trim(), memberIds, avatar || null);
+
+    // Bắn realtime tới người tạo và các thành viên được add
+    const io = getIo(req);
+    if (io) {
+      const allMembers = [authId, ...memberIds];
+      allMembers.forEach((uid) => {
+        io.to(`user_${Number(uid)}`).emit('new_chat_group', newChat);
+      });
+    }
+
+    return res.status(201).json({ success: true, chat: newChat });
+  } catch (e) {
+    console.error('createGroup error:', e);
+    return res.status(500).json({ error: 'createGroup_failed' });
+  }
+};
+
+export const getGroupDetails = async (req, res) => {
+  try {
+    const authId = getAuthUserId(req);
+    const chatId = Number(req.params.chatId);
+    if (!authId) return forbid(res);
+    if (!chatId) return badRequest(res, 'invalid_chatId');
+
+    const allowed = await ChatService.checkChatAccess(authId, chatId);
+    if (!allowed) return forbid(res);
+
+    const group = await ChatService.getGroupDetails(chatId);
+    if (!group) return res.status(404).json({ error: 'group_not_found' });
+
+    return res.json(group);
+  } catch (e) {
+    console.error('getGroupDetails error:', e);
+    return res.status(500).json({ error: 'getGroupDetails_failed' });
+  }
+};
+
+export const addGroupMembers = async (req, res) => {
+  try {
+    const authId = getAuthUserId(req);
+    const chatId = Number(req.params.chatId);
+    const { memberIds } = req.body;
+
+    if (!authId) return forbid(res);
+    if (!chatId) return badRequest(res, 'invalid_chatId');
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      return badRequest(res, 'Danh sách thành viên không hợp lệ');
+    }
+
+    const allowed = await ChatService.checkChatAccess(authId, chatId);
+    if (!allowed) return forbid(res);
+
+    await ChatService.addGroupMembers(chatId, memberIds, authId);
+
+    const group = await ChatService.getGroupDetails(chatId);
+    const io = getIo(req);
+    if (io) {
+      io.to(`chat_${chatId}`).emit('group_members_updated', group);
+      memberIds.forEach((uid) => {
+        io.to(`user_${Number(uid)}`).emit('new_chat_group', group);
+      });
+    }
+
+    return res.json({ success: true, group });
+  } catch (e) {
+    console.error('addGroupMembers error:', e);
+    return res.status(500).json({ error: 'addGroupMembers_failed' });
+  }
+};
+
+export const removeGroupMember = async (req, res) => {
+  try {
+    const authId = getAuthUserId(req);
+    const chatId = Number(req.params.chatId);
+    const memberId = Number(req.params.memberId);
+
+    if (!authId) return forbid(res);
+    if (!chatId || !memberId) return badRequest(res, 'invalid_params');
+
+    const allowed = await ChatService.checkChatAccess(authId, chatId);
+    if (!allowed) return forbid(res);
+
+    await ChatService.removeGroupMember(chatId, memberId, authId);
+
+    const group = await ChatService.getGroupDetails(chatId);
+    const io = getIo(req);
+    if (io) {
+      io.to(`chat_${chatId}`).emit('group_members_updated', group);
+      io.to(`user_${memberId}`).emit('removed_from_group', { chatId });
+    }
+
+    return res.json({ success: true, group });
+  } catch (e) {
+    console.error('removeGroupMember error:', e);
+    return res.status(500).json({ error: 'removeGroupMember_failed' });
+  }
+};
+
+export const leaveGroup = async (req, res) => {
+  try {
+    const authId = getAuthUserId(req);
+    const chatId = Number(req.params.chatId);
+
+    if (!authId) return forbid(res);
+    if (!chatId) return badRequest(res, 'invalid_chatId');
+
+    await ChatService.removeGroupMember(chatId, authId, authId);
+
+    const group = await ChatService.getGroupDetails(chatId);
+    const io = getIo(req);
+    if (io) {
+      io.to(`chat_${chatId}`).emit('group_members_updated', group);
+    }
+
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('leaveGroup error:', e);
+    return res.status(500).json({ error: 'leaveGroup_failed' });
+  }
+};
+
+export const updateGroupInfo = async (req, res) => {
+  try {
+    const authId = getAuthUserId(req);
+    const chatId = Number(req.params.chatId);
+    const { name, avatar } = req.body;
+
+    if (!authId) return forbid(res);
+    if (!chatId) return badRequest(res, 'invalid_chatId');
+
+    const allowed = await ChatService.checkChatAccess(authId, chatId);
+    if (!allowed) return forbid(res);
+
+    await ChatService.updateGroupInfo(chatId, authId, { name, avatar });
+
+    const group = await ChatService.getGroupDetails(chatId);
+    const io = getIo(req);
+    if (io) {
+      io.to(`chat_${chatId}`).emit('group_info_updated', group);
+    }
+
+    return res.json({ success: true, group });
+  } catch (e) {
+    console.error('updateGroupInfo error:', e);
+    return res.status(500).json({ error: 'updateGroupInfo_failed' });
+  }
+};
+

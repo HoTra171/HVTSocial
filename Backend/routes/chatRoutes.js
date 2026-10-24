@@ -9,6 +9,12 @@ import {
   editMessage,
   getUnreadCount,
   getOrCreateDm,
+  createGroup,
+  getGroupDetails,
+  addGroupMembers,
+  removeGroupMember,
+  leaveGroup,
+  updateGroupInfo,
 } from '../controllers/chatController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
@@ -304,5 +310,13 @@ router.get('/user/:userId/unread-count', authMiddleware, getUnreadCount);
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/dm', authMiddleware, getOrCreateDm);
+
+// ===================== GROUP CHAT ROUTES =====================
+router.post('/group', authMiddleware, createGroup);
+router.get('/group/:chatId', authMiddleware, getGroupDetails);
+router.post('/group/:chatId/members', authMiddleware, addGroupMembers);
+router.delete('/group/:chatId/members/:memberId', authMiddleware, removeGroupMember);
+router.post('/group/:chatId/leave', authMiddleware, leaveGroup);
+router.put('/group/:chatId/info', authMiddleware, updateGroupInfo);
 
 export default router;

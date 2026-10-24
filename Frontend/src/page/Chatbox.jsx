@@ -35,6 +35,8 @@ import CallHistoryItem from "../components/CallHistoryItem.jsx";
 import { Virtuoso } from "react-virtuoso";
 import { useChatMessages } from "../hooks/useChatMessages";
 import { ChatHeader } from "../components/chat/ChatHeader";
+import CreateGroupModal from "../components/chat/CreateGroupModal";
+import GroupInfoDrawer from "../components/chat/GroupInfoDrawer";
 import { playNotificationSound } from "../utils/notificationSound";
 import {
   playCallRingtone,
@@ -101,6 +103,8 @@ const Chatbox = () => {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [reactMenuFor, setReactMenuFor] = useState(null);
   const [fullImage, setFullImage] = useState(null);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [showGroupInfoDrawer, setShowGroupInfoDrawer] = useState(false);
 
   // Typing & Online
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
@@ -532,6 +536,37 @@ const Chatbox = () => {
       }
     });
 
+    // LISTENER: Group Events
+    socket.on("new_chat_group", () => {
+      fetchChatList();
+    });
+
+    socket.on("group_members_updated", (data) => {
+      if (Number(data?.chatId) === Number(chatId)) {
+        fetchPartner();
+      }
+      fetchChatList();
+    });
+
+    socket.on("group_info_updated", (data) => {
+      if (Number(data?.chatId) === Number(chatId)) {
+        fetchPartner();
+      }
+      fetchChatList();
+    });
+
+    socket.on("removed_from_group", (data) => {
+      if (Number(data?.chatId) === Number(chatId)) {
+        if (Number(data?.userId) === Number(myId)) {
+          toast.error("Bạn đã bị quản trị viên xóa khỏi nhóm");
+          navigate('/messages');
+        } else {
+          fetchPartner();
+        }
+      }
+      fetchChatList();
+    });
+
 
     return () => {
       socket.emit("leave_chat", Number(chatId));
@@ -661,8 +696,55 @@ const Chatbox = () => {
       // Tìm conversation theo chat_id
       const row = unique.find((c) => Number(c.chat_id) === Number(chatId));
 
-      // Nếu không tìm thấy conversation, thử load user info theo chatId (có thể là userId)
+      // Nếu là group chat, lấy chi tiết nhóm (thành viên, quyền admin, ...)
+      if (row && row.is_group_chat) {
+        try {
+          const groupRes = await axios.get(`${API_URL}/chat/group/${row.chat_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (groupRes.data) {
+            setPartner({
+              chat_id: row.chat_id,
+              name: groupRes.data.chat_name || row.chat_name || "Nhóm trò chuyện",
+              avatar: groupRes.data.avatar || row.avatar || "/group.png",
+              is_group_chat: true,
+              members: groupRes.data.members || [],
+              admin_id: groupRes.data.admin_id,
+              created_by: groupRes.data.created_by,
+              member_count: (groupRes.data.members || []).length,
+            });
+            return true;
+          }
+        } catch (gErr) {
+          console.warn("Error fetching group details:", gErr);
+        }
+      }
+
+      // Nếu không tìm thấy conversation, thử load group hoặc user info theo chatId
       if (!row) {
+        // 1. Thử xem chatId có phải là group chat không
+        try {
+          const groupRes = await axios.get(`${API_URL}/chat/group/${chatId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (groupRes.data && groupRes.data.id) {
+            setPartner({
+              chat_id: groupRes.data.id,
+              name: groupRes.data.chat_name || "Nhóm trò chuyện",
+              avatar: groupRes.data.avatar || "/group.png",
+              is_group_chat: true,
+              members: groupRes.data.members || [],
+              admin_id: groupRes.data.admin_id,
+              created_by: groupRes.data.created_by,
+              member_count: (groupRes.data.members || []).length,
+            });
+            return true;
+          }
+        } catch (gErr) {
+          // Không phải group
+        }
+
+        // 2. Thử load user info theo chatId (có thể là userId)
         try {
           const userRes = await axios.get(
             `${API_URL}/users/${chatId}`,
@@ -1440,49 +1522,71 @@ const Chatbox = () => {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex h-[100dvh] w-full overflow-hidden bg-[#f0f2f5]">
+      <div className="fixed inset-0 z-50 flex h-[100dvh] w-full overflow-hidden bg-[#f0f2f5] dark:bg-slate-950 text-slate-900 dark:text-slate-100">
 
         {/* MINI SIDEBAR - Icon Only (Instagram Style) */}
         <Sidebar collapsed={true} relative={true} currentUserId={myId} setSidebarOpen={() => { }} />
 
-        {/* RECENT CHATS LIST (like RecentMessages) */}
-        <div className="hidden sm:flex flex-col w-60 min-[820px]:w-80 bg-white border-r overflow-hidden border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="font-semibold text-lg mb-3">Tin nhắn</h2>
+        {/* RECENT CHATS LIST */}
+        <div className="hidden sm:flex flex-col w-60 min-[820px]:w-80 bg-white dark:bg-slate-900 border-r overflow-hidden border-slate-200 dark:border-slate-800 transition-colors">
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <h2 className="font-bold text-xl text-slate-900 dark:text-white">Tin nhắn</h2>
+            <button
+              onClick={() => setShowCreateGroupModal(true)}
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+              title="Tạo nhóm chat mới"
+            >
+              <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            </button>
+          </div>
+          <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800/60">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm kiếm"
+                placeholder="Tìm kiếm..."
                 value={chatSearch}
                 onChange={(e) => setChatSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="w-full pl-9 pr-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
               />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
             {chatList.filter(item =>
-              !chatSearch || item.target_name?.toLowerCase().includes(chatSearch.toLowerCase())
+              !chatSearch || item.target_name?.toLowerCase().includes(chatSearch.toLowerCase()) || item.chat_name?.toLowerCase().includes(chatSearch.toLowerCase())
             ).map((item) => (
               <div
                 key={item.chat_id}
                 onClick={() => navigate(`/messages/${item.chat_id}`)}
-                className={`flex items-center gap-3 py-2 px-3 cursor-pointer hover:bg-gray-100 transition ${Number(chatId) === Number(item.chat_id) ? 'bg-gray-100' : ''}`}
+                className={`flex items-center gap-3 py-2.5 px-3 cursor-pointer transition ${
+                  Number(chatId) === Number(item.chat_id)
+                    ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-l-4 border-indigo-600'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                }`}
               >
-                <img
-                  src={item.avatar || (item.is_group_chat ? "/group.png" : "/default.jpg")}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                />
+                <div className="relative flex-shrink-0">
+                  <img
+                    src={item.avatar || (item.is_group_chat ? "/group.png" : "/default.jpg")}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                  />
+                  {item.is_group_chat && (
+                    <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[9px] shadow-xs">
+                      👥
+                    </span>
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline gap-2">
-                    <p className="font-medium text-sm truncate">{item.target_name}</p>
-                    <p className="text-[10px] text-gray-400 flex-shrink-0">
+                    <p className="font-semibold text-sm truncate text-slate-900 dark:text-slate-100">
+                      {item.target_name || item.chat_name}
+                    </p>
+                    <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 flex-shrink-0">
                       {item.last_time ? new Date(item.last_time).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' }).split(',')[0] : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="text-xs text-gray-500 truncate flex-1">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1 font-normal">
                       {item.last_message ||
                         (item.last_message_type === "image"
                           ? "📷 Ảnh"
@@ -1500,13 +1604,13 @@ const Chatbox = () => {
               </div>
             ))}
             {chatList.length === 0 && (
-              <p className="text-sm text-gray-500 p-4 text-center">Chưa có cuộc trò chuyện nào</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 p-4 text-center">Chưa có cuộc trò chuyện nào</p>
             )}
           </div>
         </div>
 
         {/* CHAT CONTENT */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#f0f2f5] dark:bg-slate-950 transition-colors">
 
           {/* HEADER - Modular ChatHeader */}
           <ChatHeader
@@ -1516,6 +1620,7 @@ const Chatbox = () => {
             onStartVoiceCall={() => startCall(false)}
             onStartVideoCall={() => startCall(true)}
             onBack={() => navigate('/messages')}
+            onOpenGroupInfo={() => setShowGroupInfoDrawer(true)}
           />
 
           {/* BODY */}
@@ -1791,23 +1896,27 @@ const Chatbox = () => {
           )}
 
           {/* INPUT - Sticky Bottom */}
-          <div className="sticky bottom-0 shrink-0 p-3 bg-white flex items-center gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-20">
+          <div className="sticky bottom-0 shrink-0 p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] z-20 transition-colors">
             <button
               onClick={isRecording ? stopRecording : startRecording}
-              className={`p-2.5 rounded-full flex-shrink-0 ${isRecording ? "bg-red-500 text-white" : "bg-gray-200 text-black"
-                }`}
+              className={`p-2.5 rounded-full flex-shrink-0 transition-colors cursor-pointer ${
+                isRecording
+                  ? "bg-red-500 text-white"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
+              title={isRecording ? "Dừng ghi âm" : "Ghi âm giọng nói"}
             >
               <Mic size={20} />
             </button>
 
             {isRecording && (
-              <span className="text-xs text-red-500 min-w-[40px] flex-shrink-0">
+              <span className="text-xs font-semibold text-red-500 min-w-[40px] flex-shrink-0">
                 {recordingTime}s
               </span>
             )}
 
-            <label className="flex-shrink-0 cursor-pointer">
-              <ImageIcon className="w-6 h-6 text-gray-700" />
+            <label className="flex-shrink-0 cursor-pointer p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" title="Gửi ảnh">
+              <ImageIcon className="w-5 h-5" />
               <input
                 type="file"
                 accept="image/*"
@@ -1832,19 +1941,20 @@ const Chatbox = () => {
               }}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder={editingMessage ? "Chỉnh sửa tin nhắn..." : "Aa"}
-              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-full outline-none min-w-0"
+              className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 rounded-full outline-none focus:ring-2 focus:ring-indigo-500 transition-colors min-w-0 font-normal"
             />
 
             <button
               onClick={sendMessage}
-              className="p-2.5 bg-blue-600 rounded-full text-white flex-shrink-0 hover:bg-blue-700 transition"
+              className="p-2.5 bg-indigo-600 rounded-full text-white flex-shrink-0 hover:bg-indigo-700 active:scale-95 transition-all shadow-sm cursor-pointer"
+              title="Gửi"
             >
               <SendHorizonal size={20} />
             </button>
           </div>
         </div>
         {/* END CHAT CONTENT */}
-      </div >
+      </div>
 
       {/* FULL IMAGE */}
       {
@@ -1879,7 +1989,7 @@ const Chatbox = () => {
         )
       }
 
-      {/*THÊM INCOMING CALL MODAL */}
+      {/* INCOMING CALL MODAL */}
       {
         showIncomingCall && incomingCallData && (
           <IncomingCallModal
@@ -1893,6 +2003,33 @@ const Chatbox = () => {
           />
         )
       }
+
+      {/* CREATE GROUP MODAL */}
+      <CreateGroupModal
+        isOpen={showCreateGroupModal}
+        onClose={() => setShowCreateGroupModal(false)}
+        currentUserId={myId}
+        onGroupCreated={(newGroup) => {
+          fetchChatList();
+          navigate(`/messages/${newGroup.chat_id || newGroup.id}`);
+        }}
+      />
+
+      {/* GROUP INFO DRAWER */}
+      <GroupInfoDrawer
+        isOpen={showGroupInfoDrawer}
+        onClose={() => setShowGroupInfoDrawer(false)}
+        chatId={chatId}
+        currentUserId={myId}
+        onGroupUpdated={() => {
+          fetchPartner();
+          fetchChatList();
+        }}
+        onLeaveGroup={() => {
+          fetchChatList();
+          navigate('/messages');
+        }}
+      />
     </>
   );
 };

@@ -403,4 +403,141 @@ SELECT * FROM Base ORDER BY last_time DESC;`;
     const result = await req.query('SELECT 1 FROM chat_users WHERE user_id = @userId AND chat_id = @chatId');
     return result.recordset.length > 0;
   },
+
+  async createGroupChat(pool, creatorId, name, memberIds = [], avatar = null) {
+    if (isPostgres) {
+      const { ChatModelPG } = await import('./chatModel.pg.js');
+      return ChatModelPG.createGroupChat(creatorId, name, memberIds, avatar);
+    }
+
+    if (!pool.connected) await pool.connect();
+    const tx = new sql.Transaction(pool);
+    await tx.begin();
+    try {
+      const chatReq = tx.request();
+      chatReq.input('name', sql.NVarChar(100), name);
+      chatReq.input('creatorId', sql.Int, creatorId);
+      chatReq.input('avatar', sql.NVarChar(sql.MAX), avatar);
+
+      const chatRes = await chatReq.query(`
+        INSERT INTO chats (name, is_group_chat, avatar, created_by, created_at, updated_at)
+        OUTPUT INSERTED.id AS id, INSERTED.name AS name, INSERTED.is_group_chat, INSERTED.avatar
+        VALUES (@name, 1, @avatar, @creatorId, GETDATE(), GETDATE());
+      `);
+      const newChat = chatRes.recordset[0];
+      const chatId = newChat.id;
+
+      const insAdmin = tx.request();
+      insAdmin.input('chatId', sql.Int, chatId);
+      insAdmin.input('creatorId', sql.Int, creatorId);
+      await insAdmin.query(`
+        INSERT INTO chat_users (chat_id, user_id, is_admin, joined_at)
+        VALUES (@chatId, @creatorId, 1, GETDATE());
+      `);
+
+      const uniqueMembers = Array.from(new Set(memberIds.map(Number))).filter(
+        (id) => id && id !== creatorId
+      );
+
+      for (const mId of uniqueMembers) {
+        const insMem = tx.request();
+        insMem.input('chatId', sql.Int, chatId);
+        insMem.input('userId', sql.Int, mId);
+        await insMem.query(`
+          INSERT INTO chat_users (chat_id, user_id, is_admin, joined_at)
+          VALUES (@chatId, @userId, 0, GETDATE());
+        `);
+      }
+
+      await tx.commit();
+      return newChat;
+    } catch (e) {
+      try { await tx.rollback(); } catch {}
+      throw e;
+    }
+  },
+
+  async getGroupDetails(pool, chatId) {
+    if (isPostgres) {
+      const { ChatModelPG } = await import('./chatModel.pg.js');
+      return ChatModelPG.getGroupDetails(chatId);
+    }
+
+    if (!pool.connected) await pool.connect();
+    const req = pool.request();
+    req.input('chatId', sql.Int, chatId);
+
+    const chatRes = await req.query(`
+      SELECT c.id, c.name, c.avatar, c.is_group_chat, c.created_by, c.created_at,
+             u.full_name AS creator_name
+      FROM chats c
+      LEFT JOIN users u ON u.id = c.created_by
+      WHERE c.id = @chatId;
+    `);
+
+    if (!chatRes.recordset?.length) return null;
+
+    const memReq = pool.request();
+    memReq.input('chatId', sql.Int, chatId);
+    const membersRes = await memReq.query(`
+      SELECT u.id, u.full_name, u.username, u.avatar, cu.is_admin, cu.joined_at
+      FROM chat_users cu
+      JOIN users u ON u.id = cu.user_id
+      WHERE cu.chat_id = @chatId
+      ORDER BY cu.is_admin DESC, u.full_name ASC;
+    `);
+
+    return {
+      ...chatRes.recordset[0],
+      members: membersRes.recordset || [],
+    };
+  },
+
+  async addGroupMembers(pool, chatId, memberIds = [], actorId) {
+    if (isPostgres) {
+      const { ChatModelPG } = await import('./chatModel.pg.js');
+      return ChatModelPG.addGroupMembers(chatId, memberIds, actorId);
+    }
+    // MSSQL implementation
+    if (!pool.connected) await pool.connect();
+    for (const mId of memberIds) {
+      const req = pool.request();
+      req.input('chatId', sql.Int, chatId);
+      req.input('userId', sql.Int, mId);
+      await req.query(`
+        IF NOT EXISTS (SELECT 1 FROM chat_users WHERE chat_id = @chatId AND user_id = @userId)
+        BEGIN
+          INSERT INTO chat_users (chat_id, user_id, is_admin, joined_at)
+          VALUES (@chatId, @userId, 0, GETDATE())
+        END
+      `);
+    }
+    return true;
+  },
+
+  async removeGroupMember(pool, chatId, userId, actorId) {
+    if (isPostgres) {
+      const { ChatModelPG } = await import('./chatModel.pg.js');
+      return ChatModelPG.removeGroupMember(chatId, userId, actorId);
+    }
+    if (!pool.connected) await pool.connect();
+    const req = pool.request();
+    req.input('chatId', sql.Int, chatId);
+    req.input('userId', sql.Int, userId);
+    await req.query(`DELETE FROM chat_users WHERE chat_id = @chatId AND user_id = @userId`);
+    return true;
+  },
+
+  async updateGroupInfo(pool, chatId, actorId, { name, avatar }) {
+    if (isPostgres) {
+      const { ChatModelPG } = await import('./chatModel.pg.js');
+      return ChatModelPG.updateGroupInfo(chatId, actorId, { name, avatar });
+    }
+    if (!pool.connected) await pool.connect();
+    const req = pool.request();
+    req.input('chatId', sql.Int, chatId);
+    req.input('name', sql.NVarChar(100), name || null);
+    await req.query(`UPDATE chats SET name = ISNULL(@name, name), updated_at = GETDATE() WHERE id = @chatId`);
+    return true;
+  },
 };

@@ -183,4 +183,220 @@ ORDER BY last_time DESC, chat_id DESC;
     const result = await db.query(query, values);
     return { recordset: result.rows };
   },
+
+  // Tạo nhóm chat mới
+  async createGroupChat(creatorId, name, memberIds = [], avatar = null) {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      // 1. Tạo chat
+      const chatRes = await client.query(
+        `INSERT INTO chats (name, is_group_chat, avatar, created_by, created_at, updated_at)
+         VALUES ($1, true, $2, $3, NOW(), NOW())
+         RETURNING id, name, is_group_chat, avatar, created_by, created_at, updated_at;`,
+        [name, avatar, creatorId]
+      );
+      const newChat = chatRes.rows[0];
+      const chatId = newChat.id;
+
+      // 2. Thêm người tạo làm admin
+      await client.query(
+        `INSERT INTO chat_users (chat_id, user_id, is_admin, joined_at)
+         VALUES ($1, $2, true, NOW())
+         ON CONFLICT (chat_id, user_id) DO NOTHING;`,
+        [chatId, creatorId]
+      );
+
+      // 3. Thêm các thành viên khác
+      const uniqueMembers = Array.from(new Set(memberIds.map(Number))).filter(
+        (id) => id && id !== creatorId
+      );
+
+      for (const mId of uniqueMembers) {
+        await client.query(
+          `INSERT INTO chat_users (chat_id, user_id, is_admin, joined_at)
+           VALUES ($1, $2, false, NOW())
+           ON CONFLICT (chat_id, user_id) DO NOTHING;`,
+          [chatId, mId]
+        );
+      }
+
+      // 4. Lấy tên người tạo để ghi tin nhắn hệ thống
+      const userRes = await client.query('SELECT full_name FROM users WHERE id = $1', [creatorId]);
+      const creatorName = userRes.rows[0]?.full_name || 'Người dùng';
+
+      await client.query(
+        `INSERT INTO messages (chat_id, sender_id, content, message_type, status, created_at)
+         VALUES ($1, $2, $3, 'system', 'delivered', NOW());`,
+        [chatId, creatorId, `${creatorName} đã tạo nhóm "${name}"`]
+      );
+
+      await client.query('COMMIT');
+      return newChat;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  },
+
+  // Lấy chi tiết nhóm và thành viên
+  async getGroupDetails(chatId) {
+    const chatRes = await db.query(
+      `SELECT c.id, c.name, c.avatar, c.is_group_chat, c.created_by, c.created_at,
+              u.full_name AS creator_name
+       FROM chats c
+       LEFT JOIN users u ON u.id = c.created_by
+       WHERE c.id = $1;`,
+      [chatId]
+    );
+
+    if (chatRes.rows.length === 0) return null;
+
+    const membersRes = await db.query(
+      `SELECT u.id, u.full_name, u.username, u.avatar, cu.is_admin, cu.joined_at
+       FROM chat_users cu
+       JOIN users u ON u.id = cu.user_id
+       WHERE cu.chat_id = $1
+       ORDER BY cu.is_admin DESC, u.full_name ASC;`,
+      [chatId]
+    );
+
+    return {
+      ...chatRes.rows[0],
+      members: membersRes.rows,
+    };
+  },
+
+  // Thêm thành viên vào nhóm
+  async addGroupMembers(chatId, memberIds = [], actorId) {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      const addedUsers = [];
+      for (const uId of memberIds) {
+        const id = Number(uId);
+        if (!id) continue;
+        const res = await client.query(
+          `INSERT INTO chat_users (chat_id, user_id, is_admin, joined_at)
+           VALUES ($1, $2, false, NOW())
+           ON CONFLICT (chat_id, user_id) DO NOTHING
+           RETURNING user_id;`,
+          [chatId, id]
+        );
+        if (res.rows.length > 0) {
+          const userRow = await client.query('SELECT full_name FROM users WHERE id = $1', [id]);
+          if (userRow.rows[0]) addedUsers.push(userRow.rows[0].full_name);
+        }
+      }
+
+      if (addedUsers.length > 0) {
+        const actorRes = await client.query('SELECT full_name FROM users WHERE id = $1', [actorId]);
+        const actorName = actorRes.rows[0]?.full_name || 'Người dùng';
+        const content = `${actorName} đã thêm ${addedUsers.join(', ')} vào nhóm`;
+
+        await client.query(
+          `INSERT INTO messages (chat_id, sender_id, content, message_type, status, created_at)
+           VALUES ($1, $2, $3, 'system', 'delivered', NOW());`,
+          [chatId, actorId, content]
+        );
+        await client.query('UPDATE chats SET updated_at = NOW() WHERE id = $1', [chatId]);
+      }
+
+      await client.query('COMMIT');
+      return true;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  },
+
+  // Xóa thành viên hoặc Rời nhóm
+  async removeGroupMember(chatId, userId, actorId) {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      const targetRes = await client.query('SELECT full_name FROM users WHERE id = $1', [userId]);
+      const targetName = targetRes.rows[0]?.full_name || 'Người dùng';
+
+      const actorRes = await client.query('SELECT full_name FROM users WHERE id = $1', [actorId]);
+      const actorName = actorRes.rows[0]?.full_name || 'Người dùng';
+
+      await client.query('DELETE FROM chat_users WHERE chat_id = $1 AND user_id = $2', [
+        chatId,
+        userId,
+      ]);
+
+      const content =
+        Number(userId) === Number(actorId)
+          ? `${targetName} đã rời khỏi nhóm`
+          : `${actorName} đã xóa ${targetName} khỏi nhóm`;
+
+      await client.query(
+        `INSERT INTO messages (chat_id, sender_id, content, message_type, status, created_at)
+         VALUES ($1, $2, $3, 'system', 'delivered', NOW());`,
+        [chatId, actorId, content]
+      );
+      await client.query('UPDATE chats SET updated_at = NOW() WHERE id = $1', [chatId]);
+
+      await client.query('COMMIT');
+      return true;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  },
+
+  // Cập nhật tên nhóm / avatar nhóm
+  async updateGroupInfo(chatId, actorId, { name, avatar }) {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      const updates = [];
+      const values = [];
+      let idx = 1;
+
+      if (name !== undefined) {
+        updates.push(`name = $${idx++}`);
+        values.push(name);
+      }
+      if (avatar !== undefined) {
+        updates.push(`avatar = $${idx++}`);
+        values.push(avatar);
+      }
+
+      updates.push(`updated_at = NOW()`);
+      values.push(chatId);
+
+      await client.query(`UPDATE chats SET ${updates.join(', ')} WHERE id = $${idx}`, values);
+
+      if (name) {
+        const actorRes = await client.query('SELECT full_name FROM users WHERE id = $1', [actorId]);
+        const actorName = actorRes.rows[0]?.full_name || 'Người dùng';
+
+        await client.query(
+          `INSERT INTO messages (chat_id, sender_id, content, message_type, status, created_at)
+           VALUES ($1, $2, $3, 'system', 'delivered', NOW());`,
+          [chatId, actorId, `${actorName} đã đổi tên nhóm thành "${name}"`]
+        );
+      }
+
+      await client.query('COMMIT');
+      return true;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  },
 };

@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 import { safeFromNow } from '../utils/dateHelpers';
+import CreateGroupModal from '../components/chat/CreateGroupModal.jsx';
 
 const Messages = () => {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread' | 'groups'
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -47,6 +50,7 @@ const Messages = () => {
           navigate('/');
           return;
         }
+        if (isMounted) setCurrentUserId(userId);
 
         // 2) Lấy danh sách chat theo userId
         const res = await axios.get(`${API_URL}/chat/user/${userId}/chats`, {
@@ -139,15 +143,25 @@ const Messages = () => {
             </div>
           </div>
 
-          {/* Action button */}
-          <button
-            type="button"
-            onClick={() => navigate('/connections')}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-md shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Tìm bạn bè</span>
-          </button>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setShowCreateGroupModal(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-semibold transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+            >
+              <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>Tạo nhóm</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/connections')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-md shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Tìm bạn bè</span>
+            </button>
+          </div>
         </div>
 
         {/* SEARCH & FILTERS BAR */}
@@ -369,6 +383,16 @@ const Messages = () => {
           </div>
         )}
       </div>
+
+      {/* CREATE GROUP MODAL */}
+      <CreateGroupModal
+        isOpen={showCreateGroupModal}
+        onClose={() => setShowCreateGroupModal(false)}
+        currentUserId={currentUserId}
+        onGroupCreated={(newGroup) => {
+          navigate(`/messages/${newGroup.chat_id || newGroup.id}`);
+        }}
+      />
     </div>
   );
 };

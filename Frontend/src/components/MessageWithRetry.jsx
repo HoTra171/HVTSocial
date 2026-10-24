@@ -89,6 +89,17 @@ const MessageBubble = ({
     return <CheckCheck size={14} className="text-gray-300" />;
   };
 
+  // Render tin nhắn hệ thống (ví dụ: tạo nhóm, thêm/xóa thành viên, đổi tên nhóm)
+  if (msg.message_type === "system") {
+    return (
+      <div id={id} className="flex justify-center my-2.5 w-full px-4">
+        <span className="px-3.5 py-1 rounded-full text-xs font-medium bg-slate-200/90 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs text-center max-w-[85%] break-words">
+          {msg.content}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <>
       <div
@@ -99,7 +110,24 @@ const MessageBubble = ({
         onTouchMove={handleTouchMove}
         onContextMenu={handleContextMenu}
       >
+        {/* Avatar người gửi trong nhóm hoặc chat cá nhân */}
+        {!isMe && (
+          <img
+            src={getFullImageUrl(msg.sender_avatar || partner?.avatar || "/default.jpg")}
+            className="w-7 h-7 rounded-full object-cover flex-shrink-0 self-end mb-1 mr-2 border border-slate-200 dark:border-slate-700"
+            alt=""
+            onError={handleImageError}
+          />
+        )}
+
         <div className={`relative max-w-[85%] sm:max-w-[75%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+          {/* Tên người gửi nếu là tin nhắn trong nhóm chat */}
+          {!isMe && partner?.is_group_chat && (
+            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1 ml-1">
+              {msg.sender_name || msg.user_name || "Thành viên"}
+            </span>
+          )}
+
           {/* Icon bar (emoji + menu) - Visible on hover on all devices */}
           {
             !isRecalled && !msg.failed && (
@@ -112,7 +140,7 @@ const MessageBubble = ({
                     e.stopPropagation();
                     onReply && onReply(msg);
                   }}
-                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all border border-gray-100"
+                  className="p-1.5 bg-white dark:bg-slate-800 shadow-md rounded-full text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                   title="Trả lời tin nhắn"
                 >
                   <Reply size={16} />
@@ -124,7 +152,7 @@ const MessageBubble = ({
                     setReactMenuFor(reactMenuFor === msg.id ? null : msg.id);
                     setOpenMenuId(null);
                   }}
-                  className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-yellow-500 hover:bg-yellow-50 transition-all border border-gray-100"
+                  className="p-1.5 bg-white dark:bg-slate-800 shadow-md rounded-full text-slate-700 dark:text-slate-200 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                   title="Thả cảm xúc"
                 >
                   <Smile size={16} />
@@ -137,7 +165,7 @@ const MessageBubble = ({
                       setOpenMenuId(openMenuId === msg.id ? null : msg.id);
                       setReactMenuFor(null);
                     }}
-                    className="p-1.5 bg-white shadow-md rounded-full text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all border border-gray-100"
+                    className="p-1.5 bg-white dark:bg-slate-800 shadow-md rounded-full text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
                     title="Tùy chọn"
                   >
                     <MoreVertical size={16} />
@@ -152,12 +180,12 @@ const MessageBubble = ({
             openMenuId === msg.id && (
               <div
                 ref={menuRef}
-                className={`msg-menu absolute top-0 bg-white shadow-xl rounded-lg py-1 z-50 border border-gray-200 min-w-[150px]
+                className={`msg-menu absolute top-0 bg-white dark:bg-slate-800 shadow-xl rounded-xl py-1 z-50 border border-slate-200 dark:border-slate-700 min-w-[150px]
               ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
               >
                 {msg.message_type === "text" && (
                   <button
-                    className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2 transition-colors"
                     onClick={() => {
                       onEdit(msg);
                       setOpenMenuId(null);
@@ -172,7 +200,7 @@ const MessageBubble = ({
                     onRecall(msg.id);
                     setOpenMenuId(null);
                   }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-500 text-sm flex items-center gap-2 transition-colors"
+                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 dark:text-red-400 text-sm flex items-center gap-2 transition-colors"
                 >
                   <span className="text-lg">🗑️</span>
                   <span>Thu hồi</span>
@@ -186,13 +214,13 @@ const MessageBubble = ({
             reactMenuFor === msg.id && (
               <div
                 ref={reactMenuRef}
-                className={`msg-react-menu absolute top-1/2 -translate-y-1/2 bg-white shadow-2xl rounded-full flex gap-1 px-3 py-2.5 border-2 border-gray-100 z-[60]
+                className={`msg-react-menu absolute top-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 shadow-2xl rounded-full flex gap-1 px-3 py-2 border-2 border-slate-200 dark:border-slate-700 z-[60]
               ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
               >
                 {["❤️", "👍", "😂", "😮", "😢", "😡"].map((emo) => (
                   <button
                     key={emo}
-                    className="text-2xl cursor-pointer hover:scale-125 active:scale-110 transition-transform p-1 rounded-full hover:bg-gray-100"
+                    className="text-2xl cursor-pointer hover:scale-125 active:scale-110 transition-transform p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
                     onClick={() => {
                       onReact(msg.id, emo);
                       setReactMenuFor(null);
@@ -213,16 +241,16 @@ const MessageBubble = ({
                   e.stopPropagation();
                   if (onReplyClick && replyData.id) onReplyClick(replyData.id);
                 }}
-                className={`mb-1 px-3 py-1.5 rounded-xl text-xs bg-gray-100/90 text-gray-600 border-l-4 border-blue-500 cursor-pointer hover:bg-gray-200 transition-colors shadow-sm max-w-[280px] ${
-                  isMe ? "self-end text-right border-r-4 border-l-0 border-blue-600" : "self-start text-left"
+                className={`mb-1 px-3 py-1.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-300 border-l-4 border-indigo-500 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-xs max-w-[280px] ${
+                  isMe ? "self-end text-right border-r-4 border-l-0 border-indigo-600" : "self-start text-left"
                 }`}
                 title="Nhấn để xem tin nhắn gốc"
               >
-                <div className={`flex items-center gap-1 text-[11px] font-semibold text-blue-600 mb-0.5 ${isMe ? "justify-end" : "justify-start"}`}>
+                <div className={`flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mb-0.5 ${isMe ? "justify-end" : "justify-start"}`}>
                   <Reply size={12} className={isMe ? "rotate-180" : ""} />
                   <span className="truncate">{replyData.sender || "Người dùng"}</span>
                 </div>
-                <p className="truncate text-gray-700 text-xs">
+                <p className="truncate text-slate-800 dark:text-slate-200 text-xs font-normal">
                   {replyData.type === "text"
                     ? replyData.content
                     : replyData.type === "image"
@@ -236,7 +264,7 @@ const MessageBubble = ({
           {/* Message bubble */}
           {
             isRecalled ? (
-              <div className="italic text-gray-500 px-3 py-2 bg-white border border-gray-200 rounded-2xl text-sm">
+              <div className="italic text-slate-500 dark:text-slate-400 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm">
                 Bạn đã xóa một tin nhắn
               </div>
             ) : msg.message_type === "text" ? (
@@ -246,10 +274,13 @@ const MessageBubble = ({
                   onReply && onReply(msg);
                 }}
                 title="Nhấn đúp để trả lời"
-                className={`px-3 py-2 rounded-2xl text-sm shadow cursor-pointer select-text ${isMe ? "bg-blue-600 text-white" : "bg-white text-black"
-                  } ${msg.failed ? "opacity-60" : ""}`}
+                className={`px-3.5 py-2 rounded-2xl text-sm shadow-sm cursor-pointer select-text transition-all ${
+                  isMe
+                    ? "bg-indigo-600 text-white font-normal"
+                    : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 font-normal"
+                } ${msg.failed ? "opacity-60" : ""}`}
               >
-                <div>{msg.content}</div>
+                <div className="leading-relaxed break-words">{msg.content}</div>
                 <div className="flex items-center justify-end gap-2 mt-1">
                   {renderMessageStatus()}
                   {msg.failed && (
@@ -265,15 +296,10 @@ const MessageBubble = ({
               </div>
             ) : msg.message_type === "image" ? (
               <div>
-                {/* Note: If image relies on isReply, we should also separate it. 
-                  But existing code handled image separately. For consistency, let's keep image as is but without internal reply logic 
-                  Wait, existing image rendering didn't show reply context inside? 
-                  Looking at previous code, image block didn't have reply logic inside. 
-                  So moving it out is actually better for Images too! */}
                 <img
                   src={getFullImageUrl(msg.media_url)}
                   onClick={() => onImageClick(getFullImageUrl(msg.media_url))}
-                  className={`rounded-xl max-w-[260px] max-h-[360px] object-cover shadow cursor-pointer ${msg.failed ? "opacity-60" : ""
+                  className={`rounded-xl max-w-[260px] max-h-[360px] object-cover shadow-sm cursor-pointer ${msg.failed ? "opacity-60" : ""
                     }`}
                   alt=""
                   onError={(e) => handleImageError(e, msg.media_url)}
@@ -292,7 +318,7 @@ const MessageBubble = ({
                 </div>
               </div>
             ) : msg.message_type === "voice" ? (
-              <div className={`px-3 py-2 rounded-2xl shadow bg-white flex items-center gap-2 ${msg.failed ? "opacity-60" : ""
+              <div className={`px-3 py-2 rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-2 ${msg.failed ? "opacity-60" : ""
                 }`}>
                 <audio controls src={msg.media_url} className="h-8" />
                 {renderMessageStatus()}
@@ -312,7 +338,7 @@ const MessageBubble = ({
           {
             msg.reaction && !isRecalled && (
               <div
-                className={`mt-1 inline-block px-2 bg-white shadow rounded-full text-lg ${isMe ? "float-right mr-2" : "float-left ml-2"
+                className={`mt-1 inline-block px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-full text-base ${isMe ? "float-right mr-2" : "float-left ml-2"
                   }`}
               >
                 {msg.reaction}
