@@ -142,7 +142,11 @@ export default function chatSocket(io) {
               ? (row.content || '').substring(0, 50)
               : row.message_type === 'image'
                 ? 'Đã gửi một ảnh'
-                : 'Đã gửi tin nhắn thoại';
+                : row.message_type === 'file'
+                  ? 'Đã gửi một tệp đính kèm'
+                  : row.message_type === 'shared_post'
+                    ? 'Đã chia sẻ một bài viết'
+                    : 'Đã gửi tin nhắn thoại';
 
           await Promise.all(
             receivers.map(async (u) => {
@@ -243,6 +247,22 @@ export default function chatSocket(io) {
       } catch (err) {
         console.error('send_reaction error:', err);
       }
+    });
+
+    // Ghim tin nhắn
+    socket.on('pin_message', ({ messageId, chatId, message }) => {
+      io.to(`chat_${Number(chatId)}`).emit('message_pinned', {
+        messageId: Number(messageId),
+        chatId: Number(chatId),
+        message,
+      });
+    });
+
+    // Bỏ ghim tin nhắn
+    socket.on('unpin_message', ({ chatId }) => {
+      io.to(`chat_${Number(chatId)}`).emit('message_unpinned', {
+        chatId: Number(chatId),
+      });
     });
 
     // =========================

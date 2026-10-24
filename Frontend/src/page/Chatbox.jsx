@@ -18,6 +18,12 @@ import {
   Users,
   Bell,
   Reply,
+  Smile,
+  Paperclip,
+  Pin,
+  ThumbsUp,
+  Palette,
+  Share2,
 } from "lucide-react";
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -27,6 +33,10 @@ import { useNavigate } from 'react-router-dom';
 import IncomingCallModal from "../components/IncomingCallModal.jsx";
 import toast from "react-hot-toast";
 import MessageBubble from "../components/MessageWithRetry.jsx";
+import MessageSearch from "../components/MessageSearch.jsx";
+import EmojiPicker from "../components/chat/EmojiPicker.jsx";
+import ForwardMessageModal from "../components/chat/ForwardMessageModal.jsx";
+import { ChatThemeModal, CHAT_THEMES } from "../components/chat/ChatThemeModal.jsx";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
 import { getFullImageUrl, handleImageError } from '../utils/imageHelper.js';
 import Sidebar from "../components/Sidebar.jsx";
@@ -71,6 +81,19 @@ const Chatbox = () => {
     loadChatData();
   }, [chatId, myId, hasRedirected]);
 
+  useEffect(() => {
+    try {
+      const savedPin = localStorage.getItem(`hvtsocial_pinned_${chatId}`);
+      setPinnedMessage(savedPin ? JSON.parse(savedPin) : null);
+      const savedTheme = localStorage.getItem(`hvtsocial_chat_theme_${chatId}`) || 'indigo';
+      setCurrentTheme(savedTheme);
+      setIsSearching(false);
+      setShowEmojiPicker(false);
+    } catch (e) {
+      console.warn(e);
+    }
+  }, [chatId]);
+
 
   // Debug: Kiểm tra chatId
   useEffect(() => {
@@ -105,6 +128,26 @@ const Chatbox = () => {
   const [fullImage, setFullImage] = useState(null);
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [showGroupInfoDrawer, setShowGroupInfoDrawer] = useState(false);
+
+  // Modern Social Chat Features States
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [pinnedMessage, setPinnedMessage] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`hvtsocial_pinned_${chatId}`);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [forwardModalOpen, setForwardModalOpen] = useState(false);
+  const [messageToForward, setMessageToForward] = useState(null);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    return localStorage.getItem(`hvtsocial_chat_theme_${chatId}`) || 'indigo';
+  });
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const docFileInputRef = useRef(null);
 
   // Typing & Online
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
@@ -546,6 +589,23 @@ const Chatbox = () => {
         fetchPartner();
       }
       fetchChatList();
+    });
+
+    // LISTENER: Pinned Message
+    socket.on("message_pinned", (data) => {
+      if (Number(data?.chatId) === Number(chatId)) {
+        setPinnedMessage(data.message);
+        localStorage.setItem(`hvtsocial_pinned_${chatId}`, JSON.stringify(data.message));
+        toast.success("Một tin nhắn đã được ghim");
+      }
+    });
+
+    socket.on("message_unpinned", (data) => {
+      if (Number(data?.chatId) === Number(chatId)) {
+        setPinnedMessage(null);
+        localStorage.removeItem(`hvtsocial_pinned_${chatId}`);
+        toast.success("Tin nhắn đã được bỏ ghim");
+      }
     });
 
     socket.on("group_info_updated", (data) => {
@@ -1008,6 +1068,86 @@ const Chatbox = () => {
     if (failedMsg.message_type === "text") {
       setText(failedMsg.content);
       setTimeout(() => sendMessage(), 100);
+    }
+  };
+
+  const handlePinMessage = (msg) => {
+    const pinData = {
+      id: msg.id,
+      content: msg.content || (msg.message_type === 'image' ? '📷 Hình ảnh' : msg.message_type === 'file' ? '📎 Tệp đính kèm' : 'Tin nhắn'),
+      message_type: msg.message_type,
+      sender_name: msg.sender_id === myId ? 'Bạn' : (msg.sender_name || partner?.name || 'Người dùng'),
+    };
+    setPinnedMessage(pinData);
+    localStorage.setItem(`hvtsocial_pinned_${chatId}`, JSON.stringify(pinData));
+    socketRef.current?.emit("pin_message", {
+      messageId: msg.id,
+      chatId: Number(chatId),
+      message: pinData,
+    });
+    toast.success("Đã ghim tin nhắn!");
+  };
+
+  const handleUnpinMessage = () => {
+    setPinnedMessage(null);
+    localStorage.removeItem(`hvtsocial_pinned_${chatId}`);
+    socketRef.current?.emit("unpin_message", {
+      chatId: Number(chatId),
+    });
+    toast.success("Đã bỏ ghim tin nhắn");
+  };
+
+  const handleForwardMessage = (msg) => {
+    setMessageToForward(msg);
+    setForwardModalOpen(true);
+  };
+
+  const handleSendQuickLike = () => {
+    if (!socketRef.current || isSubmittingRef.current) return;
+    socketRef.current.emit("send_message", {
+      chatId: Number(chatId),
+      senderId: myId,
+      content: "👍",
+      message_type: "text",
+    }, (res) => {
+      if (!res?.ok) toast.error("Không thể gửi cảm xúc");
+    });
+  };
+
+  const handleDocUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    try {
+      setIsUploadingFile(true);
+      const form = new FormData();
+      form.append("file", file);
+
+      const token = localStorage.getItem("token");
+      const res = await axios.post(`${API_URL}/upload`, form, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.data?.url && socketRef.current) {
+        socketRef.current.emit("send_message", {
+          chatId: Number(chatId),
+          senderId: myId,
+          content: file.name,
+          message_type: "file",
+          media_url: res.data.url,
+          created_at: new Date().toISOString(),
+        });
+        toast.success("Đã gửi tệp đính kèm!");
+      }
+    } catch (err) {
+      console.error("Upload doc error:", err);
+      toast.error(err.response?.data?.message || "Không thể tải tệp lên");
+    } finally {
+      setIsUploadingFile(false);
     }
   };
 
@@ -1621,7 +1761,53 @@ const Chatbox = () => {
             onStartVideoCall={() => startCall(true)}
             onBack={() => navigate('/messages')}
             onOpenGroupInfo={() => setShowGroupInfoDrawer(true)}
+            onToggleSearch={() => setIsSearching((prev) => !prev)}
+            isSearching={isSearching}
+            onOpenThemeModal={() => setShowThemeModal(true)}
           />
+
+          {/* IN-CONVERSATION SEARCH BAR */}
+          {isSearching && (
+            <MessageSearch
+              messages={messages}
+              onResultClick={scrollToMessage}
+              onClose={() => setIsSearching(false)}
+            />
+          )}
+
+          {/* PINNED MESSAGE BANNER (MESSENGER / TELEGRAM STYLE) */}
+          {pinnedMessage && (
+            <div className="bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 px-4 py-2 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200 z-10 animate-in slide-in-from-top-1 duration-150">
+              <div
+                className="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
+                onClick={() => pinnedMessage.id && scrollToMessage(pinnedMessage.id)}
+                title="Nhấn để cuộn tới tin nhắn này"
+              >
+                <Pin size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                <div className="min-w-0 truncate">
+                  <span className="font-bold">{pinnedMessage.sender_name || 'Đã ghim'}: </span>
+                  <span className="font-normal truncate">{pinnedMessage.content}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <button
+                  type="button"
+                  onClick={() => pinnedMessage.id && scrollToMessage(pinnedMessage.id)}
+                  className="font-semibold text-amber-700 dark:text-amber-300 hover:underline cursor-pointer"
+                >
+                  Xem
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUnpinMessage}
+                  className="p-1 hover:bg-amber-100 dark:hover:bg-amber-900/60 rounded-full text-amber-600 dark:text-amber-400 cursor-pointer"
+                  title="Bỏ ghim"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* BODY */}
           <Virtuoso
@@ -1804,6 +1990,9 @@ const Chatbox = () => {
                       reactMenuFor={reactMenuFor}
                       setReactMenuFor={setReactMenuFor}
                       onReplyClick={scrollToMessage}
+                      onPinMessage={handlePinMessage}
+                      onForwardMessage={handleForwardMessage}
+                      bubbleClass={CHAT_THEMES.find((t) => t.id === currentTheme)?.bubbleClass}
                       id={`message-${msg.id}`}
                     />
                   )}
@@ -1896,7 +2085,18 @@ const Chatbox = () => {
           )}
 
           {/* INPUT - Sticky Bottom */}
-          <div className="sticky bottom-0 shrink-0 p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] z-20 transition-colors">
+          <div className="sticky bottom-0 shrink-0 p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-1.5 sm:gap-2 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] z-20 transition-colors relative">
+            {/* EMOJI PICKER POPUP */}
+            {showEmojiPicker && (
+              <EmojiPicker
+                onSelectEmoji={(emoji) => {
+                  setText((prev) => prev + emoji);
+                  handleTyping();
+                }}
+                onClose={() => setShowEmojiPicker(false)}
+              />
+            )}
+
             <button
               onClick={isRecording ? stopRecording : startRecording}
               className={`p-2.5 rounded-full flex-shrink-0 transition-colors cursor-pointer ${
@@ -1906,7 +2106,7 @@ const Chatbox = () => {
               }`}
               title={isRecording ? "Dừng ghi âm" : "Ghi âm giọng nói"}
             >
-              <Mic size={20} />
+              <Mic size={19} />
             </button>
 
             {isRecording && (
@@ -1933,24 +2133,64 @@ const Chatbox = () => {
               />
             </label>
 
-            <input
-              value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                handleTyping();
-              }}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder={editingMessage ? "Chỉnh sửa tin nhắn..." : "Aa"}
-              className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 rounded-full outline-none focus:ring-2 focus:ring-indigo-500 transition-colors min-w-0 font-normal"
-            />
-
-            <button
-              onClick={sendMessage}
-              className="p-2.5 bg-indigo-600 rounded-full text-white flex-shrink-0 hover:bg-indigo-700 active:scale-95 transition-all shadow-sm cursor-pointer"
-              title="Gửi"
+            {/* Attach Document / File */}
+            <label
+              className="flex-shrink-0 cursor-pointer p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              title="Đính kèm tệp tài liệu"
             >
-              <SendHorizonal size={20} />
-            </button>
+              <Paperclip className={`w-5 h-5 ${isUploadingFile ? 'animate-spin text-indigo-600' : ''}`} />
+              <input
+                ref={docFileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                hidden
+                onChange={handleDocUpload}
+                disabled={isUploadingFile}
+              />
+            </label>
+
+            {/* Input field with embedded Emoji Button */}
+            <div className="relative flex-1 min-w-0 flex items-center">
+              <input
+                value={text}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  handleTyping();
+                }}
+                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                placeholder={editingMessage ? "Chỉnh sửa tin nhắn..." : "Aa"}
+                className="w-full pl-4 pr-10 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 rounded-full outline-none focus:ring-2 focus:ring-indigo-500 transition-colors min-w-0 font-normal text-sm"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                className="absolute right-2.5 p-1 text-slate-400 hover:text-yellow-500 rounded-full hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+                title="Chọn biểu cảm"
+              >
+                <Smile size={19} />
+              </button>
+            </div>
+
+            {/* Send button OR Quick Like 👍 */}
+            {text.trim().length > 0 || previewImages.length > 0 ? (
+              <button
+                onClick={sendMessage}
+                className="p-2.5 bg-indigo-600 rounded-full text-white flex-shrink-0 hover:bg-indigo-700 active:scale-95 transition-all shadow-sm cursor-pointer"
+                title="Gửi"
+              >
+                <SendHorizonal size={19} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSendQuickLike}
+                className="p-2 text-indigo-600 dark:text-indigo-400 hover:scale-125 active:scale-95 transition-transform flex-shrink-0 cursor-pointer"
+                title="Gửi nhanh biểu tượng thích"
+              >
+                <ThumbsUp size={22} className="fill-indigo-600 dark:fill-indigo-400 stroke-none" />
+              </button>
+            )}
           </div>
         </div>
         {/* END CHAT CONTENT */}
@@ -2028,6 +2268,29 @@ const Chatbox = () => {
         onLeaveGroup={() => {
           fetchChatList();
           navigate('/messages');
+        }}
+      />
+
+      {/* FORWARD MESSAGE MODAL (MESSENGER / TELEGRAM STYLE) */}
+      <ForwardMessageModal
+        isOpen={forwardModalOpen}
+        onClose={() => {
+          setForwardModalOpen(false);
+          setMessageToForward(null);
+        }}
+        messageToForward={messageToForward}
+        currentUserId={myId}
+      />
+
+      {/* CHAT THEME MODAL (CUSTOMIZE CHAT BUBBLES) */}
+      <ChatThemeModal
+        isOpen={showThemeModal}
+        onClose={() => setShowThemeModal(false)}
+        currentTheme={currentTheme}
+        onSelectTheme={(t) => {
+          setCurrentTheme(t);
+          localStorage.setItem(`hvtsocial_chat_theme_${chatId}`, t);
+          toast.success("Đã cập nhật màu đoạn chat!");
         }}
       />
     </>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Phone, Video, History, Info, Users } from 'lucide-react';
+import { ArrowLeft, Phone, Video, History, Info, Users, Search, Palette } from 'lucide-react';
 import { getFullImageUrl, handleImageError } from '../../utils/imageHelper';
 
 export const ChatHeader = ({
@@ -12,6 +12,9 @@ export const ChatHeader = ({
   showCallHistory = false,
   onBack,
   onOpenGroupInfo,
+  onToggleSearch,
+  isSearching = false,
+  onOpenThemeModal,
 }) => {
   const isGroup = Boolean(partner?.is_group_chat);
   const partnerName = partner?.name || partner?.full_name || partner?.username || 'Đoạn chat';
@@ -117,6 +120,32 @@ export const ChatHeader = ({
             title="Lịch sử cuộc gọi"
           >
             <History className="w-5 h-5" />
+          </button>
+        )}
+
+        {onToggleSearch && (
+          <button
+            type="button"
+            onClick={onToggleSearch}
+            className={`p-2 rounded-full transition-colors cursor-pointer ${
+              isSearching
+                ? 'text-indigo-600 bg-indigo-50 dark:bg-slate-800'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            title="Tìm kiếm trong đoạn chat"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+        )}
+
+        {onOpenThemeModal && (
+          <button
+            type="button"
+            onClick={onOpenThemeModal}
+            className="p-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
+            title="Đổi màu đoạn chat"
+          >
+            <Palette className="w-5 h-5" />
           </button>
         )}
 

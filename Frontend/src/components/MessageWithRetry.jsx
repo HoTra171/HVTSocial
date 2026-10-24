@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Check,
   CheckCheck,
@@ -7,9 +8,21 @@ import {
   RefreshCw,
   Smile,
   MoreVertical,
-  Reply
+  Reply,
+  Pin,
+  Share2,
+  FileText,
+  Download
 } from "lucide-react";
 import { getFullImageUrl, handleImageError } from "../utils/imageHelper.js";
+
+const isOnlyEmojis = (str) => {
+  if (!str || typeof str !== 'string') return false;
+  const trimmed = str.trim();
+  if (trimmed.length > 8) return false;
+  const emojiRegex = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\s){1,3}$/u;
+  return emojiRegex.test(trimmed);
+};
 
 const MessageBubble = ({
   msg,
@@ -28,8 +41,12 @@ const MessageBubble = ({
   reactMenuFor,
   setReactMenuFor,
   onReplyClick,
+  onPinMessage,
+  onForwardMessage,
+  bubbleClass,
   id // Receive id prop
 }) => {
+  const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const longPressTimer = useRef(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -158,19 +175,17 @@ const MessageBubble = ({
                   <Smile size={16} />
                 </button>
 
-                {isMe && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenMenuId(openMenuId === msg.id ? null : msg.id);
-                      setReactMenuFor(null);
-                    }}
-                    className="p-1.5 bg-white dark:bg-slate-800 shadow-md rounded-full text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700"
-                    title="Tùy chọn"
-                  >
-                    <MoreVertical size={16} />
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuId(openMenuId === msg.id ? null : msg.id);
+                    setReactMenuFor(null);
+                  }}
+                  className="p-1.5 bg-white dark:bg-slate-800 shadow-md rounded-full text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  title="Tùy chọn"
+                >
+                  <MoreVertical size={16} />
+                </button>
               </div>
             )
           }
@@ -180,31 +195,55 @@ const MessageBubble = ({
             openMenuId === msg.id && (
               <div
                 ref={menuRef}
-                className={`msg-menu absolute top-0 bg-white dark:bg-slate-800 shadow-xl rounded-xl py-1 z-50 border border-slate-200 dark:border-slate-700 min-w-[150px]
+                className={`msg-menu absolute top-0 bg-white dark:bg-slate-800 shadow-xl rounded-xl py-1 z-50 border border-slate-200 dark:border-slate-700 min-w-[160px]
               ${isMe ? "right-full mr-2" : "left-full ml-2"}`}
               >
-                {msg.message_type === "text" && (
+                <button
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-2 transition-colors cursor-pointer"
+                  onClick={() => {
+                    onPinMessage && onPinMessage(msg);
+                    setOpenMenuId(null);
+                  }}
+                >
+                  <Pin size={15} className="text-amber-500" />
+                  <span>Ghim tin nhắn</span>
+                </button>
+
+                <button
+                  className="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-2 transition-colors cursor-pointer"
+                  onClick={() => {
+                    onForwardMessage && onForwardMessage(msg);
+                    setOpenMenuId(null);
+                  }}
+                >
+                  <Share2 size={15} className="text-indigo-500" />
+                  <span>Chuyển tiếp</span>
+                </button>
+
+                {isMe && msg.message_type === "text" && (
                   <button
-                    className="w-full text-left px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-3.5 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-2 transition-colors cursor-pointer"
                     onClick={() => {
                       onEdit(msg);
                       setOpenMenuId(null);
                     }}
                   >
-                    <span className="text-lg">✏️</span>
+                    <span className="text-base">✏️</span>
                     <span>Chỉnh sửa</span>
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    onRecall(msg.id);
-                    setOpenMenuId(null);
-                  }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 dark:text-red-400 text-sm flex items-center gap-2 transition-colors"
-                >
-                  <span className="text-lg">🗑️</span>
-                  <span>Thu hồi</span>
-                </button>
+                {isMe && (
+                  <button
+                    onClick={() => {
+                      onRecall(msg.id);
+                      setOpenMenuId(null);
+                    }}
+                    className="w-full text-left px-3.5 py-2 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 dark:text-red-400 text-xs sm:text-sm flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <span className="text-base">🗑️</span>
+                    <span>Thu hồi</span>
+                  </button>
+                )}
               </div>
             )
           }
@@ -267,6 +306,20 @@ const MessageBubble = ({
               <div className="italic text-slate-500 dark:text-slate-400 px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm">
                 Bạn đã xóa một tin nhắn
               </div>
+            ) : msg.message_type === "text" && isOnlyEmojis(msg.content) ? (
+              <div
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  onReply && onReply(msg);
+                }}
+                title="Nhấn đúp để trả lời"
+                className="text-4xl py-1 px-1 cursor-pointer select-text transition-transform hover:scale-110 active:scale-95 animate-in zoom-in-75 duration-150"
+              >
+                <span>{msg.content}</span>
+                <div className="flex items-center justify-end gap-1 mt-0.5 text-xs text-slate-400">
+                  {renderMessageStatus()}
+                </div>
+              </div>
             ) : msg.message_type === "text" ? (
               <div
                 onDoubleClick={(e) => {
@@ -276,7 +329,7 @@ const MessageBubble = ({
                 title="Nhấn đúp để trả lời"
                 className={`px-3.5 py-2 rounded-2xl text-sm shadow-sm cursor-pointer select-text transition-all ${
                   isMe
-                    ? "bg-indigo-600 text-white font-normal"
+                    ? bubbleClass || "bg-indigo-600 text-white font-normal"
                     : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 font-normal"
                 } ${msg.failed ? "opacity-60" : ""}`}
               >
@@ -317,6 +370,72 @@ const MessageBubble = ({
                   )}
                 </div>
               </div>
+            ) : msg.message_type === "file" ? (
+              <div
+                className={`p-3 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center gap-3 max-w-[280px] sm:max-w-[320px] ${
+                  msg.failed ? "opacity-60" : ""
+                }`}
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+                  <FileText size={22} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate" title={msg.content || 'Tệp đính kèm'}>
+                    {msg.content || 'Tệp đính kèm'}
+                  </p>
+                  <a
+                    href={msg.media_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    download
+                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 mt-0.5 font-medium"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Download size={11} /> Tải xuống tệp
+                  </a>
+                </div>
+                {renderMessageStatus()}
+              </div>
+            ) : msg.message_type === "shared_post" ? (
+              (() => {
+                let postData = null;
+                try {
+                  postData = typeof msg.media_url === 'string' && msg.media_url.startsWith('{')
+                    ? JSON.parse(msg.media_url)
+                    : null;
+                } catch (e) {}
+
+                return (
+                  <div
+                    onClick={() => postData?.postId && navigate(`/post/${postData.postId}`)}
+                    className="p-3 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 max-w-[280px] sm:max-w-[320px] cursor-pointer hover:border-indigo-400 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100 dark:border-slate-700/60">
+                      <Share2 size={13} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        Bài viết của {postData?.userName || 'Người dùng'}
+                      </span>
+                    </div>
+                    {postData?.content && (
+                      <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-2">
+                        {postData.content}
+                      </p>
+                    )}
+                    {postData?.images?.[0] && (
+                      <img
+                        src={getFullImageUrl(postData.images[0])}
+                        alt=""
+                        className="w-full h-32 rounded-lg object-cover mb-2 border border-slate-200 dark:border-slate-700"
+                        onError={handleImageError}
+                      />
+                    )}
+                    <div className="flex items-center justify-between pt-1 text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                      <span>Xem bài viết chi tiết →</span>
+                      {renderMessageStatus()}
+                    </div>
+                  </div>
+                );
+              })()
             ) : msg.message_type === "voice" ? (
               <div className={`px-3 py-2 rounded-2xl shadow-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-2 ${msg.failed ? "opacity-60" : ""
                 }`}>
@@ -381,7 +500,7 @@ const MessageBubble = ({
               {/* Action buttons */}
               <div className="space-y-2">
                 <button
-                  className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
+                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-700/60 rounded-lg flex items-center gap-3 text-base text-slate-800 dark:text-slate-200"
                   onClick={() => {
                     onReply && onReply(msg);
                     setShowMobileMenu(false);
@@ -391,9 +510,31 @@ const MessageBubble = ({
                   <span>Trả lời</span>
                 </button>
 
+                <button
+                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-700/60 rounded-lg flex items-center gap-3 text-base text-slate-800 dark:text-slate-200"
+                  onClick={() => {
+                    onPinMessage && onPinMessage(msg);
+                    setShowMobileMenu(false);
+                  }}
+                >
+                  <Pin size={20} className="text-amber-500" />
+                  <span>Ghim tin nhắn</span>
+                </button>
+
+                <button
+                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-700/60 rounded-lg flex items-center gap-3 text-base text-slate-800 dark:text-slate-200"
+                  onClick={() => {
+                    onForwardMessage && onForwardMessage(msg);
+                    setShowMobileMenu(false);
+                  }}
+                >
+                  <Share2 size={20} className="text-indigo-500" />
+                  <span>Chuyển tiếp tin nhắn</span>
+                </button>
+
                 {isMe && msg.message_type === "text" && (
                   <button
-                    className="w-full text-left px-4 py-3 hover:bg-gray-100 rounded-lg flex items-center gap-3 text-base"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-700/60 rounded-lg flex items-center gap-3 text-base text-slate-800 dark:text-slate-200"
                     onClick={() => {
                       onEdit(msg);
                       setShowMobileMenu(false);

@@ -85,7 +85,7 @@ router.post(
       let resourceType = 'image';
       if (req.file.mimetype.startsWith('video/')) {
         resourceType = 'video';
-      } else if (req.file.mimetype.startsWith('audio/')) {
+      } else if (req.file.mimetype.startsWith('audio/') || req.file.mimetype.startsWith('application/') || req.file.mimetype.startsWith('text/')) {
         resourceType = 'raw';
       }
 
@@ -96,6 +96,8 @@ router.post(
         url,
         publicId: url,
         resourceType,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
       });
     } catch (error) {
       console.error(' Upload error:', error);
