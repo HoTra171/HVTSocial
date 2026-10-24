@@ -23,6 +23,14 @@ const Layout = () => {
   // Kiểm tra đang ở trang story
   const isStoryPage = location.pathname.startsWith('/story');
 
+  // Kiểm tra đang ở trang livestream
+  const isLivePage = location.pathname.startsWith('/live');
+
+  // Kiểm tra call page
+  const isCallPage = location.pathname.startsWith('/voicecall/') || location.pathname.startsWith('/videocall/');
+
+  const isFullscreenPage = isChatPage || isStoryPage || isLivePage || isCallPage;
+
   // Check mobile
   const isMobile = window.innerWidth < 768;
 
@@ -38,16 +46,18 @@ const Layout = () => {
   return (
     <div className="w-full min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden touch-pan-y">
 
-      {/* ===== MOBILE HEADER (Mobile only) ===== */}
-      {!isChatPage && !isStoryPage && <MobileHeader currentUserId={currentUserId} />}
+      {/* ===== MOBILE HEADER (Mobile only - hidden on fullscreen pages) ===== */}
+      {!isFullscreenPage && <MobileHeader currentUserId={currentUserId} />}
 
-      {/* ===== SIDEBAR (Desktop only - always visible) ===== */}
-      <Sidebar
-        currentUserId={currentUserId}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        onOpenCreatePost={() => setShowCreatePostModal(true)}
-      />
+      {/* ===== SIDEBAR (Desktop only - hidden on live/call pages) ===== */}
+      {!isLivePage && !isCallPage && (
+        <Sidebar
+          currentUserId={currentUserId}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          onOpenCreatePost={() => setShowCreatePostModal(true)}
+        />
+      )}
 
       {/* ===== RECENT CHATS (Visible on Chat Page) ===== */}
       {isChatPage && (
@@ -64,8 +74,10 @@ const Layout = () => {
         className={`flex-1 relative ${isChatPage
           ? "sm:pl-20 md:pl-[20rem] min-[820px]:pl-[25rem] xl:pl-[38rem] h-screen min-h-0 overflow-hidden"
           : isStoryPage
-            ? "sm:pl-20 xl:pl-72 min-h-screen overflow-y-auto" // Sidebar only
-            : "sm:pl-20 xl:pl-72 min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16" // Sidebar only
+            ? "sm:pl-20 xl:pl-72 min-h-screen overflow-y-auto"
+            : isLivePage || isCallPage
+              ? "h-screen min-h-0 overflow-hidden p-0 m-0"
+              : "sm:pl-20 xl:pl-72 min-h-screen overflow-y-auto max-sm:pt-14 max-sm:pb-16"
           }`}
       >
 
@@ -83,8 +95,8 @@ const Layout = () => {
         <Outlet />
       </div>
 
-      {/* ===== BOTTOM NAVIGATION (Mobile only) ===== */}
-      {!isChatPage && !isStoryPage && (
+      {/* ===== BOTTOM NAVIGATION (Mobile only - hidden on fullscreen pages) ===== */}
+      {!isFullscreenPage && (
         <BottomNav
           currentUserId={currentUserId}
           onOpenCreatePost={() => setShowCreatePostModal(true)}

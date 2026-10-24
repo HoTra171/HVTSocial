@@ -56,6 +56,7 @@ const LiveStreamView = () => {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [reactions, setReactions] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Media & WebRTC Refs
   const remoteVideoRef = useRef(null);
@@ -365,7 +366,7 @@ const LiveStreamView = () => {
           setShowUnmutePrompt(false);
         }
       }}
-      className="fixed inset-0 bg-slate-950 text-white flex flex-col z-50 select-none overflow-hidden"
+      className="fixed inset-0 bg-slate-950 text-white flex flex-col z-[70] select-none overflow-hidden"
     >
       {/* 1. TOP OVERLAY HEADER */}
       <div className="absolute top-0 left-0 right-0 p-4 sm:p-5 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
@@ -528,23 +529,30 @@ const LiveStreamView = () => {
         </div>
 
         {/* CHAT COMMENTS OVERLAY (BOTTOM LEFT) */}
-        <div className="absolute bottom-20 left-3 sm:left-6 max-w-sm sm:max-w-md w-full max-h-[300px] overflow-y-auto no-scrollbar pointer-events-auto z-20 space-y-2 flex flex-col justify-end">
+        <div className="absolute bottom-[68px] sm:bottom-[80px] left-3 sm:left-6 max-w-[85%] sm:max-w-md w-full max-h-[220px] sm:max-h-[300px] overflow-y-auto no-scrollbar pointer-events-auto z-30 space-y-2 flex flex-col justify-end">
+          {comments.length === 0 && !isStreamEnded && (
+            <div className="inline-flex items-center gap-2 p-2 px-3.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 text-xs text-white/90 shadow-lg w-fit animate-in fade-in">
+              <MessageSquare className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+              <span>Chưa có bình luận. Hãy là người đầu tiên trò chuyện!</span>
+            </div>
+          )}
+
           {comments.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-start gap-2.5 p-2 px-3 rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 max-w-[90%] shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150"
+              className="inline-flex items-start gap-2.5 p-2 px-3 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 max-w-[95%] shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150"
             >
               <img
                 src={c.user?.avatar || '/default.jpg'}
                 alt=""
-                className="w-6 h-6 rounded-full object-cover border border-white/20 mt-0.5"
+                className="w-6 h-6 rounded-full object-cover border border-white/20 mt-0.5 flex-shrink-0"
                 onError={(e) => {
                   e.currentTarget.src = '/default.jpg';
                 }}
               />
-              <div className="text-xs leading-snug">
+              <div className="text-xs leading-snug break-words">
                 <span className="font-bold text-slate-200 mr-1.5">{c.user?.full_name || 'Khán giả'}:</span>
-                <span className="text-white/90">{c.content}</span>
+                <span className="text-white/95">{c.content}</span>
               </div>
             </div>
           ))}
@@ -567,7 +575,7 @@ const LiveStreamView = () => {
             <button
               type="button"
               onClick={() => navigate('/feed')}
-              className="px-6 py-2.5 rounded-2xl bg-white text-slate-900 font-bold text-xs sm:text-sm hover:bg-slate-200 active:scale-95 transition shadow-lg"
+              className="px-6 py-2.5 rounded-2xl bg-white text-slate-900 font-bold text-xs sm:text-sm hover:bg-slate-200 active:scale-95 transition shadow-lg cursor-pointer"
             >
               Quay lại Bảng tin
             </button>
@@ -577,28 +585,51 @@ const LiveStreamView = () => {
 
       {/* 3. BOTTOM CHAT & REACTION BAR */}
       {!isStreamEnded && (
-        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-20 flex items-center justify-between gap-3">
+        <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 sm:px-5 sm:py-3.5 pb-[max(env(safe-area-inset-bottom),0.85rem)] bg-gradient-to-t from-black/95 via-black/75 to-transparent z-30 flex items-center gap-2 sm:gap-3">
+          {/* Floating Emoji Picker on Mobile */}
+          {showEmojiPicker && (
+            <div className="absolute bottom-full mb-2 right-3 sm:right-6 bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl z-40 animate-in fade-in slide-in-from-bottom-2">
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => {
+                    handleSendReaction(emoji);
+                    setShowEmojiPicker(false);
+                  }}
+                  className="w-8 h-8 rounded-full hover:bg-white/20 active:scale-125 transition-transform flex items-center justify-center text-xl cursor-pointer"
+                  title={`Thả ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Comment Form */}
-          <form onSubmit={handleSendComment} className="flex-1 max-w-md flex items-center gap-2">
+          <form onSubmit={handleSendComment} className="flex-1 min-w-0 flex items-center bg-black/60 sm:bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3 py-1.5 focus-within:ring-2 focus-within:ring-red-500/70 transition-all">
+            <MessageSquare className="w-4 h-4 text-white/50 mr-2 flex-shrink-0" />
             <input
               type="text"
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Bình luận trong buổi trực tiếp..."
-              className="flex-1 px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition"
+              placeholder="Viết bình luận..."
+              className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder-white/60 outline-none min-w-0 px-1"
               maxLength={150}
             />
-            <button
-              type="submit"
-              className="p-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white transition cursor-pointer"
-              title="Gửi"
-            >
-              <Send size={15} />
-            </button>
+            {commentText.trim() && (
+              <button
+                type="submit"
+                className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition active:scale-95 flex-shrink-0 cursor-pointer shadow-sm ml-1"
+                title="Gửi"
+              >
+                <Send size={14} />
+              </button>
+            )}
           </form>
 
-          {/* Quick Reaction Emojis Bar */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Quick Reaction Emojis Bar (Desktop / Tablet) */}
+          <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
             {REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
@@ -610,6 +641,27 @@ const LiveStreamView = () => {
                 {emoji}
               </button>
             ))}
+          </div>
+
+          {/* Quick Reaction Buttons (Mobile) */}
+          <div className="flex sm:hidden items-center gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md hover:bg-white/25 active:scale-110 transition flex items-center justify-center text-base cursor-pointer border border-white/10"
+              title="Chọn cảm xúc"
+            >
+              😊
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSendReaction('❤️')}
+              className="w-9 h-9 rounded-full bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-lg active:scale-125 transition-transform flex items-center justify-center text-lg cursor-pointer"
+              title="Thả tim"
+            >
+              ❤️
+            </button>
           </div>
         </div>
       )}

@@ -395,7 +395,7 @@ const LiveStreamBroadcast = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950 text-white flex flex-col z-50 select-none overflow-hidden">
+    <div className="fixed inset-0 bg-slate-950 text-white flex flex-col z-[70] select-none overflow-hidden">
       {/* 1. TOP HEADER OVERLAY */}
       <div className="absolute top-0 left-0 right-0 p-4 sm:p-5 flex items-center justify-between z-20 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
         <div className="flex items-center gap-3">
@@ -475,23 +475,30 @@ const LiveStreamBroadcast = () => {
         </div>
 
         {/* CHAT COMMENTS OVERLAY (BOTTOM LEFT) */}
-        <div className="absolute bottom-20 left-3 sm:left-6 max-w-sm sm:max-w-md w-full max-h-[320px] overflow-y-auto no-scrollbar pointer-events-auto z-20 space-y-2 flex flex-col justify-end">
+        <div className="absolute bottom-[68px] sm:bottom-[80px] left-3 sm:left-6 max-w-[85%] sm:max-w-md w-full max-h-[220px] sm:max-h-[320px] overflow-y-auto no-scrollbar pointer-events-auto z-30 space-y-2 flex flex-col justify-end">
+          {comments.length === 0 && (
+            <div className="inline-flex items-center gap-2 p-2 px-3.5 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 text-xs text-white/90 shadow-lg w-fit animate-in fade-in">
+              <MessageSquare className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+              <span>Chưa có bình luận nào trong buổi Live của bạn.</span>
+            </div>
+          )}
+
           {comments.map((c) => (
             <div
               key={c.id}
-              className="inline-flex items-start gap-2.5 p-2 px-3 rounded-2xl bg-black/55 backdrop-blur-md border border-white/10 max-w-[90%] shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150"
+              className="inline-flex items-start gap-2.5 p-2 px-3 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 max-w-[95%] shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-150"
             >
               <img
                 src={c.user?.avatar || '/default.jpg'}
                 alt=""
-                className="w-6 h-6 rounded-full object-cover border border-white/20 mt-0.5"
+                className="w-6 h-6 rounded-full object-cover border border-white/20 mt-0.5 flex-shrink-0"
                 onError={(e) => {
                   e.currentTarget.src = '/default.jpg';
                 }}
               />
-              <div className="text-xs leading-snug">
+              <div className="text-xs leading-snug break-words">
                 <span className="font-bold text-slate-200 mr-1.5">{c.user?.full_name || 'Khán giả'}:</span>
-                <span className="text-white/90">{c.content}</span>
+                <span className="text-white/95">{c.content}</span>
               </div>
             </div>
           ))}
@@ -500,58 +507,61 @@ const LiveStreamBroadcast = () => {
       </div>
 
       {/* 3. BOTTOM CONTROLS BAR */}
-      <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent z-20 flex items-center justify-between gap-3">
+      <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 sm:px-5 sm:py-3.5 pb-[max(env(safe-area-inset-bottom),0.85rem)] bg-gradient-to-t from-black/95 via-black/75 to-transparent z-30 flex items-center justify-between gap-2 sm:gap-3">
         {/* Comment input form for Host */}
-        <form onSubmit={handleSendComment} className="flex-1 max-w-md flex items-center gap-2">
+        <form onSubmit={handleSendComment} className="flex-1 min-w-0 flex items-center bg-black/60 sm:bg-white/15 backdrop-blur-md border border-white/25 rounded-full px-3 py-1.5 focus-within:ring-2 focus-within:ring-red-500/70 transition-all">
+          <MessageSquare className="w-4 h-4 text-white/50 mr-2 flex-shrink-0" />
           <input
             type="text"
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Nói gì đó với tư cách là Người phát sóng..."
-            className="flex-1 px-4 py-2 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition"
+            placeholder="Nói gì đó với khán giả..."
+            className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder-white/60 outline-none min-w-0 px-1"
           />
-          <button
-            type="submit"
-            className="p-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white transition cursor-pointer"
-            title="Gửi"
-          >
-            <Send size={15} />
-          </button>
+          {commentText.trim() && (
+            <button
+              type="submit"
+              className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition active:scale-95 flex-shrink-0 cursor-pointer shadow-sm ml-1"
+              title="Gửi"
+            >
+              <Send size={14} />
+            </button>
+          )}
         </form>
 
         {/* Media Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <button
             type="button"
             onClick={toggleMic}
-            className={`p-3 rounded-2xl backdrop-blur-md transition cursor-pointer ${
+            className={`p-2.5 sm:p-3 rounded-full backdrop-blur-md transition cursor-pointer ${
               isMuted ? 'bg-red-600 text-white' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
             title={isMuted ? 'Bật Mic' : 'Tắt Mic'}
           >
-            {isMuted ? <MicOff size={18} /> : <Mic size={18} />}
+            {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
 
           <button
             type="button"
             onClick={toggleCamera}
-            className={`p-3 rounded-2xl backdrop-blur-md transition cursor-pointer ${
+            className={`p-2.5 sm:p-3 rounded-full backdrop-blur-md transition cursor-pointer ${
               isCameraOff ? 'bg-red-600 text-white' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
             title={isCameraOff ? 'Bật Camera' : 'Tắt Camera'}
           >
-            {isCameraOff ? <VideoOff size={18} /> : <Video size={18} />}
+            {isCameraOff ? <VideoOff size={16} /> : <Video size={16} />}
           </button>
 
           <button
             type="button"
             onClick={toggleScreenShare}
-            className={`p-3 rounded-2xl backdrop-blur-md transition cursor-pointer ${
+            className={`p-2.5 sm:p-3 rounded-full backdrop-blur-md transition cursor-pointer ${
               isScreenSharing ? 'bg-indigo-600 text-white' : 'bg-white/20 text-white hover:bg-white/30'
             }`}
             title="Chia sẻ màn hình"
           >
-            {isScreenSharing ? <Monitor size={18} /> : <Camera size={18} />}
+            {isScreenSharing ? <Monitor size={16} /> : <Camera size={16} />}
           </button>
         </div>
       </div>
