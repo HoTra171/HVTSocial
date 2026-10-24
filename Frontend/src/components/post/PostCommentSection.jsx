@@ -10,6 +10,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Maximize2,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
@@ -62,7 +65,11 @@ function CommentItem({
     if (comment.replies_count !== undefined) {
       setRepliesCount(Number(comment.replies_count || 0));
     }
-  }, [comment.content, comment.replies_count]);
+    if (Array.isArray(comment.replies) && comment.replies.length > 0) {
+      setReplies(comment.replies);
+      setShowReplies(true);
+    }
+  }, [comment.content, comment.replies_count, comment.replies]);
 
   const handleDelete = async () => {
     if (!window.confirm('Bạn có chắc muốn xóa bình luận này?')) return;
@@ -288,10 +295,15 @@ export const PostCommentSection = ({
   loadingComments,
   onCommentAdded,
   onCommentDeleted,
+  sortMode = 'newest',
+  onSortChange,
+  onOpenModal,
+  hideQuickSortBar = false,
 }) => {
   const [input, setInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null); // { id, name, username }
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   // Image upload in comment state
   const [imageFile, setImageFile] = useState(null);
@@ -523,6 +535,77 @@ export const PostCommentSection = ({
           </div>
         </div>
       </div>
+
+      {/* THANH CHỌN 2 CHẾ ĐỘ BÌNH LUẬN CHUẨN FACEBOOK */}
+      {!hideQuickSortBar && (
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-1 pb-1 border-b border-slate-100 dark:border-slate-800">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowSortMenu((prev) => !prev)}
+              className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 py-1 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              <span>{sortMode === 'relevant' ? 'Phù hợp nhất' : 'Tất cả bình luận (Mới nhất)'}</span>
+              <ChevronDown size={14} className={`transition-transform duration-200 ${showSortMenu ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showSortMenu && (
+              <div className="absolute left-0 mt-1 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 p-1.5 z-20 animate-in fade-in">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSortChange?.('newest');
+                    setShowSortMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer ${
+                    sortMode === 'newest'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold">Tất cả bình luận (Mới nhất)</p>
+                    <p className="text-[10px] text-slate-400 font-normal">Bình luận mới nhất hiển thị trên đầu</p>
+                  </div>
+                  {sortMode === 'newest' && <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">✓</span>}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSortChange?.('relevant');
+                    setShowSortMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between cursor-pointer mt-0.5 ${
+                    sortMode === 'relevant'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div>
+                    <p className="font-semibold">Phù hợp nhất</p>
+                    <p className="text-[10px] text-slate-400 font-normal">Nhiều tương tác và câu trả lời</p>
+                  </div>
+                  {sortMode === 'relevant' && <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">✓</span>}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Nút mở trang bình luận riêng như Facebook */}
+          {onOpenModal && (
+            <button
+              type="button"
+              onClick={onOpenModal}
+              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer"
+              title="Mở trang bình luận riêng chuẩn Facebook"
+            >
+              <Maximize2 size={13} />
+              <span>Xem trang riêng</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* DANH SÁCH BÌNH LUẬN */}
       <div className="space-y-3 pt-1">

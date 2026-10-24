@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 
-const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false, relative = false }) => {
+const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false, relative = false, onOpenCreatePost }) => {
     const navigate = useNavigate();
     const { currentUser: user, logout } = useAuth();
     const { isDark, toggleTheme } = useTheme();
@@ -61,13 +61,17 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentUserId, collapsed = false
                     </div>
                 )}
 
-                <Link to='/create-post' className={`flex items-center justify-center gap-2
+                <button
+                    type="button"
+                    onClick={onOpenCreatePost}
+                    className={`flex items-center justify-center gap-2
              py-2.5 mt-6 mx-auto w-10/12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600
             hover:from-indigo-500 hover:to-purple-500 active:scale-95 shadow-md shadow-indigo-500/20
-             transition text-white cursor-pointer px-0 ${!collapsed ? 'xl:mx-6 xl:w-auto xl:px-4' : 'xl:mx-auto xl:w-10/12 xl:px-0'}`}>
+             transition text-white cursor-pointer px-0 ${!collapsed ? 'xl:mx-6 xl:w-auto xl:px-4' : 'xl:mx-auto xl:w-10/12 xl:px-0'}`}
+                >
                     <CirclePlus className='w-5 h-5' />
                     <span className={`hidden ${!collapsed ? 'xl:inline' : ''} font-semibold text-sm`}>Tạo bài viết</span>
-                </Link>
+                </button>
             </div>
             <div className={`w-full border-t border-slate-200 dark:border-slate-800 p-3 px-6 flex items-center justify-between md:flex-col md:gap-3 md:px-2 ${!collapsed ? 'xl:flex-row xl:gap-0 xl:px-6' : ''}`}>
                 <div 

@@ -5,8 +5,13 @@ export const CommentService = {
   /**
    * Lấy comment cấp 1 của post (comment_parent IS NULL)
    */
-  async getCommentsByPost(postId) {
+  async getCommentsByPost(postId, sort = 'newest') {
     const db = await pool;
+
+    const isRelevant = sort === 'relevant';
+    const orderByClause = isRelevant
+      ? 'ORDER BY replies_count DESC, likes_count DESC, c.created_at DESC'
+      : 'ORDER BY c.created_at DESC';
 
     const result = await db.request().input('postId', sql.Int, postId).query(`
         SELECT 
@@ -27,7 +32,7 @@ export const CommentService = {
         FROM comments c
         JOIN users u ON u.id = c.user_id
         WHERE c.post_id = @postId AND c.parent_comment_id IS NULL
-        ORDER BY c.created_at DESC
+        ${orderByClause}
       `);
 
     return result.recordset.map((row) => ({

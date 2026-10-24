@@ -18,6 +18,8 @@ import shareRoutes from './routes/shareRoutes.js';
 import friendshipRoutes from './routes/friendshipRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import callHistoryRoutes from './routes/callHistoryRoutes.js';
+import liveStreamRoutes from './routes/liveStreamRoutes.js';
+import liveSocket from './sockets/liveSocket.js';
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 import { helmetConfig, apiLimiter, authLimiter, uploadLimiter } from './middlewares/security.js';
@@ -149,6 +151,7 @@ app.use('/api/shares', apiLimiter, shareRoutes);
 app.use('/api/friendships', apiLimiter, friendshipRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/call-history', apiLimiter, callHistoryRoutes);
+app.use('/api/livestreams', apiLimiter, liveStreamRoutes);
 
 // SOCKET.IO
 const server = http.createServer(app);
@@ -176,6 +179,7 @@ logger.info('RUNNING SERVER FILE:', new URL(import.meta.url).pathname);
 setSocketIO(io);
 
 chatSocket(io);
+liveSocket(io);
 
 // Error handling middlewares (MUST be last)
 app.use(sentryErrorHandler);

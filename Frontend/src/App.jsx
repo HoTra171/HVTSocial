@@ -19,6 +19,8 @@ import ChangePassword from "./page/ChangePassword";
 import NotificationsPage from "./page/NotificationsPage";
 import PostDetail from "./page/PostDetail";
 import PrivacySettings from "./page/PrivacySettings";
+import LiveStreamBroadcast from "./page/LiveStreamBroadcast";
+import LiveStreamView from "./page/LiveStreamView";
 import { useNavigate } from 'react-router-dom';
 import DebugEnv from "./debug-env";
 import AdminDashboard from "./page/Admin/AdminDashboard";
@@ -263,6 +265,15 @@ function App() {
           <Route
             path="/videocall/:chatId"
             element={<VideoCall socket={socket} currentUser={currentUser} />}
+          />
+
+          <Route
+            path="/live/:streamId"
+            element={<LiveStreamView socket={socket} currentUser={currentUser} />}
+          />
+          <Route
+            path="/live/broadcast/:streamId"
+            element={<LiveStreamBroadcast socket={socket} currentUser={currentUser} />}
           />
 
           <Route

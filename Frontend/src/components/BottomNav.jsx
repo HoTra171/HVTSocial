@@ -4,7 +4,7 @@ import { Home, Users, Plus, MessageCircle } from 'lucide-react'
 import NotificationBadge from './NotificationBadge'
 import { useUnreadCounts } from '../hooks/useUnreadCounts'
 
-const BottomNav = ({ currentUserId }) => {
+const BottomNav = ({ currentUserId, onOpenCreatePost }) => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const { unreadMessages, pendingFriendRequests } = useUnreadCounts();
 
@@ -43,13 +43,14 @@ const BottomNav = ({ currentUserId }) => {
                 </NavLink>
 
                 {/* Center: Create Post (Instagram/Facebook Style) */}
-                <NavLink
-                    to="/create-post"
-                    className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md active:scale-95 transition-transform"
+                <button
+                    type="button"
+                    onClick={onOpenCreatePost}
+                    className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md active:scale-95 transition-transform cursor-pointer"
                     title="Tạo bài viết"
                 >
                     <Plus size={22} strokeWidth={2.5} />
-                </NavLink>
+                </button>
 
                 {/* Messages */}
                 <NavLink

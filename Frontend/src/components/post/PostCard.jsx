@@ -13,6 +13,7 @@ import LikesModal from './LikesModal';
 import ShareModal from '../ShareModal';
 import PostPoll from './PostPoll';
 import EditPostModal from './EditPostModal';
+import FacebookPostCommentModal from './FacebookPostCommentModal';
 
 const parseImages = (raw) => {
   if (Array.isArray(raw)) return raw.map(String).map((s) => s.trim()).filter(Boolean);
@@ -43,6 +44,8 @@ export const PostCard = ({
   const [loadingComments, setLoadingComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentsCount, setCommentsCount] = useState(Number(post?.comments_count) || 0);
+  const [commentSortMode, setCommentSortMode] = useState('newest'); // 'newest' | 'relevant'
+  const [showFacebookModal, setShowFacebookModal] = useState(false);
 
   const [showLikesModal, setShowLikesModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -89,18 +92,25 @@ export const PostCard = ({
     };
   }, [currentUser?.id, currentPost?.id, isUploading]);
 
+  // Tải bình luận với chế độ sắp xếp (mặc định 'newest' để hiện ngay bình luận của bạn)
+  const fetchComments = async (sort = commentSortMode) => {
+    if (!currentPost?.id || isUploading) return;
+    setLoadingComments(true);
+    try {
+      const res = await commentApi.getByPostId(currentPost.id, { sort });
+      const fetched = res.data?.data || res.data?.comments || res.data || [];
+      setComments(Array.isArray(fetched) ? fetched : []);
+    } catch (err) {
+      console.error('Lỗi khi tải bình luận:', err);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
   // Tải trước bình luận nếu initialShowComments = true
   useEffect(() => {
-    if (initialShowComments && currentPost?.id && comments.length === 0 && !isUploading) {
-      setLoadingComments(true);
-      commentApi
-        .getByPostId(currentPost.id)
-        .then((res) => {
-          const fetched = res.data?.data || res.data?.comments || res.data || [];
-          setComments(Array.isArray(fetched) ? fetched : []);
-        })
-        .catch((err) => console.error('Lỗi khi tải bình luận:', err))
-        .finally(() => setLoadingComments(false));
+    if (initialShowComments && currentPost?.id && !isUploading) {
+      fetchComments(commentSortMode);
     }
   }, [initialShowComments, currentPost?.id, isUploading]);
 
@@ -162,18 +172,15 @@ export const PostCard = ({
     const nextState = !showComments;
     setShowComments(nextState);
 
-    if (nextState && comments.length === 0) {
-      setLoadingComments(true);
-      try {
-        const res = await commentApi.getByPostId(currentPost.id);
-        const fetched = res.data?.data || res.data?.comments || res.data || [];
-        setComments(Array.isArray(fetched) ? fetched : []);
-      } catch (err) {
-        console.error('Lỗi khi tải bình luận:', err);
-      } finally {
-        setLoadingComments(false);
-      }
+    if (nextState) {
+      fetchComments(commentSortMode);
     }
+  };
+
+  // Đổi chế độ sắp xếp bình luận (Phù hợp nhất vs Tất cả bình luận)
+  const handleSortChange = (newSort) => {
+    setCommentSortMode(newSort);
+    fetchComments(newSort);
   };
 
   // Xử lý khi bài viết được cập nhật từ modal chỉnh sửa
@@ -337,6 +344,9 @@ export const PostCard = ({
             loadingComments={loadingComments}
             onCommentAdded={handleCommentAdded}
             onCommentDeleted={handleCommentDeleted}
+            sortMode={commentSortMode}
+            onSortChange={handleSortChange}
+            onOpenModal={() => setShowFacebookModal(true)}
           />
         )}
 
@@ -423,6 +433,17 @@ export const PostCard = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL TRANG BÌNH LUẬN RIÊNG CHUẨN FACEBOOK */}
+      {showFacebookModal && (
+        <FacebookPostCommentModal
+          post={currentPost}
+          isOpen={showFacebookModal}
+          onClose={() => setShowFacebookModal(false)}
+          currentUser={currentUser}
+          onPostUpdated={handlePostUpdated}
+        />
       )}
     </>
   );

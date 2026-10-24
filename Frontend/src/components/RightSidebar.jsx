@@ -1,20 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, MessageSquare, Sparkles, ExternalLink, RefreshCw } from 'lucide-react';
+import { Users, MessageSquare, Sparkles, ExternalLink, RefreshCw, Radio } from 'lucide-react';
 import { userApi } from '../api/userApi';
 import { assets } from '../assets/assets';
 import FriendButton from './FriendButton';
+import { liveStreamApi } from '../api/liveStreamApi';
+import { useSocket } from '../contexts';
 
 export const RightSidebar = ({ currentUser }) => {
   const navigate = useNavigate();
+  const { socket } = useSocket();
   const [suggestions, setSuggestions] = useState([]);
   const [friends, setFriends] = useState([]);
+  const [activeLiveStreams, setActiveLiveStreams] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchLiveStreams = async () => {
+    try {
+      const res = await liveStreamApi.getActive();
+      if (Array.isArray(res?.data)) {
+        setActiveLiveStreams(res.data);
+      }
+    } catch (err) {
+      console.error('Error fetching live streams in RightSidebar:', err);
+    }
+  };
 
   const fetchSidebarData = async () => {
     if (!currentUser?.id) return;
     try {
       setLoading(true);
+      fetchLiveStreams();
+
       // Fetch suggested users (not friends)
       const resSuggestions = await userApi.discover({ search: '', filterType: 'not-friends' }).catch(() => null);
       if (resSuggestions?.data?.success || Array.isArray(resSuggestions?.data?.data)) {
@@ -39,9 +56,80 @@ export const RightSidebar = ({ currentUser }) => {
     fetchSidebarData();
   }, [currentUser?.id]);
 
+  useEffect(() => {
+    if (!socket) return;
+    const handleNewLive = (newStream) => {
+      setActiveLiveStreams((prev) => {
+        if (prev.some((s) => s.id === newStream.id)) return prev;
+        return [newStream, ...prev];
+      });
+    };
+
+    const handleLiveEnded = ({ streamId }) => {
+      setActiveLiveStreams((prev) => prev.filter((s) => s.id !== streamId));
+    };
+
+    socket.on('new_livestream_started', handleNewLive);
+    socket.on('livestream_ended', handleLiveEnded);
+    socket.on('user_livestream_ended', handleLiveEnded);
+
+    return () => {
+      socket.off('new_livestream_started', handleNewLive);
+      socket.off('livestream_ended', handleLiveEnded);
+      socket.off('user_livestream_ended', handleLiveEnded);
+    };
+  }, [socket]);
+
   return (
     <div className="max-xl:hidden w-80 flex-shrink-0">
       <div className="sticky top-10 self-start flex flex-col gap-5 pb-10">
+
+        {/* 0. LIVE STREAM WIDGET (Hiện khi có buổi phát trực tiếp) */}
+        {activeLiveStreams.length > 0 && (
+          <div className="bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-purple-500/10 dark:from-rose-950/30 dark:to-purple-950/30 p-4 rounded-2xl border border-rose-200 dark:border-rose-900/40 shadow-xs">
+            <div className="flex items-center justify-between pb-2.5 border-b border-rose-100 dark:border-rose-900/30 mb-2.5">
+              <div className="flex items-center gap-2">
+                <Radio size={16} className="text-rose-500 animate-pulse" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                  Đang phát trực tiếp
+                </h3>
+              </div>
+              <span className="flex items-center gap-1 text-[10px] font-extrabold text-rose-600 bg-rose-100 dark:bg-rose-900/50 dark:text-rose-300 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                {activeLiveStreams.length} Live
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {activeLiveStreams.map((stream) => (
+                <Link
+                  key={stream.id}
+                  to={`/live/${stream.id}`}
+                  className="flex items-center gap-2.5 p-2 rounded-xl bg-white/90 dark:bg-slate-800/90 hover:bg-white dark:hover:bg-slate-800 border border-rose-100 dark:border-rose-950/60 transition shadow-xs group"
+                >
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={stream.user_avatar || '/default.jpg'}
+                      alt={stream.user_name}
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-rose-500"
+                    />
+                    <span className="absolute -bottom-1 -right-1 px-1 bg-rose-600 text-[8px] text-white font-extrabold rounded">
+                      LIVE
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-rose-600 transition">
+                      {stream.title}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {stream.user_name} • {stream.viewer_count || 1} người xem
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 1. GỢI Ý KẾT BẠN (Suggested for you - Instagram/Facebook style) */}
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">

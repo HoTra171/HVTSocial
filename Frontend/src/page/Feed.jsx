@@ -121,6 +121,17 @@ const Feed = () => {
     setFeeds((prev) => prev.filter((p) => p.id !== postId));
   };
 
+  // Lắng nghe sự kiện tạo bài viết từ Sidebar hoặc BottomNav toàn cục
+  useEffect(() => {
+    const handleGlobalPostCreated = (e) => {
+      if (e.detail) {
+        handlePostCreated(e.detail);
+      }
+    };
+    window.addEventListener('app:post-created', handleGlobalPostCreated);
+    return () => window.removeEventListener('app:post-created', handleGlobalPostCreated);
+  }, []);
+
   // Scroll to top listener
   useEffect(() => {
     const handleScroll = () => {
@@ -324,13 +335,20 @@ const Feed = () => {
                 luôn rộn ràng!
               </p>
               <div className="flex items-center gap-3 flex-wrap justify-center">
-                <Link
-                  to="/create-post"
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => {
+                      const createBoxBtn = document.querySelector('button[type="button"][class*="rounded-full"]');
+                      createBoxBtn?.click();
+                    }, 100);
+                  }}
                   className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold rounded-2xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                 >
                   <PenSquare size={14} />
                   <span>Tạo bài viết ngay</span>
-                </Link>
+                </button>
                 <Link
                   to="/discover"
                   className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-2xl transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"

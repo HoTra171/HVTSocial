@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { CircleArrowRight, Plus } from "lucide-react";
+import { CircleArrowRight, Plus, Radio, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import StoryModal from "./StoryModal.jsx";
 import StoryViewer from "./StoryViewer.jsx";
 import dayjs from "dayjs";
@@ -8,12 +9,17 @@ import axios from "axios";
 import "dayjs/locale/vi";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { API_URL, SERVER_ORIGIN } from '../constants/api';
+import { liveStreamApi } from '../api/liveStreamApi';
+import { useSocket } from '../contexts';
 
 dayjs.extend(relativeTime);
 dayjs.locale("vi");
 
 const StoriesBar = ({ openTrigger = false, onModalClose }) => {
+  const navigate = useNavigate();
+  const { socket } = useSocket();
   const [stories, setStories] = useState([]);
+  const [activeLiveStreams, setActiveLiveStreams] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [viewStory, setViewStory] = useState(null);
   const [isUploadingStory, setIsUploadingStory] = useState(false);
@@ -34,7 +40,6 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
 
 
   const fetchStories = async () => {
-    // Không gọi API nếu chưa có token (tránh 401)
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -46,6 +51,17 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
       requestAnimationFrame(() => requestAnimationFrame(updateNavButtons));
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const fetchActiveLiveStreams = async () => {
+    try {
+      const res = await liveStreamApi.getActive();
+      if (res.data) {
+        setActiveLiveStreams(Array.isArray(res.data) ? res.data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching livestreams:', err);
     }
   };
 
@@ -90,18 +106,40 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
 
   useEffect(() => {
     fetchStories();
+    fetchActiveLiveStreams();
 
-    // Tự làm mới stories mỗi 5 phút để UI luôn cập nhật
-    const interval = setInterval(fetchStories, 5 * 60 * 1000);
+    const interval = setInterval(() => {
+      fetchStories();
+      fetchActiveLiveStreams();
+    }, 2 * 60 * 1000);
 
     updateNavButtons();
     window.addEventListener("resize", updateNavButtons);
+
+    // Socket realtime live updates
+    if (socket) {
+      const handleNewLive = (stream) => {
+        setActiveLiveStreams((prev) => [stream, ...prev.filter((s) => s.id !== stream.id)]);
+      };
+      const handleEndLive = ({ streamId }) => {
+        setActiveLiveStreams((prev) => prev.filter((s) => s.id !== streamId));
+      };
+      socket.on('new_livestream_started', handleNewLive);
+      socket.on('user_livestream_ended', handleEndLive);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("resize", updateNavButtons);
+        socket.off('new_livestream_started', handleNewLive);
+        socket.off('user_livestream_ended', handleEndLive);
+      };
+    }
 
     return () => {
       clearInterval(interval);
       window.removeEventListener("resize", updateNavButtons);
     };
-  }, []);
+  }, [socket]);
 
 
   return (
@@ -174,6 +212,47 @@ const StoriesBar = ({ openTrigger = false, onModalClose }) => {
                 </p>
               </div>
             </div>
+
+            {/* DANH SÁCH PHÒNG LIVE STREAM ĐANG PHÁT (TRỰC TIẾP) */}
+            {activeLiveStreams.map((stream) => (
+              <div
+                key={`livestream-${stream.id}`}
+                onClick={() => navigate(`/live/${stream.id}`)}
+                className="relative rounded-2xl min-w-[110px] w-[110px] h-[190px] overflow-hidden cursor-pointer shadow-sm hover:shadow-xl hover:scale-[1.03] transition-all bg-gradient-to-b from-rose-600 to-red-700 ring-2 ring-red-500 animate-pulse group"
+              >
+                <img
+                  src={stream.user?.avatar || stream.thumbnail_url || '/default.jpg'}
+                  alt={stream.user?.full_name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    e.currentTarget.src = '/default.jpg';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/50" />
+
+                {/* Badge TRỰC TIẾP */}
+                <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-600 text-white font-extrabold text-[10px] shadow-sm tracking-wider">
+                  <Radio size={10} className="animate-spin" />
+                  <span>TRỰC TIẾP</span>
+                </div>
+
+                {/* Viewer count */}
+                <div className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded-full bg-black/60 text-white text-[10px] font-semibold flex items-center gap-1">
+                  <Eye size={10} />
+                  <span>{stream.viewer_count || 0}</span>
+                </div>
+
+                {/* Info bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-2 z-10">
+                  <p className="text-white text-xs font-bold truncate leading-tight">
+                    {stream.user?.full_name}
+                  </p>
+                  <p className="text-white/80 text-[10px] truncate mt-0.5">
+                    {stream.title}
+                  </p>
+                </div>
+              </div>
+            ))}
 
             {/* Danh sách preview story theo user */}
             {[...stories].sort((a, b) => {

@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Cake,
   ShieldCheck,
+  Radio,
 } from "lucide-react";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +21,8 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { API_URL } from "../constants/api";
 import FriendButton from "./FriendButton";
+import { liveStreamApi } from "../api/liveStreamApi";
+import { useSocket } from "../contexts";
 
 const GENDER_LABELS = {
   male: "Nam",
@@ -38,8 +41,10 @@ const UserProfileInfo = ({
   mediaCount = 0,
 }) => {
   const navigate = useNavigate();
+  const { socket } = useSocket();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [friendsCount, setFriendsCount] = useState(0);
+  const [activeLiveStream, setActiveLiveStream] = useState(null);
 
   let currentUser = null;
   try {
@@ -49,6 +54,48 @@ const UserProfileInfo = ({
   }
 
   const isOwnProfile = !profileId || Number(currentUser?.id) === Number(user?.id);
+
+  // Kiểm tra trạng thái phát trực tiếp của người dùng
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLiveStatus = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await liveStreamApi.getUserStatus(user.id);
+        if (isMounted) {
+          if (res?.data?.is_live && res?.data?.stream) {
+            setActiveLiveStream(res.data.stream);
+          } else {
+            setActiveLiveStream(null);
+          }
+        }
+      } catch (err) {
+        console.error("Check user live status error:", err);
+      }
+    };
+
+    fetchLiveStatus();
+
+    const handleNewLive = (stream) => {
+      if (Number(stream.user_id) === Number(user?.id)) {
+        setActiveLiveStream(stream);
+      }
+    };
+    const handleLiveEnded = ({ userId }) => {
+      if (Number(userId) === Number(user?.id)) {
+        setActiveLiveStream(null);
+      }
+    };
+
+    socket?.on("new_livestream_started", handleNewLive);
+    socket?.on("user_livestream_ended", handleLiveEnded);
+
+    return () => {
+      isMounted = false;
+      socket?.off("new_livestream_started", handleNewLive);
+      socket?.off("user_livestream_ended", handleLiveEnded);
+    };
+  }, [user?.id, socket]);
 
   // Fetch số lượng bạn bè
   useEffect(() => {
@@ -120,9 +167,19 @@ const UserProfileInfo = ({
         {/* Floating Avatar */}
         <div className="relative -mt-20 sm:-mt-24 flex-shrink-0 group">
           <div
-            onClick={() => onViewAvatar?.(avatarUrl)}
-            className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-white shadow-xl overflow-hidden bg-slate-100 cursor-pointer relative"
-            title="Nhấn để xem ảnh đại diện"
+            onClick={() => {
+              if (activeLiveStream) {
+                navigate(isOwnProfile ? `/live/broadcast/${activeLiveStream.id}` : `/live/${activeLiveStream.id}`);
+              } else {
+                onViewAvatar?.(avatarUrl);
+              }
+            }}
+            className={`w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 ${
+              activeLiveStream
+                ? "border-rose-500 ring-4 ring-rose-400/50 shadow-rose-300"
+                : "border-white"
+            } shadow-xl overflow-hidden bg-slate-100 cursor-pointer relative transition-all`}
+            title={activeLiveStream ? "Đang phát trực tiếp - Nhấn để xem ngay" : "Nhấn để xem ảnh đại diện"}
           >
             <img
               src={avatarUrl}
@@ -131,13 +188,34 @@ const UserProfileInfo = ({
             />
             {/* Hover overlay hint */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-              <Eye className="w-6 h-6 mb-1 drop-shadow" />
-              <span className="text-[11px] font-semibold drop-shadow">Xem ảnh</span>
+              {activeLiveStream ? (
+                <>
+                  <Radio className="w-6 h-6 mb-1 text-rose-400 drop-shadow animate-pulse" />
+                  <span className="text-[11px] font-bold drop-shadow">Xem trực tiếp</span>
+                </>
+              ) : (
+                <>
+                  <Eye className="w-6 h-6 mb-1 drop-shadow" />
+                  <span className="text-[11px] font-semibold drop-shadow">Xem ảnh</span>
+                </>
+              )}
             </div>
           </div>
 
+          {/* Pulsing Live Badge directly under avatar */}
+          {activeLiveStream && (
+            <button
+              type="button"
+              onClick={() => navigate(isOwnProfile ? `/live/broadcast/${activeLiveStream.id}` : `/live/${activeLiveStream.id}`)}
+              className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-20 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-rose-300 border-2 border-white animate-pulse cursor-pointer whitespace-nowrap"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+              <span>TRỰC TIẾP</span>
+            </button>
+          )}
+
           {/* Quick Edit Avatar Button for Own Profile */}
-          {isOwnProfile && (
+          {isOwnProfile && !activeLiveStream && (
             <button
               type="button"
               onClick={() => setShowEdit?.(true)}
@@ -165,6 +243,17 @@ const UserProfileInfo = ({
                     <span>Riêng tư</span>
                   </span>
                 )}
+                {activeLiveStream && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(isOwnProfile ? `/live/broadcast/${activeLiveStream.id}` : `/live/${activeLiveStream.id}`)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-bold transition cursor-pointer"
+                    title="Người dùng đang phát trực tiếp"
+                  >
+                    <Radio className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                    <span>ĐANG LIVE</span>
+                  </button>
+                )}
               </div>
 
               {/* Username */}
@@ -175,6 +264,17 @@ const UserProfileInfo = ({
 
             {/* Action Buttons */}
             <div className="flex items-center justify-center md:justify-end gap-2.5 flex-wrap">
+              {activeLiveStream && (
+                <button
+                  type="button"
+                  onClick={() => navigate(isOwnProfile ? `/live/broadcast/${activeLiveStream.id}` : `/live/${activeLiveStream.id}`)}
+                  className="h-10 px-5 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-600 to-rose-600 hover:from-rose-600 hover:to-pink-700 active:scale-95 text-white font-bold text-sm shadow-md shadow-rose-200 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer animate-pulse"
+                >
+                  <Radio className="w-4 h-4" />
+                  <span>{isOwnProfile ? "Studio của bạn" : "Xem phát trực tiếp"}</span>
+                </button>
+              )}
+
               {isOwnProfile ? (
                 <>
                   <button

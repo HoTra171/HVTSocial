@@ -6,8 +6,10 @@ export const commentApi = {
    * @param {number|string} postId
    * @param {Object} params { page, limit }
    */
-  getByPostId: (postId, params = {}) =>
-    axiosInstance.get(`/comments/post/${postId}`, { params }),
+  getByPostId: (postId, params = {}) => {
+    const queryParams = typeof params === 'string' ? { sort: params } : params;
+    return axiosInstance.get(`/comments/post/${postId}`, { params: queryParams });
+  },
 
   /**
    * Tạo bình luận mới cho bài viết

@@ -9,4 +9,4 @@ export { CreatePostModal } from './CreatePostModal';
 export { CreatePostBox } from './CreatePostBox';
 export { PostPoll } from './PostPoll';
 export { EditPostModal } from './EditPostModal';
-
+export { FacebookPostCommentModal } from './FacebookPostCommentModal';

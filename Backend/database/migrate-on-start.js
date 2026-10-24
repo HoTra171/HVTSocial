@@ -246,6 +246,29 @@ END $$;`,
       `ALTER TABLE comments ADD COLUMN IF NOT EXISTS image_url TEXT;`,
       `ALTER TABLE stories ALTER COLUMN background_color TYPE TEXT;`,
       `ALTER TABLE stories ADD COLUMN IF NOT EXISTS music_url TEXT;`,
+      `CREATE TABLE IF NOT EXISTS livestreams (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(20) DEFAULT 'live',
+        viewer_count INTEGER DEFAULT 0,
+        peak_viewers INTEGER DEFAULT 0,
+        total_reactions INTEGER DEFAULT 0,
+        thumbnail_url TEXT,
+        started_at TIMESTAMP DEFAULT NOW(),
+        ended_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      );`,
+      `CREATE TABLE IF NOT EXISTS livestream_comments (
+        id SERIAL PRIMARY KEY,
+        livestream_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );`,
+      `CREATE INDEX IF NOT EXISTS idx_livestreams_status ON livestreams(status);`,
+      `CREATE INDEX IF NOT EXISTS idx_livestreams_user_id ON livestreams(user_id);`,
     ];
 
     for (const stmt of statements) {

@@ -92,7 +92,8 @@ export const getCommentsByPost = async (req, res) => {
       return res.status(400).json({ message: 'Invalid post ID' });
     }
 
-    const comments = await CommentService.getCommentsByPost(postId);
+    const sort = req.query.sort || 'newest'; // 'newest' | 'relevant'
+    const comments = await CommentService.getCommentsByPost(postId, sort);
     return res.json(comments);
   } catch (err) {
     console.error('getCommentsByPost error:', err);

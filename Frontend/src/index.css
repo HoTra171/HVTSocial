@@ -80,3 +80,23 @@
   animation: slideUp 0.3s ease-out;
 }
 
+/* Floating animation for live stream reactions */
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-120px) scale(1.2) rotate(-6deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-280px) scale(1) rotate(6deg);
+    opacity: 0;
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 2.5s ease-out forwards;
+}
+

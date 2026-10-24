@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Image, Smile, Sparkles, BarChart2 } from 'lucide-react';
+import { Image, Smile, Sparkles, BarChart2, Radio } from 'lucide-react';
 import { CreatePostModal } from './CreatePostModal';
+import { StartLiveModal } from '../livestream/StartLiveModal';
 
 export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) => {
   const [showModal, setShowModal] = useState(false);
   const [openWithPoll, setOpenWithPoll] = useState(false);
+  const [showLiveModal, setShowLiveModal] = useState(false);
 
   const firstName = currentUser?.full_name?.split(' ').pop() || 'bạn';
 
@@ -36,12 +38,24 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
         </div>
 
         {/* Bottom: Quick Action Shortcuts */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-2 gap-1 overflow-x-auto no-scrollbar">
+          {/* Phát trực tiếp (Live Stream) */}
+          <button
+            type="button"
+            onClick={() => setShowLiveModal(true)}
+            className="flex-1 min-w-[75px] sm:min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-semibold transition cursor-pointer"
+          >
+            <span className="text-red-500 animate-pulse">
+              <Radio size={18} />
+            </span>
+            <span className="hidden sm:inline">Phát trực tiếp</span>
+          </button>
+
           {/* Ảnh / Video */}
           <button
             type="button"
             onClick={() => handleOpenModal(false)}
-            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            className="flex-1 min-w-[75px] sm:min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer"
           >
             <span className="text-emerald-500">
               <Image size={18} />
@@ -53,7 +67,7 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
           <button
             type="button"
             onClick={() => handleOpenModal(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            className="flex-1 min-w-[75px] sm:min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer"
           >
             <span className="text-indigo-500">
               <BarChart2 size={18} />
@@ -65,7 +79,7 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
           <button
             type="button"
             onClick={() => handleOpenModal(false)}
-            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            className="flex-1 min-w-[75px] sm:min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer"
           >
             <span className="text-amber-500">
               <Smile size={18} />
@@ -77,7 +91,7 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
           <button
             type="button"
             onClick={onOpenStoryModal}
-            className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition"
+            className="flex-1 min-w-[75px] sm:min-w-0 flex items-center justify-center gap-1.5 sm:gap-2 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300 text-xs font-semibold transition cursor-pointer"
           >
             <span className="text-purple-500">
               <Sparkles size={18} />
@@ -97,6 +111,13 @@ export const CreatePostBox = ({ currentUser, onPostCreated, onOpenStoryModal }) 
         currentUser={currentUser}
         onPostCreated={onPostCreated}
         initialPollOpen={openWithPoll}
+      />
+
+      {/* Modal phát trực tiếp (Live Stream) */}
+      <StartLiveModal
+        isOpen={showLiveModal}
+        onClose={() => setShowLiveModal(false)}
+        currentUser={currentUser}
       />
     </>
   );

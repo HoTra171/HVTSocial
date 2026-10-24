@@ -7,11 +7,13 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Loading from '../components/Loading.jsx';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { CreatePostModal } from '../components/post/CreatePostModal.jsx';
 
 const Layout = () => {
   const { currentUser, loading: authLoading } = useAuth();
   const currentUserId = currentUser?.id || null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -44,6 +46,7 @@ const Layout = () => {
         currentUserId={currentUserId}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        onOpenCreatePost={() => setShowCreatePostModal(true)}
       />
 
       {/* ===== RECENT CHATS (Visible on Chat Page) ===== */}
@@ -81,7 +84,25 @@ const Layout = () => {
       </div>
 
       {/* ===== BOTTOM NAVIGATION (Mobile only) ===== */}
-      {!isChatPage && !isStoryPage && <BottomNav currentUserId={currentUserId} />}
+      {!isChatPage && !isStoryPage && (
+        <BottomNav
+          currentUserId={currentUserId}
+          onOpenCreatePost={() => setShowCreatePostModal(true)}
+        />
+      )}
+
+      {/* ===== GLOBAL CREATE POST MODAL (OPENS FROM SIDEBAR / BOTTOMNAV ANYWHERE) ===== */}
+      {showCreatePostModal && (
+        <CreatePostModal
+          isOpen={showCreatePostModal}
+          onClose={() => setShowCreatePostModal(false)}
+          currentUser={currentUser}
+          onPostCreated={(newPost) => {
+            setShowCreatePostModal(false);
+            window.dispatchEvent(new CustomEvent('app:post-created', { detail: newPost }));
+          }}
+        />
+      )}
 
     </div>
   )
