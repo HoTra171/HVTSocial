@@ -1,8 +1,7 @@
 
 // notificationSound.js
-// Sử dụng AudioContext để tạo âm thanh (Synthesized Sound)
-// Cách này KHÔNG bị lỗi decode và load cực nhanh.
-// Hỗ trợ đầy đủ cho iOS Safari
+// Sử dụng Web Audio API để tạo âm thanh thông báo hiện đại, sang trọng (Double Chime)
+// Không phụ thuộc file mp3/wav ngoài, đảm bảo 100% không lỗi decode và tương thích cao.
 
 let audioContext = null;
 let isAudioUnlocked = false;
@@ -15,15 +14,14 @@ const isIOS = () => {
 export const initAudio = async () => {
   try {
     if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      audioContext = new AudioCtx();
     }
 
-    // Mở khóa AudioContext trên Mobile (Resume khi user chạm)
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
 
-    // ĐẶC BIỆT CHO iOS: Phát âm thanh câm để unlock
     if (isIOS() && !isAudioUnlocked) {
       const silentBuffer = audioContext.createBuffer(1, 1, 22050);
       const source = audioContext.createBufferSource();
@@ -38,56 +36,61 @@ export const initAudio = async () => {
   }
 };
 
+/**
+ * Phát âm thanh thông báo tin nhắn mới (Double Chime: G5 -> C6)
+ */
 export const playNotificationSound = async () => {
   try {
-    // 1. RUNG (Vibration) - Chỉ Android hỗ trợ
+    // 1. Rung trên thiết bị di động
     if ("vibrate" in navigator) {
-      navigator.vibrate([200]);
+      navigator.vibrate([100, 50, 100]);
     }
 
-    // 2. KHỞI TẠO CONTEXT
+    // 2. Khởi tạo & resume AudioContext
     if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      audioContext = new AudioCtx();
     }
 
-    // 3. RESUME CONTEXT (Quan trọng cho iOS)
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
 
-    // 4. KIỂM TRA CONTEXT STATE
     if (audioContext.state !== 'running') {
       console.warn("AudioContext not running:", audioContext.state);
       return;
     }
 
-    // 5. TẠO ÂM THANH "TING" (Synthesized)
     const t = audioContext.currentTime;
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+    const baseVolume = isIOS() ? 0.6 : 0.45;
 
-    // Cấu hình âm thanh: Sine wave (tiếng chuông trong)
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, t); // 880Hz (Nốt A5) - Tiếng cao, rõ
-    oscillator.frequency.exponentialRampToValueAtTime(110, t + 0.5); // Giảm dần cao độ chút (Hiệu ứng Ping)
+    // Helper tạo nốt chuông trong trẻo
+    const playChimeNote = (freq, startTime, duration, vol) => {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
 
-    // Cấu hình âm lượng (Fade out - Hiệu ứng ngân)
-    // iOS thường có âm lượng thấp hơn nên tăng lên 0.7
-    const volume = isIOS() ? 0.7 : 0.5;
-    gainNode.gain.setValueAtTime(volume, t);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, t + 0.5);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
 
-    // Nối mạch: Oscillator -> Gain -> Loa
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+      // Attack & Exponential decay mượt mà
+      gain.gain.setValueAtTime(0.001, startTime);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
-    // Phát và dừng sau 0.5s
-    oscillator.start(t);
-    oscillator.stop(t + 0.5);
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
 
-    console.log("Notification sound played");
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
 
+    // Nốt 1: G5 (784Hz)
+    playChimeNote(784, t, 0.25, baseVolume * 0.8);
+    // Nốt 2: C6 (1046.5Hz) vang hơn
+    playChimeNote(1046.5, t + 0.08, 0.4, baseVolume);
+
+    console.log("🔔 Notification sound played successfully");
   } catch (error) {
-    console.error("Play sound error:", error);
+    console.error("Play notification sound error:", error);
   }
 };

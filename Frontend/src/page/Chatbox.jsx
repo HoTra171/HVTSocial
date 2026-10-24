@@ -36,6 +36,13 @@ import { Virtuoso } from "react-virtuoso";
 import { useChatMessages } from "../hooks/useChatMessages";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { playNotificationSound } from "../utils/notificationSound";
+import {
+  playCallRingtone,
+  stopCallRingtone,
+  playOutgoingCallRingtone,
+  stopOutgoingCallRingtone,
+  playCallEndTone,
+} from "../utils/callRingtone";
 
 const PAGE = 15;
 
@@ -147,6 +154,24 @@ const Chatbox = () => {
   const iceCandidatesQueue = useRef([]); // Queue for early ICE candidates
   const lastMessageIdRef = useRef(null);
 
+  // Helper xả hàng đợi ICE candidates khi Remote Description đã sẵn sàng
+  const flushIceCandidatesQueue = async (targetPc) => {
+    const pc = targetPc || pcRef.current;
+    if (!pc || !pc.remoteDescription) return;
+    if (iceCandidatesQueue.current.length > 0) {
+      console.log(`🧊 Flushing ${iceCandidatesQueue.current.length} queued ICE candidates`);
+    }
+    while (iceCandidatesQueue.current.length > 0) {
+      const candidate = iceCandidatesQueue.current.shift();
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log("✅ Added queued ICE candidate");
+      } catch (e) {
+        console.warn("Error adding queued ICE candidate:", e);
+      }
+    }
+  };
+
   useEffect(() => {
     partnerIdRef.current = partner?.target_id || null;
   }, [partner?.target_id]);
@@ -160,6 +185,7 @@ const Chatbox = () => {
 
       // Clear ngay để không bị gọi lại
       sessionStorage.removeItem('pendingCall');
+      stopCallRingtone();
 
       console.log('Auto answering call...', pendingCall);
 
@@ -180,7 +206,7 @@ const Chatbox = () => {
             if (err.name === 'NotReadableError' && i < maxAttempts - 1) {
               // Device vẫn busy → đợi thêm
               console.log(`Device busy, retry ${i + 1}/${maxAttempts}...`);
-              await new Promise(resolve => setTimeout(resolve, 500));
+              await new Promise(resolve => setTimeout(resolve, 300));
             } else {
               throw err;
             }
@@ -202,7 +228,7 @@ const Chatbox = () => {
             setLocalStream(null);
 
             // Đợi browser thực sự release device
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
 
           //  ĐỢI DEVICE SẴN SÀNG
@@ -228,6 +254,8 @@ const Chatbox = () => {
           stream.getTracks().forEach((t) => pc.addTrack(t, stream));
 
           await pc.setRemoteDescription(new RTCSessionDescription(pendingCall.offer));
+          // Xả toàn bộ ICE candidates nhận được trong lúc chờ
+          await flushIceCandidatesQueue(pc);
 
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
@@ -254,7 +282,7 @@ const Chatbox = () => {
           // Gửi end_call nếu lỗi
           socketRef.current?.emit("end_call", { to: pendingCall.from });
         }
-      }, 1500); // Tăng delay lên 1.5s
+      }, 600); // 600ms đủ nhanh và an toàn
     }
   }, [partner?.target_id, socketReady]);
 
@@ -367,7 +395,7 @@ const Chatbox = () => {
       // setMessages((prev) => [...prev, msg].slice(-PAGE)); // Removed
 
       // Phát âm thanh nếu tin nhắn không phải từ mình
-      if (msg.sender_id !== myId) {
+      if (Number(msg.sender_id) !== Number(myId)) {
         playNotificationSound();
       }
 
@@ -393,9 +421,14 @@ const Chatbox = () => {
         callerAvatar: partner?.avatar,
       });
       setShowIncomingCall(true);
+      // Phát tiếng chuông cuộc gọi đến!
+      playCallRingtone(isVideo ? 'video' : 'voice');
     });
 
     socket.on("call_answered", async ({ answer }) => {
+      // Dừng tiếng tút tút gọi đi ngay lập tức!
+      stopOutgoingCallRingtone();
+
       // Clear timeout if answered
       if (callTimeoutRef.current) {
         clearTimeout(callTimeoutRef.current);
@@ -407,18 +440,8 @@ const Chatbox = () => {
         if (state === 'have-local-offer') {
           try {
             await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-            console.log("Remote description set successfully");
-
-            // Process queued candidates
-            while (iceCandidatesQueue.current.length > 0) {
-              const candidate = iceCandidatesQueue.current.shift();
-              try {
-                await pcRef.current.addIceCandidate(candidate);
-                console.log("Added queued ICE candidate");
-              } catch (e) {
-                console.error("Error adding queued candidate:", e);
-              }
-            }
+            console.log("✅ Remote description set successfully");
+            await flushIceCandidatesQueue(pcRef.current);
           } catch (error) {
             console.error("Set remote description error:", error.message);
           }
@@ -429,37 +452,44 @@ const Chatbox = () => {
     });
 
     socket.on("ice_candidate", async ({ candidate }) => {
-      // Validate connection state before adding candidate
-      if (pcRef.current && candidate) {
-        if (pcRef.current.signalingState === 'closed') {
-          console.warn("⚠️ Ignored ICE candidate because PC is closed");
-          return;
-        }
+      if (!candidate) return;
 
-        // If remote description is set, add directly
-        if (pcRef.current.remoteDescription && pcRef.current.remoteDescription.type) {
-          try {
-            await pcRef.current.addIceCandidate(candidate);
-          } catch (error) {
-            console.error("Add ICE candidate error:", error);
-          }
-        } else {
-          // Queue if not ready
-          console.log("Queueing ICE candidate (remote desc not ready)");
-          iceCandidatesQueue.current.push(candidate);
+      // Nếu PC đã sẵn sàng và đã có Remote Description thì add trực tiếp
+      if (
+        pcRef.current &&
+        pcRef.current.remoteDescription &&
+        pcRef.current.remoteDescription.type &&
+        pcRef.current.signalingState !== 'closed'
+      ) {
+        try {
+          await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (error) {
+          console.error("Add ICE candidate error:", error);
         }
+      } else {
+        // Lưu vào hàng đợi nếu PC hoặc remoteDescription chưa sẵn sàng
+        console.log("Queueing ICE candidate (PC or remote desc not ready yet)");
+        iceCandidatesQueue.current.push(candidate);
       }
     });
 
-    socket.on("call_ended", () => cleanupCall());
+    socket.on("call_ended", () => {
+      stopCallRingtone();
+      stopOutgoingCallRingtone();
+      playCallEndTone();
+      cleanupCall();
+    });
 
     // Xử lý khi người gọi hủy cuộc gọi (Missed Call)
     socket.on("call_cancelled", async () => {
+      stopCallRingtone();
+      stopOutgoingCallRingtone();
+      playCallEndTone();
+
       // Chỉ lưu history nếu mình là người nhận và chưa bắt máy
       if (showIncomingCall) {
         console.log("📞 Call missed (cancelled by caller)");
         try {
-          // Fetch lại history để hiện missed call mới
           fetchCallHistory();
         } catch (error) {
           console.error("Fetch history error:", error);
@@ -469,7 +499,7 @@ const Chatbox = () => {
       setIncomingCallData(null);
     });
 
-    // Khi có cuộc gọi đến, cũng fetch lại history (để hiện Incoming Call nếu muốn, hoặc chuẩn bị)
+    // Khi có cuộc gọi đến, cũng fetch lại history
     socket.on("incoming_call", () => {
       fetchCallHistory();
     });
@@ -496,15 +526,9 @@ const Chatbox = () => {
     });
 
     // LISTENER: Mesages Read
-    // LISTENER: Mesages Read
     socket.on("messages_read", ({ chatId: readChatId, readBy }) => {
       if (Number(readChatId) === Number(chatId) && Number(readBy) !== Number(myId)) {
-        // Invalidate query to refetch updated statuses or use setQueryData to update manually
-        // For simplicity, invalidate:
         queryClient.invalidateQueries(queryKey);
-
-        // setMessages(prev => prev.map(m => m.sender_id === myId ? { ...m, status: 'read' } : m));
-        // setAllMessages(prev => prev.map(m => m.sender_id === myId ? { ...m, status: 'read' } : m));
       }
     });
 
@@ -512,6 +536,8 @@ const Chatbox = () => {
     return () => {
       socket.emit("leave_chat", Number(chatId));
       socket.off("receive_message");
+      stopCallRingtone();
+      stopOutgoingCallRingtone();
 
       // Cleanup: chỉ disconnect nếu socket đã connected hoặc connecting
       if (socket && (socket.connected || socket.connecting)) {
@@ -525,6 +551,8 @@ const Chatbox = () => {
 
   const handleAcceptCall = async () => {
     if (!incomingCallData || !socketRef.current) return;
+    // Dừng chuông cuộc gọi đến
+    stopCallRingtone();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -545,14 +573,7 @@ const Chatbox = () => {
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCallData.offer));
 
       // Process queued candidates
-      while (iceCandidatesQueue.current.length > 0) {
-        const candidate = iceCandidatesQueue.current.shift();
-        try {
-          await pc.addIceCandidate(candidate);
-        } catch (e) {
-          console.error("Error adding queued candidate in accept:", e);
-        }
-      }
+      await flushIceCandidatesQueue(pc);
 
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -570,6 +591,9 @@ const Chatbox = () => {
   };
 
   const handleRejectCall = async () => {
+    stopCallRingtone();
+    playCallEndTone();
+
     if (incomingCallData && socketRef.current) {
       socketRef.current.emit("end_call", { to: incomingCallData.from });
 
@@ -1144,19 +1168,31 @@ const Chatbox = () => {
         { urls: "stun:stun2.l.google.com:19302" },
         { urls: "stun:stun3.l.google.com:19302" },
         { urls: "stun:stun4.l.google.com:19302" },
+        { urls: "stun:stun.services.mozilla.com" },
       ],
+      iceCandidatePoolSize: 10,
     });
 
     pc.ontrack = (event) => {
-      console.log("🎥 Received remote track:", event.streams[0]);
-      if (event.streams && event.streams[0]) {
-        setRemoteStream(event.streams[0]);
-      }
+      console.log("🎥 Received remote track:", event.track.kind, event.track.id);
+      setRemoteStream((prevStream) => {
+        const stream = prevStream ? new MediaStream(prevStream.getTracks()) : new MediaStream();
+        // Loại bỏ track cũ cùng loại nếu khác id để đảm bảo track mới nhất được ưu tiên
+        const existingTracks = stream.getTracks();
+        const oldTrack = existingTracks.find((t) => t.kind === event.track.kind);
+        if (oldTrack && oldTrack.id !== event.track.id) {
+          stream.removeTrack(oldTrack);
+        }
+        if (!stream.getTracks().some((t) => t.id === event.track.id)) {
+          stream.addTrack(event.track);
+        }
+        return new MediaStream(stream.getTracks());
+      });
     };
 
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socketRef.current.emit("ice_candidate", {
+      if (event.candidate && remoteUserIdRef.current) {
+        socketRef.current?.emit("ice_candidate", {
           to: remoteUserIdRef.current,
           candidate: event.candidate,
         });
@@ -1218,6 +1254,9 @@ const Chatbox = () => {
     try {
       console.log('🔵 Starting call:', { isVideo, partnerId: partner.target_id, chatId });
 
+      // Phát tiếng chuông gọi đi (tút... tút...)
+      playOutgoingCallRingtone();
+
       // STOP LOCAL STREAM CŨ TRƯỚC
       if (localStream) {
         localStream.getTracks().forEach(track => {
@@ -1266,6 +1305,8 @@ const Chatbox = () => {
         if (inCall) {
           console.log("⏱️ No answer timeout (45s)");
           toast.error("Người nhận không trả lời");
+          stopOutgoingCallRingtone();
+          playCallEndTone();
           endCall();
         }
       }, 45000); // 45 seconds
@@ -1273,6 +1314,7 @@ const Chatbox = () => {
       console.log('✅ Call initiated successfully');
     } catch (err) {
       console.error("❌ Start call error:", err);
+      stopOutgoingCallRingtone();
 
       if (err.name === 'NotReadableError') {
         toast.error('Camera/mic đang được sử dụng bởi ứng dụng khác');
@@ -1285,6 +1327,9 @@ const Chatbox = () => {
   };
 
   const cleanupCall = () => {
+    stopCallRingtone();
+    stopOutgoingCallRingtone();
+
     if (callTimeoutRef.current) {
       clearTimeout(callTimeoutRef.current);
       callTimeoutRef.current = null;
@@ -1299,6 +1344,10 @@ const Chatbox = () => {
 
   const endCall = async () => {
     console.log('Ending call...');
+    stopCallRingtone();
+    stopOutgoingCallRingtone();
+    playCallEndTone();
+
     if (callTimeoutRef.current) {
       clearTimeout(callTimeoutRef.current);
       callTimeoutRef.current = null;

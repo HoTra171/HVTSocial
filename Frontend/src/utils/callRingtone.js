@@ -1,236 +1,332 @@
 /**
  * Call Ringtone Utility
- * Plays ringtone for incoming video/voice calls
- * Works on both desktop and mobile (iOS/Android)
+ * - Incoming Call Ringtone: Nhạc chuông cuộc gọi đến du dương, ngân vang.
+ * - Outgoing Call Ringtone: Tiếng chuông gọi đi (tút... tút...) chuẩn viễn thông.
+ * - Call End Tone: Tiếng bíp dứt khoát khi ngắt cuộc gọi.
+ * Hoạt động mượt mà trên cả Web Desktop và Mobile (iOS / Android) với Web Audio API.
  */
 
 let audioContext = null;
-let ringtoneSource = null;
-let isRingtonePlaying = false;
-let ringtoneInterval = null;
+let incomingRingtoneNodes = [];
+let outgoingRingtoneNodes = [];
+let incomingRingtoneInterval = null;
+let outgoingRingtoneInterval = null;
+let isIncomingRingtonePlaying = false;
+let isOutgoingRingtonePlaying = false;
 let isAudioUnlocked = false;
 
 /**
- * Initialize AudioContext (required for iOS)
+ * Khởi tạo AudioContext
  */
 const initAudioContext = () => {
   if (!audioContext) {
-    // Use webkitAudioContext for Safari compatibility
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    audioContext = new AudioContextClass();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    audioContext = new AudioCtx();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => {});
   }
   return audioContext;
 };
 
 /**
- * Detect if device is iOS
+ * Kiểm tra thiết bị iOS
  */
 const isIOS = () => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 };
 
 /**
- * Unlock audio for iOS (must be called on user interaction)
+ * Mở khóa Audio cho Web & iOS (chạy khi người dùng tương tác lần đầu)
  */
 export const unlockCallRingtone = () => {
   if (isAudioUnlocked) return;
-
   try {
     const ctx = initAudioContext();
-
-    // Create silent buffer
     const silentBuffer = ctx.createBuffer(1, 1, 22050);
     const source = ctx.createBufferSource();
     source.buffer = silentBuffer;
     source.connect(ctx.destination);
     source.start(0);
-
     isAudioUnlocked = true;
-    console.log('Call ringtone audio unlocked');
+    console.log("🔊 Call ringtone audio unlocked");
   } catch (error) {
-    console.error('Failed to unlock call ringtone audio:', error);
+    console.warn("Failed to unlock audio:", error);
   }
 };
 
 /**
- * Create a ringtone pattern (similar to phone ringtone)
- * Plays a repeating tone: beep-beep-pause-beep-beep-pause
+ * Tạo một chu kỳ chuông gọi đến (Melodic Chime Pattern kiểu Marimba / iPhone)
  */
-const createRingtonePattern = () => {
+const playIncomingPatternCycle = () => {
   const ctx = initAudioContext();
+  if (!ctx || ctx.state !== 'running') return;
 
-  // Ensure context is running
-  if (ctx.state === 'suspended') {
-    ctx.resume();
-  }
+  const now = ctx.currentTime;
+  const vol = isIOS() ? 0.65 : 0.5;
 
-  // Create oscillator for tone
-  const oscillator = ctx.createOscillator();
-  const gainNode = ctx.createGain();
+  // Chuỗi nốt nhạc vui tươi: E5 (659Hz), G#5 (830Hz), B5 (987Hz), E6 (1318Hz)
+  const notes = [
+    { freq: 659.25, time: 0.00, dur: 0.18 },
+    { freq: 830.61, time: 0.14, dur: 0.18 },
+    { freq: 987.77, time: 0.28, dur: 0.18 },
+    { freq: 1318.51, time: 0.42, dur: 0.40 },
 
-  oscillator.connect(gainNode);
-  gainNode.connect(ctx.destination);
+    // Lặp lại đoạn 2 cao hơn chút
+    { freq: 659.25, time: 0.90, dur: 0.18 },
+    { freq: 830.61, time: 1.04, dur: 0.18 },
+    { freq: 1318.51, time: 1.18, dur: 0.18 },
+    { freq: 1661.22, time: 1.32, dur: 0.45 },
+  ];
 
-  // Ringtone frequency (similar to phone ringtone)
-  oscillator.frequency.value = 800; // 800 Hz
-  oscillator.type = 'sine';
+  notes.forEach(({ freq, time, dur }) => {
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-  // Volume (higher for iOS, lower for others)
-  const volume = isIOS() ? 0.8 : 0.6;
-  gainNode.gain.value = volume;
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + time);
 
-  // Start the oscillator
-  const currentTime = ctx.currentTime;
-  oscillator.start(currentTime);
+      gain.gain.setValueAtTime(0.001, now + time);
+      gain.gain.linearRampToValueAtTime(vol, now + time + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + time + dur);
 
-  // Create beep pattern: 0.3s on, 0.2s off, 0.3s on, 1.5s off
-  // This creates: beep-beep-pause pattern
-  gainNode.gain.setValueAtTime(volume, currentTime);
-  gainNode.gain.setValueAtTime(0, currentTime + 0.3); // First beep
-  gainNode.gain.setValueAtTime(volume, currentTime + 0.5); // Second beep
-  gainNode.gain.setValueAtTime(0, currentTime + 0.8); // Pause
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-  // Stop after one cycle (2 seconds total)
-  oscillator.stop(currentTime + 2);
+      osc.start(now + time);
+      osc.stop(now + time + dur);
 
-  return oscillator;
+      incomingRingtoneNodes.push(osc);
+    } catch (e) {
+      // Bỏ qua nếu context bị gián đoạn
+    }
+  });
 };
 
 /**
- * Play call ringtone (loops until stopped)
- * @param {string} callType - 'video' or 'voice'
+ * Phát chuông cuộc gọi đến (Lặp lại cho đến khi nhận hoặc từ chối)
  */
 export const playCallRingtone = (callType = 'video') => {
   try {
-    // Stop any existing ringtone
     stopCallRingtone();
+    stopOutgoingCallRingtone();
 
-    isRingtonePlaying = true;
-
-    // Play ringtone pattern repeatedly
-    const playPattern = () => {
-      if (!isRingtonePlaying) return;
-
-      ringtoneSource = createRingtonePattern();
-
-      // Play next pattern after 2 seconds
-      ringtoneInterval = setTimeout(playPattern, 2000);
-    };
-
-    // Start playing
-    playPattern();
-
-    // Also vibrate on mobile (if available)
-    if (navigator.vibrate) {
-      // Vibrate pattern: [vibrate, pause, vibrate, pause] in milliseconds
-      const vibratePattern = [400, 200, 400, 1400]; // Matches the beep-beep-pause pattern
-      const vibrateLoop = () => {
-        if (isRingtonePlaying) {
-          navigator.vibrate(vibratePattern);
-          setTimeout(vibrateLoop, 2000); // Repeat every 2 seconds
-        }
-      };
-      vibrateLoop();
-    }
-
-    console.log(`${callType} call ringtone started`);
-  } catch (error) {
-    console.error('Play call ringtone error:', error);
-  }
-};
-
-/**
- * Stop call ringtone
- */
-export const stopCallRingtone = () => {
-  try {
-    isRingtonePlaying = false;
-
-    // Clear interval
-    if (ringtoneInterval) {
-      clearTimeout(ringtoneInterval);
-      ringtoneInterval = null;
-    }
-
-    // Stop current tone
-    if (ringtoneSource) {
-      try {
-        ringtoneSource.stop();
-      } catch (e) {
-        // Ignore if already stopped
-      }
-      ringtoneSource = null;
-    }
-
-    // Stop vibration
-    if (navigator.vibrate) {
-      navigator.vibrate(0);
-    }
-
-    console.log('Call ringtone stopped');
-  } catch (error) {
-    console.error('Stop call ringtone error:', error);
-  }
-};
-
-/**
- * Check if ringtone is currently playing
- */
-export const isRingtoneActive = () => {
-  return isRingtonePlaying;
-};
-
-/**
- * Play a short "call ended" tone
- */
-export const playCallEndTone = () => {
-  try {
     const ctx = initAudioContext();
-
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
 
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    isIncomingRingtonePlaying = true;
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    // Phát chu kỳ đầu tiên ngay lập tức
+    playIncomingPatternCycle();
 
-    // Lower frequency for "end" tone
-    oscillator.frequency.value = 400; // 400 Hz
-    oscillator.type = 'sine';
+    // Lặp lại chu kỳ chuông mỗi 2.2 giây
+    incomingRingtoneInterval = setInterval(() => {
+      if (!isIncomingRingtonePlaying) {
+        clearInterval(incomingRingtoneInterval);
+        return;
+      }
+      playIncomingPatternCycle();
+    }, 2200);
 
-    const volume = isIOS() ? 0.6 : 0.4;
-    gainNode.gain.value = volume;
+    // Rung điện thoại nếu có hỗ trợ
+    if (navigator.vibrate) {
+      const vibratePattern = [400, 200, 400, 1200];
+      navigator.vibrate(vibratePattern);
+    }
 
-    const currentTime = ctx.currentTime;
-    oscillator.start(currentTime);
-
-    // Short descending tone
-    oscillator.frequency.exponentialRampToValueAtTime(200, currentTime + 0.3);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, currentTime + 0.3);
-
-    oscillator.stop(currentTime + 0.3);
-
-    console.log('Call end tone played');
+    console.log(`📞 Incoming ${callType} call ringtone started`);
   } catch (error) {
-    console.error('Play call end tone error:', error);
+    console.error("Play incoming ringtone error:", error);
   }
 };
 
-// Auto-unlock on first user interaction
+/**
+ * Dừng chuông cuộc gọi đến
+ */
+export const stopCallRingtone = () => {
+  try {
+    isIncomingRingtonePlaying = false;
+
+    if (incomingRingtoneInterval) {
+      clearInterval(incomingRingtoneInterval);
+      incomingRingtoneInterval = null;
+    }
+
+    incomingRingtoneNodes.forEach((node) => {
+      try {
+        node.stop();
+        node.disconnect();
+      } catch (e) {}
+    });
+    incomingRingtoneNodes = [];
+
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+
+    console.log("🔇 Incoming call ringtone stopped");
+  } catch (error) {
+    console.error("Stop incoming ringtone error:", error);
+  }
+};
+
+/**
+ * Tạo một nhịp chuông gọi đi (tiếng tút... kéo dài 1.2s)
+ */
+const playOutgoingPatternCycle = () => {
+  const ctx = initAudioContext();
+  if (!ctx || ctx.state !== 'running') return;
+
+  const now = ctx.currentTime;
+  const vol = isIOS() ? 0.35 : 0.25;
+
+  try {
+    // Chuẩn âm báo gọi đi: 440Hz + 480Hz
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(440, now);
+
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(480, now);
+
+    gainNode.gain.setValueAtTime(0.001, now);
+    gainNode.gain.linearRampToValueAtTime(vol, now + 0.05);
+    gainNode.gain.setValueAtTime(vol, now + 1.15);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc1.start(now);
+    osc2.start(now);
+
+    osc1.stop(now + 1.2);
+    osc2.stop(now + 1.2);
+
+    outgoingRingtoneNodes.push(osc1, osc2);
+  } catch (e) {
+    // Context có thể tạm dừng
+  }
+};
+
+/**
+ * Phát tiếng chuông gọi đi (tút... tút...) khi đang chờ đối phương bắt máy
+ */
+export const playOutgoingCallRingtone = () => {
+  try {
+    stopOutgoingCallRingtone();
+    stopCallRingtone();
+
+    const ctx = initAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    isOutgoingRingtonePlaying = true;
+
+    // Phát tiếng tút đầu tiên
+    playOutgoingPatternCycle();
+
+    // Lặp lại chu kỳ mỗi 3.2 giây (1.2s kêu + 2.0s im lặng)
+    outgoingRingtoneInterval = setInterval(() => {
+      if (!isOutgoingRingtonePlaying) {
+        clearInterval(outgoingRingtoneInterval);
+        return;
+      }
+      playOutgoingPatternCycle();
+    }, 3200);
+
+    console.log("📞 Outgoing call ringtone started (tut... tut...)");
+  } catch (error) {
+    console.error("Play outgoing call ringtone error:", error);
+  }
+};
+
+/**
+ * Dừng tiếng chuông gọi đi
+ */
+export const stopOutgoingCallRingtone = () => {
+  try {
+    isOutgoingRingtonePlaying = false;
+
+    if (outgoingRingtoneInterval) {
+      clearInterval(outgoingRingtoneInterval);
+      outgoingRingtoneInterval = null;
+    }
+
+    outgoingRingtoneNodes.forEach((node) => {
+      try {
+        node.stop();
+        node.disconnect();
+      } catch (e) {}
+    });
+    outgoingRingtoneNodes = [];
+
+    console.log("🔇 Outgoing call ringtone stopped");
+  } catch (error) {
+    console.error("Stop outgoing call ringtone error:", error);
+  }
+};
+
+/**
+ * Phát 3 tiếng bíp dứt khoát khi cuộc gọi kết thúc
+ */
+export const playCallEndTone = () => {
+  try {
+    // Dừng mọi âm thanh chuông đang chạy
+    stopCallRingtone();
+    stopOutgoingCallRingtone();
+
+    const ctx = initAudioContext();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const now = ctx.currentTime;
+    const vol = isIOS() ? 0.4 : 0.3;
+
+    // 3 tiếng bíp ngắn cách nhau 0.1s
+    [0, 0.16, 0.32].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(440, now + offset);
+
+      gain.gain.setValueAtTime(0.001, now + offset);
+      gain.gain.linearRampToValueAtTime(vol, now + offset + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.11);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.11);
+    });
+
+    console.log("📴 Call end tone played");
+  } catch (error) {
+    console.error("Play call end tone error:", error);
+  }
+};
+
+export const isRingtoneActive = () => {
+  return isIncomingRingtonePlaying || isOutgoingRingtonePlaying;
+};
+
+// Tự động mở khóa audio khi user click / chạm lần đầu trên trang
 if (typeof window !== 'undefined') {
-  const events = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+  const events = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
   const handleFirstInteraction = () => {
     unlockCallRingtone();
-    // Remove listeners after first interaction
-    events.forEach(event => {
-      window.removeEventListener(event, handleFirstInteraction);
-    });
+    events.forEach((ev) => window.removeEventListener(ev, handleFirstInteraction));
   };
-
-  events.forEach(event => {
-    window.addEventListener(event, handleFirstInteraction);
-  });
+  events.forEach((ev) => window.addEventListener(ev, handleFirstInteraction, { passive: true }));
 }

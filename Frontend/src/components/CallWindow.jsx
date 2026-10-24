@@ -16,6 +16,7 @@ const CallWindow = ({
   const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [duration, setDuration] = useState(0);
+  const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
@@ -41,52 +42,93 @@ const CallWindow = ({
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => {});
     }
   }, [localStream]);
 
-  // 2. Remote Stream Handling
+  // 2. Remote Stream Handling & Video Track Detection
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
+    if (!remoteStream) {
+      setHasRemoteVideo(false);
+      return;
+    }
 
-      const playVideo = async () => {
+    const checkVideoState = () => {
+      const vTracks = remoteStream.getVideoTracks();
+      const active = vTracks.length > 0 && vTracks.some((t) => t.enabled && t.readyState === "live");
+      setHasRemoteVideo(active);
+    };
+
+    checkVideoState();
+
+    remoteStream.onaddtrack = checkVideoState;
+    remoteStream.onremovetrack = checkVideoState;
+
+    remoteStream.getVideoTracks().forEach((track) => {
+      track.onmute = checkVideoState;
+      track.onunmute = checkVideoState;
+      track.onended = checkVideoState;
+    });
+
+    if (remoteVideoRef.current) {
+      const videoEl = remoteVideoRef.current;
+      if (videoEl.srcObject !== remoteStream) {
+        videoEl.srcObject = remoteStream;
+      }
+
+      const attemptPlay = async () => {
         try {
-          if (remoteVideoRef.current.paused) {
-            await remoteVideoRef.current.play();
+          if (videoEl.paused) {
+            await videoEl.play();
           }
           setNeedsUserInteraction(false);
-        } catch (e) {
-          console.error("Error playing remote video:", e);
-          if (e.name === "NotAllowedError") {
+        } catch (err) {
+          console.warn("Direct play failed (autoplay policy), fallback to muted play:", err);
+          // Mute trước để video luôn hiển thị khung hình, tránh màn hình đen!
+          videoEl.muted = true;
+          try {
+            await videoEl.play();
             setNeedsUserInteraction(true);
+          } catch (mutedErr) {
+            console.error("Muted play also failed:", mutedErr);
           }
         }
       };
 
-      playVideo();
+      const handleCanPlay = () => attemptPlay();
+      videoEl.addEventListener("loadedmetadata", handleCanPlay);
+      videoEl.addEventListener("canplay", handleCanPlay);
+
+      attemptPlay();
+
+      return () => {
+        videoEl.removeEventListener("loadedmetadata", handleCanPlay);
+        videoEl.removeEventListener("canplay", handleCanPlay);
+      };
     }
   }, [remoteStream]);
 
   // 3. Sync mute state with speaker toggle
   useEffect(() => {
-    if (remoteVideoRef.current) {
+    if (remoteVideoRef.current && !needsUserInteraction) {
       remoteVideoRef.current.muted = !isSpeakerOn;
     }
-  }, [isSpeakerOn]);
+  }, [isSpeakerOn, needsUserInteraction]);
 
   const toggleSpeaker = () => {
     if (remoteVideoRef.current) {
-      remoteVideoRef.current.muted = !remoteVideoRef.current.muted;
-      setIsSpeakerOn(!remoteVideoRef.current.muted);
+      const newMuted = !remoteVideoRef.current.muted;
+      remoteVideoRef.current.muted = newMuted;
+      setIsSpeakerOn(!newMuted);
     }
   };
 
   const handleManualPlay = async () => {
     if (remoteVideoRef.current) {
       try {
+        remoteVideoRef.current.muted = !isSpeakerOn;
         await remoteVideoRef.current.play();
         setNeedsUserInteraction(false);
-        remoteVideoRef.current.muted = !isSpeakerOn;
       } catch (e) {
         console.error("Manual play failed:", e);
       }
@@ -97,7 +139,12 @@ const CallWindow = ({
   const partnerAvatar = partner?.avatar || "/default.jpg";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-slate-950 text-white overflow-hidden select-none">
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-slate-950 text-white overflow-hidden select-none"
+      onClick={() => {
+        if (needsUserInteraction) handleManualPlay();
+      }}
+    >
       {/* Background Ambient Glow */}
       <div className="absolute inset-0 bg-radial from-indigo-900/30 via-slate-950 to-slate-950 -z-10" />
 
@@ -125,22 +172,53 @@ const CallWindow = ({
       <div className="relative w-full flex-1 flex items-center justify-center p-4">
         {/* VIDEO CALL REMOTE VIEW */}
         {isVideoCall ? (
-          <div className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden bg-slate-900 shadow-2xl border border-white/10">
+          <div className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden bg-slate-900 shadow-2xl border border-white/10 flex items-center justify-center">
+            {/* Video chính của đối phương */}
             <video
               ref={remoteVideoRef}
               autoPlay
               playsInline
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover transition-opacity duration-300 ${
+                hasRemoteVideo ? "opacity-100" : "opacity-0 absolute pointer-events-none"
+              }`}
             />
 
-            {/* Unmute prompt if browser blocks autoplay */}
+            {/* Màn hình chờ nếu đối phương tắt camera hoặc track video chưa tới */}
+            {!hasRemoteVideo && (
+              <div className="flex flex-col items-center justify-center text-center p-6 z-10">
+                <div className="relative flex items-center justify-center mb-5">
+                  <div className="absolute w-32 h-32 rounded-full bg-indigo-500/20 animate-ping" />
+                  <div className="absolute w-40 h-40 rounded-full bg-indigo-500/10 animate-pulse" />
+                  <div className="relative w-28 h-28 rounded-full overflow-hidden border-4 border-indigo-500/50 shadow-2xl bg-slate-800">
+                    <img
+                      src={partnerAvatar}
+                      alt={partnerName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/default.jpg";
+                      }}
+                    />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-white/90 mb-1">{partnerName}</h3>
+                <div className="flex items-center gap-2 text-xs text-white/60 bg-black/40 px-3.5 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
+                  <VideoOff size={14} className="text-amber-400" />
+                  <span>Đối phương đang tắt camera hoặc đang kết nối...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Thông báo bật âm thanh nếu browser chặn autoplay */}
             {needsUserInteraction && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-30">
+              <div className="absolute top-4 left-4 z-40">
                 <button
-                  onClick={handleManualPlay}
-                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleManualPlay();
+                  }}
+                  className="px-4 py-2 bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2 backdrop-blur-md border border-white/20 animate-bounce"
                 >
-                  <Volume2 size={20} /> Nhấn để bật âm thanh
+                  <Volume2 size={16} /> Bấm để bật âm thanh
                 </button>
               </div>
             )}
@@ -199,7 +277,10 @@ const CallWindow = ({
 
             {needsUserInteraction && (
               <button
-                onClick={handleManualPlay}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleManualPlay();
+                }}
                 className="mt-4 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2 animate-bounce"
               >
                 <Volume2 size={16} /> Bấm để bật loa
