@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader2, Trash2, AlertCircle, RefreshCw, X, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,6 +33,7 @@ export const PostCard = ({
   onRetryUpload,
   onCancelUpload,
 }) => {
+  const navigate = useNavigate();
   const { currentUser: authUser } = useAuth();
   const currentUser = authUser || propUser;
 
@@ -166,15 +168,10 @@ export const PostCard = ({
     }
   };
 
-  // Toggle xem danh sách bình luận
-  const handleToggleComments = async () => {
-    if (isUploading) return;
-    const nextState = !showComments;
-    setShowComments(nextState);
-
-    if (nextState) {
-      fetchComments(commentSortMode);
-    }
+  // Chuyển trực tiếp sang trang bài viết & bình luận riêng biệt
+  const handleToggleComments = () => {
+    if (isUploading || !currentPost?.id) return;
+    navigate(`/post/${currentPost.id}`);
   };
 
   // Đổi chế độ sắp xếp bình luận (Phù hợp nhất vs Tất cả bình luận)
@@ -237,13 +234,23 @@ export const PostCard = ({
         )
       );
     }
-    setCommentsCount((prev) => prev + 1);
+    const nextCount = commentsCount + 1;
+    setCommentsCount(nextCount);
+    onPostUpdated?.({
+      ...currentPost,
+      comments_count: nextCount,
+    });
   };
 
   // Xóa bình luận khỏi danh sách
   const handleCommentDeleted = (commentId) => {
     setComments((prev) => prev.filter((c) => c.id !== commentId));
-    setCommentsCount((prev) => Math.max(0, prev - 1));
+    const nextCount = Math.max(0, commentsCount - 1);
+    setCommentsCount(nextCount);
+    onPostUpdated?.({
+      ...currentPost,
+      comments_count: nextCount,
+    });
   };
 
   return (

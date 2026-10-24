@@ -43,7 +43,27 @@ export default function liveSocket(io) {
       socket.join(roomName);
       socket.activeViewingStreamId = sId;
 
-      const room = liveRooms.get(sId);
+      let room = liveRooms.get(sId);
+      // Fallback: nếu server khởi động lại hoặc host đã vào trước đó
+      if (!room) {
+        try {
+          const socketsInRoom = await io.in(roomName).fetchSockets();
+          const hostSocket = socketsInRoom.find((s) => s.isStreamHost && Number(s.activeStreamId) === sId);
+          if (hostSocket) {
+            room = {
+              hostSocketId: hostSocket.id,
+              hostUserId: hostSocket.userId,
+              hostUser: hostSocket.user,
+              viewers: new Map(),
+            };
+            liveRooms.set(sId, room);
+            console.log(`[LiveStream] Recovered room ${sId} with host socket ${hostSocket.id}`);
+          }
+        } catch (e) {
+          console.error('[LiveStream] Error recovering host socket:', e);
+        }
+      }
+
       if (room) {
         room.viewers.set(socket.id, {
           socketId: socket.id,
@@ -60,11 +80,44 @@ export default function liveSocket(io) {
 
         // Báo cho host biết có viewer mới để Host tạo RTCPeerConnection offer gửi tới viewer này
         if (room.hostSocketId) {
+          console.log(`[LiveStream] Emitting viewer_joined to host ${room.hostSocketId} for viewer ${socket.id}`);
           io.to(room.hostSocketId).emit('viewer_joined', {
             viewerSocketId: socket.id,
             viewerUser: user,
           });
         }
+      } else {
+        console.warn(`[LiveStream] Viewer ${socket.id} joined stream ${sId} but host not found yet.`);
+      }
+    });
+
+    // 2.1. VIEWER YÊU CẦU LẠI STREAM (NẾU CHƯA NHẬN ĐƯỢC VIDEO HOẶC BỊ ĐEN HÌNH)
+    socket.on('viewer_request_stream', async ({ streamId, user }) => {
+      const sId = Number(streamId);
+      if (!sId) return;
+
+      let room = liveRooms.get(sId);
+      if (!room) {
+        const roomName = `livestream_${sId}`;
+        const socketsInRoom = await io.in(roomName).fetchSockets();
+        const hostSocket = socketsInRoom.find((s) => s.isStreamHost && Number(s.activeStreamId) === sId);
+        if (hostSocket) {
+          room = {
+            hostSocketId: hostSocket.id,
+            hostUserId: hostSocket.userId,
+            hostUser: hostSocket.user,
+            viewers: new Map(),
+          };
+          liveRooms.set(sId, room);
+        }
+      }
+
+      if (room?.hostSocketId) {
+        console.log(`[LiveStream] Viewer ${socket.id} re-requested stream from host ${room.hostSocketId}`);
+        io.to(room.hostSocketId).emit('viewer_joined', {
+          viewerSocketId: socket.id,
+          viewerUser: user,
+        });
       }
     });
 

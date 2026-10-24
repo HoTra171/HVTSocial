@@ -73,10 +73,13 @@ export const useChatMessages = (chatId, socket) => {
         queryClient.setQueryData(queryKey, (oldData) => {
             if (!oldData) return { pages: [[newMessage]], pageParams: [null] };
 
-            // Tin nhắn mới luôn append vào Main Page (Page đầu tiên trong cấu trúc dữ liệu nếu fetch mới nhất trước)
-            // Nhưng structure hiện tại của React Query: Pages[0] là lượt fetch đầu tiên (Latest).
-            // Nên ta append vào Pages[0].
             const newPages = [...oldData.pages];
+            // Tránh trùng lặp tin nhắn nếu nhận qua nhiều kênh socket
+            const isDuplicate = newPages.some(page =>
+                Array.isArray(page) && page.some(m => m.id === newMessage.id)
+            );
+            if (isDuplicate) return oldData;
+
             newPages[0] = [...newPages[0], newMessage];
             return {
                 ...oldData,

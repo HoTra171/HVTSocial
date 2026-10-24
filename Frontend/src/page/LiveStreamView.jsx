@@ -25,6 +25,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth, useSocket } from '../contexts';
 import { liveStreamApi } from '../api/liveStreamApi';
+import { playNotificationSound, initAudio } from '../utils/notificationSound';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -48,6 +49,8 @@ const LiveStreamView = () => {
   const [isStreamEnded, setIsStreamEnded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showUnmutePrompt, setShowUnmutePrompt] = useState(false);
 
   // Chat & Reactions
   const [comments, setComments] = useState([]);
@@ -57,6 +60,8 @@ const LiveStreamView = () => {
   // Media & WebRTC Refs
   const remoteVideoRef = useRef(null);
   const peerRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
+  const retryCountRef = useRef(0);
   const commentsEndRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -114,16 +119,61 @@ const LiveStreamView = () => {
     const handleOffer = async ({ fromHostSocketId, offer }) => {
       console.log(`[Viewer] Received WebRTC offer from host ${fromHostSocketId}`);
       cleanupWebRTC();
+      pendingCandidatesRef.current = [];
 
       try {
         const pc = new RTCPeerConnection(ICE_SERVERS);
         peerRef.current = pc;
 
+        // Giám sát trạng thái kết nối WebRTC
+        pc.onconnectionstatechange = () => {
+          console.log('[Viewer] WebRTC connection state:', pc.connectionState);
+          if (pc.connectionState === 'connected') {
+            console.log('[Viewer] WebRTC connected successfully!');
+          } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+            console.warn('[Viewer] WebRTC disconnected, requesting stream refresh...');
+            setIsVideoPlaying(false);
+          }
+        };
+
         // Nhận track media từ host
         pc.ontrack = (event) => {
-          console.log('[Viewer] Received host media stream track');
-          if (remoteVideoRef.current && event.streams[0]) {
-            remoteVideoRef.current.srcObject = event.streams[0];
+          console.log('[Viewer] Received host media stream track:', event.track.kind);
+          if (remoteVideoRef.current) {
+            let stream = (event.streams && event.streams[0]) ? event.streams[0] : null;
+            if (!stream) {
+              if (!remoteVideoRef.current.srcObject) {
+                stream = new MediaStream();
+                remoteVideoRef.current.srcObject = stream;
+              } else {
+                stream = remoteVideoRef.current.srcObject;
+              }
+              stream.addTrack(event.track);
+            } else {
+              remoteVideoRef.current.srcObject = stream;
+            }
+
+            // Gọi play() và xử lý chính sách Autoplay của trình duyệt
+            const playPromise = remoteVideoRef.current.play();
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log('[Viewer] Video playback started with sound');
+                  setIsVideoPlaying(true);
+                  setShowUnmutePrompt(false);
+                })
+                .catch((err) => {
+                  console.warn('[Viewer] Autoplay with sound blocked. Muting to display video:', err);
+                  if (remoteVideoRef.current) {
+                    remoteVideoRef.current.muted = true;
+                    setIsMuted(true);
+                    setShowUnmutePrompt(true);
+                    remoteVideoRef.current.play()
+                      .then(() => setIsVideoPlaying(true))
+                      .catch((e) => console.error('[Viewer] Muted play failed:', e));
+                  }
+                });
+            }
           }
         };
 
@@ -138,6 +188,17 @@ const LiveStreamView = () => {
         };
 
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+        // Thêm các ICE candidate đã đến sớm trước khi remoteDescription hoàn tất
+        while (pendingCandidatesRef.current.length > 0) {
+          const cand = pendingCandidatesRef.current.shift();
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.warn('[Viewer] Error adding queued ICE candidate:', e);
+          }
+        }
+
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
 
@@ -154,12 +215,17 @@ const LiveStreamView = () => {
 
     // Khi nhận ICE candidate từ Host
     const handleIceCandidate = async ({ candidate }) => {
-      if (peerRef.current && candidate) {
-        try {
-          await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error('[Viewer] Add ICE candidate error:', err);
-        }
+      if (!candidate) return;
+      const pc = peerRef.current;
+      if (!pc || !pc.remoteDescription || !pc.remoteDescription.type) {
+        console.log('[Viewer] Queueing early ICE candidate from host');
+        pendingCandidatesRef.current.push(candidate);
+        return;
+      }
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.error('[Viewer] Add ICE candidate error:', err);
       }
     };
 
@@ -171,6 +237,10 @@ const LiveStreamView = () => {
     // Khi nhận bình luận mới
     const handleNewComment = (comment) => {
       setComments((prev) => [...prev.slice(-40), comment]);
+      // Phát tiếng chuông thông báo khi có tin nhắn mới trên live
+      if (comment.user?.id !== currentUser?.id) {
+        playNotificationSound();
+      }
       setTimeout(() => {
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 50);
@@ -188,6 +258,7 @@ const LiveStreamView = () => {
     const handleStreamEnded = () => {
       setIsStreamEnded(true);
       cleanupWebRTC();
+      setIsVideoPlaying(false);
       toast('Buổi phát trực tiếp đã kết thúc', { icon: 'ℹ️' });
     };
 
@@ -204,7 +275,19 @@ const LiveStreamView = () => {
       user: currentUser,
     });
 
+    // Định kỳ kiểm tra nếu sau 3s chưa nhận được video thì tự động gửi yêu cầu kết nối lại tới Host
+    const checkStreamTimer = setInterval(() => {
+      const video = remoteVideoRef.current;
+      const hasTracks = video?.srcObject && video.srcObject.getTracks().length > 0;
+      if (!hasTracks && retryCountRef.current < 4 && !isStreamEnded) {
+        retryCountRef.current += 1;
+        console.log(`[Viewer] Requesting stream refresh (${retryCountRef.current}/4)...`);
+        socket.emit('viewer_request_stream', { streamId, user: currentUser });
+      }
+    }, 2800);
+
     return () => {
+      clearInterval(checkStreamTimer);
       socket.emit('viewer_leave_livestream', { streamId });
       socket.off('livestream_offer', handleOffer);
       socket.off('livestream_ice_candidate', handleIceCandidate);
@@ -274,6 +357,14 @@ const LiveStreamView = () => {
   return (
     <div
       ref={containerRef}
+      onClick={() => {
+        initAudio();
+        if (showUnmutePrompt && remoteVideoRef.current) {
+          remoteVideoRef.current.muted = false;
+          setIsMuted(false);
+          setShowUnmutePrompt(false);
+        }
+      }}
       className="fixed inset-0 bg-slate-950 text-white flex flex-col z-50 select-none overflow-hidden"
     >
       {/* 1. TOP OVERLAY HEADER */}
@@ -356,8 +447,72 @@ const LiveStreamView = () => {
           ref={remoteVideoRef}
           autoPlay
           playsInline
+          onLoadedMetadata={() => {
+            console.log('[Viewer] Video metadata loaded');
+            remoteVideoRef.current?.play().catch(() => {});
+          }}
+          onPlaying={() => {
+            console.log('[Viewer] Video stream is actively playing');
+            setIsVideoPlaying(true);
+          }}
           className="w-full h-full object-cover"
         />
+
+        {/* CONNECTING / BUFFERING OVERLAY - KHÔNG ĐỂ MÀN HÌNH BỊ TỐI THUI */}
+        {!isVideoPlaying && !isStreamEnded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur-sm z-10 p-6 text-center animate-in fade-in">
+            <div className="relative mb-5">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full p-1 bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 animate-spin">
+                <div className="w-full h-full bg-slate-950 rounded-full" />
+              </div>
+              <img
+                src={host.avatar || '/default.jpg'}
+                alt=""
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover absolute inset-0 m-auto ring-4 ring-black"
+                onError={(e) => { e.currentTarget.src = '/default.jpg'; }}
+              />
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-white mb-1.5">
+              Đang kết nối luồng phát của {host.full_name || 'Host'}...
+            </h3>
+            <p className="text-xs text-slate-400 max-w-xs mb-5 leading-relaxed">
+              Vui lòng đợi giây lát, hình ảnh và âm thanh trực tiếp đang được đồng bộ qua WebRTC
+            </p>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (socket) {
+                  socket.emit('viewer_request_stream', { streamId, user: currentUser });
+                  toast('Đang gửi lại yêu cầu kết nối video tới Host...', { icon: '🔄' });
+                }
+              }}
+              className="px-5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-2 cursor-pointer border border-white/10"
+            >
+              <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+              <span>Làm mới kết nối video</span>
+            </button>
+          </div>
+        )}
+
+        {/* UNMUTE FLOATING PROMPT KHI TRÌNH DUYỆT CHẶN TIẾNG AUTOPLAY */}
+        {showUnmutePrompt && isVideoPlaying && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (remoteVideoRef.current) {
+                remoteVideoRef.current.muted = false;
+                setIsMuted(false);
+                setShowUnmutePrompt(false);
+              }
+            }}
+            className="absolute top-20 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xl backdrop-blur-md transition-all flex items-center gap-2 animate-bounce cursor-pointer border border-white/20"
+          >
+            <VolumeX className="w-4 h-4" />
+            <span>Chạm để bật âm thanh live</span>
+          </button>
+        )}
 
         {/* FLOATING REACTIONS CANVAS */}
         <div className="absolute inset-y-0 right-4 sm:right-12 w-24 pointer-events-none overflow-hidden z-20">

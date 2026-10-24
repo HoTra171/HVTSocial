@@ -160,6 +160,9 @@ export default function chatSocket(io) {
                 content: notificationContent,
               });
 
+              // Gửi receive_message tới room cá nhân của người nhận để App.jsx phát tiếng chuông và cập nhật thông báo
+              io.to(`user_${u.user_id}`).emit('receive_message', message);
+
               // cập nhật recent realtime cho tất cả user trong chat
               chatUsers.forEach((u) => {
                 io.to(`user_${u.user_id}`).emit('recent_chat_updated', {

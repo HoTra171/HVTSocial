@@ -35,6 +35,7 @@ import CallHistoryItem from "../components/CallHistoryItem.jsx";
 import { Virtuoso } from "react-virtuoso";
 import { useChatMessages } from "../hooks/useChatMessages";
 import { ChatHeader } from "../components/chat/ChatHeader";
+import { playNotificationSound } from "../utils/notificationSound";
 
 const PAGE = 15;
 
@@ -367,7 +368,7 @@ const Chatbox = () => {
 
       // Phát âm thanh nếu tin nhắn không phải từ mình
       if (msg.sender_id !== myId) {
-        // playMessageSound(); - Removed (Handled globally in App.jsx)
+        playNotificationSound();
       }
 
       // nếu muốn tự mark read khi đang mở phòng

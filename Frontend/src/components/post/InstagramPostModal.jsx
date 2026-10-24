@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   Heart,
@@ -30,6 +30,7 @@ const InstagramPostModal = ({ post, onClose, currentUser, onPostUpdated }) => {
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+  const commentInputRef = useRef(null);
 
   const images = post?.image_urls && post.image_urls.length > 0 ? post.image_urls : [];
 
@@ -149,6 +150,10 @@ const InstagramPostModal = ({ post, onClose, currentUser, onPostUpdated }) => {
         };
         setComments((prev) => [added, ...prev]);
         setNewComment('');
+        onPostUpdated?.({
+          ...post,
+          comments_count: (Number(post.comments_count) || 0) + 1,
+        });
         toast.success('Đã gửi bình luận');
       }
     } catch (err) {
@@ -375,6 +380,7 @@ const InstagramPostModal = ({ post, onClose, currentUser, onPostUpdated }) => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => commentInputRef.current?.focus()}
                   className="p-1 text-slate-700 hover:text-indigo-600 transition cursor-pointer"
                   title="Bình luận"
                 >
@@ -417,6 +423,7 @@ const InstagramPostModal = ({ post, onClose, currentUser, onPostUpdated }) => {
             className="flex items-center gap-2 px-4 py-3 border-t border-slate-100 bg-white flex-shrink-0"
           >
             <input
+              ref={commentInputRef}
               type="text"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}

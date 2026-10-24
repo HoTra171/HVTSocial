@@ -218,73 +218,20 @@ const PostDetail = () => {
         </div>
       </header>
 
-      {/* Main 2-Column Content */}
+      {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 flex items-center justify-center">
         {loading ? (
           <div className="w-full max-w-2xl">
             <PostSkeleton />
           </div>
         ) : post ? (
-          <div className="w-full h-full min-h-[580px] bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col md:flex-row">
-            {/* CỘT TRÁI: RẠP PHIM MEDIA (FACEBOOK STYLE) */}
-            <div className="md:w-7/12 bg-black flex flex-col justify-between relative select-none min-h-[300px] md:min-h-[620px] overflow-hidden">
-              <div className="flex-1 flex items-center justify-center relative w-full h-full min-h-[280px]">
-                {images.length > 0 ? (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <img
-                      src={images[currentImageIndex]}
-                      alt="Post Media"
-                      className="max-h-[75vh] w-full object-contain"
-                    />
-
-                    {images.length > 1 && (
-                      <>
-                        {currentImageIndex > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setCurrentImageIndex((p) => p - 1)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
-                          >
-                            <ChevronLeft className="w-6 h-6" />
-                          </button>
-                        )}
-                        {currentImageIndex < images.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={() => setCurrentImageIndex((p) => p + 1)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
-                          >
-                            <ChevronRight className="w-6 h-6" />
-                          </button>
-                        )}
-
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md">
-                          {images.map((_, idx) => (
-                            <div
-                              key={idx}
-                              className={`h-1.5 rounded-full transition-all ${
-                                idx === currentImageIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-8 max-w-md text-center text-white/90">
-                    <p className="text-lg font-medium leading-relaxed italic">
-                      "{post.content || 'Bài viết văn bản'}"
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* CỘT PHẢI: TRANG BÌNH LUẬN RIÊNG BIỆT (FACEBOOK STYLE) */}
-            <div className="md:w-5/12 flex flex-col bg-white dark:bg-slate-900 h-full flex-1 min-w-0">
+          <div className="w-full bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            {/* ============================================================== */}
+            {/* MOBILE VIEW (< md): FLUID SINGLE-COLUMN FEED & COMMENTS */}
+            {/* ============================================================== */}
+            <div className="md:hidden flex flex-col w-full">
               {/* 1. Header tác giả */}
-              <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+              <div className="p-3.5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80">
                 <Link
                   to={`/profile/${author.id}`}
                   className="flex items-center gap-3 group min-w-0"
@@ -301,7 +248,7 @@ const PostDetail = () => {
                     <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 transition">
                       {authorName}
                     </h4>
-                    <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
                       <span>{dayjs(post.created_at || post.createdAt).fromNow()}</span>
                       <span>•</span>
                       <span>{post.status === 'private' ? 'Chỉ mình tôi' : 'Công khai'}</span>
@@ -318,27 +265,72 @@ const PostDetail = () => {
                 )}
               </div>
 
-              {/* 2. Thân nội dung & Nút tương tác */}
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 flex-shrink-0">
-                {post.content && (
-                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto pr-1">
-                    {post.content}
-                  </p>
-                )}
+              {/* 2. Nội dung bài viết */}
+              {post.content && (
+                <div className="px-3.5 pt-3 pb-2 text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  {post.content}
+                </div>
+              )}
 
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800">
-                  <span className="flex items-center gap-1 font-medium">
+              {/* 3. Media Carousel (nếu có ảnh) */}
+              {images.length > 0 && (
+                <div className="relative w-full bg-slate-950 flex items-center justify-center max-h-[46vh] overflow-hidden select-none my-1">
+                  <img
+                    src={images[currentImageIndex]}
+                    alt="Post Media"
+                    className="max-h-[46vh] w-full object-contain"
+                  />
+
+                  {images.length > 1 && (
+                    <>
+                      {currentImageIndex > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setCurrentImageIndex((p) => p - 1)}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-xs transition active:scale-95 cursor-pointer"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                      )}
+                      {currentImageIndex < images.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setCurrentImageIndex((p) => p + 1)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-xs transition active:scale-95 cursor-pointer"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      )}
+                      <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs">
+                        {images.map((_, idx) => (
+                          <div
+                            key={idx}
+                            className={`h-1.5 rounded-full transition-all ${
+                              idx === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* 4. Thống kê & Nút hành động */}
+              <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
                     <span className="text-rose-500">❤️</span>
                     <span>{likesCount} người thích</span>
                   </span>
                   <span>{commentsCount} bình luận</span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 pt-2 mt-1 border-t border-slate-100 dark:border-slate-800/80">
+                <div className="grid grid-cols-3 gap-1.5 pt-2">
                   <button
                     type="button"
                     onClick={handleToggleLike}
-                    className={`py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition ${
+                    className={`py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
                       liked
                         ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -351,7 +343,7 @@ const PostDetail = () => {
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="py-1.5 rounded-xl font-semibold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5 transition"
+                    className="py-1.5 rounded-xl font-semibold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5 transition cursor-pointer"
                   >
                     <Share2 className="w-4 h-4" />
                     <span>Chia sẻ</span>
@@ -360,7 +352,7 @@ const PostDetail = () => {
                   <button
                     type="button"
                     onClick={handleToggleSave}
-                    className={`py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition ${
+                    className={`py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
                       saved
                         ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -372,13 +364,13 @@ const PostDetail = () => {
                 </div>
               </div>
 
-              {/* 3. THANH CHỌN 2 CHẾ ĐỘ BÌNH LUẬN (FACEBOOK STYLE) */}
-              <div className="px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs flex-shrink-0">
+              {/* 5. Bộ lọc 2 chế độ bình luận */}
+              <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs bg-white dark:bg-slate-900">
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowSortDropdown((p) => !p)}
-                    className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 transition cursor-pointer"
+                    className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 cursor-pointer"
                   >
                     {sortMode === 'newest' ? (
                       <>
@@ -399,7 +391,7 @@ const PostDetail = () => {
                   </button>
 
                   {showSortDropdown && (
-                    <div className="absolute left-0 mt-1.5 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 z-30 animate-in fade-in">
+                    <div className="absolute left-0 mt-1.5 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 z-40 animate-in fade-in zoom-in-95">
                       <button
                         type="button"
                         onClick={() => handleSwitchSort('newest')}
@@ -413,7 +405,7 @@ const PostDetail = () => {
                         <div>
                           <p className="text-xs font-bold">Tất cả bình luận (Mới nhất)</p>
                           <p className="text-[11px] text-slate-400 font-normal mt-0.5">
-                            Xem mọi bình luận theo thứ tự thời gian mới nhất (thấy ngay bình luận của bạn).
+                            Xem mọi bình luận theo thứ tự thời gian mới nhất.
                           </p>
                         </div>
                       </button>
@@ -431,7 +423,7 @@ const PostDetail = () => {
                         <div>
                           <p className="text-xs font-bold">Phù hợp nhất</p>
                           <p className="text-[11px] text-slate-400 font-normal mt-0.5">
-                            Ưu tiên hiển thị bình luận có nhiều lượt thích và nhiều phản hồi nhất.
+                            Ưu tiên hiển thị bình luận có nhiều tương tác.
                           </p>
                         </div>
                       </button>
@@ -450,8 +442,8 @@ const PostDetail = () => {
                 </button>
               </div>
 
-              {/* 4. Khung bình luận cuộn độc lập */}
-              <div className="flex-1 overflow-y-auto">
+              {/* 6. Danh sách bình luận & Nhập bình luận */}
+              <div className="pb-8">
                 <PostCommentSection
                   postId={post.id}
                   currentUser={currentUser}
@@ -462,6 +454,250 @@ const PostDetail = () => {
                   onCommentDeleted={handleCommentDeleted}
                   hideQuickSortBar={true}
                 />
+              </div>
+            </div>
+
+            {/* ============================================================== */}
+            {/* DESKTOP VIEW (>= md): 2-COLUMN FACEBOOK THEATER LAYOUT */}
+            {/* ============================================================== */}
+            <div className="hidden md:flex flex-row min-h-[620px] w-full">
+              {/* CỘT TRÁI: RẠP PHIM MEDIA (FACEBOOK STYLE) */}
+              <div className="w-7/12 bg-black flex flex-col justify-between relative select-none min-h-[620px] overflow-hidden">
+                <div className="flex-1 flex items-center justify-center relative w-full h-full min-h-[280px]">
+                  {images.length > 0 ? (
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <img
+                        src={images[currentImageIndex]}
+                        alt="Post Media"
+                        className="max-h-[75vh] w-full object-contain"
+                      />
+
+                      {images.length > 1 && (
+                        <>
+                          {currentImageIndex > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setCurrentImageIndex((p) => p - 1)}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
+                            >
+                              <ChevronLeft className="w-6 h-6" />
+                            </button>
+                          )}
+                          {currentImageIndex < images.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setCurrentImageIndex((p) => p + 1)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/20 hover:bg-white/40 text-white backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
+                            >
+                              <ChevronRight className="w-6 h-6" />
+                            </button>
+                          )}
+
+                          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-md">
+                            {images.map((_, idx) => (
+                              <div
+                                key={idx}
+                                className={`h-1.5 rounded-full transition-all ${
+                                  idx === currentImageIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-8 max-w-md text-center text-white/90">
+                      <p className="text-lg font-medium leading-relaxed italic">
+                        "{post.content || 'Bài viết văn bản'}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CỘT PHẢI: TRANG BÌNH LUẬN RIÊNG BIỆT (FACEBOOK STYLE) */}
+              <div className="w-5/12 flex flex-col bg-white dark:bg-slate-900 h-full flex-1 min-w-0">
+                {/* 1. Header tác giả */}
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 flex-shrink-0">
+                  <Link
+                    to={`/profile/${author.id}`}
+                    className="flex items-center gap-3 group min-w-0"
+                  >
+                    <img
+                      src={authorAvatar}
+                      alt={authorName}
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.src = '/default.jpg';
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 transition">
+                        {authorName}
+                      </h4>
+                      <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                        <span>{dayjs(post.created_at || post.createdAt).fromNow()}</span>
+                        <span>•</span>
+                        <span>{post.status === 'private' ? 'Chỉ mình tôi' : 'Công khai'}</span>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {currentUser?.id !== author.id && (
+                    <FriendButton
+                      userId={author.id}
+                      currentUserId={currentUser?.id}
+                      fullWidth={false}
+                    />
+                  )}
+                </div>
+
+                {/* 2. Thân nội dung & Nút tương tác */}
+                <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 flex-shrink-0">
+                  {post.content && (
+                    <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto pr-1">
+                      {post.content}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-slate-400 pt-2.5 mt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="text-rose-500">❤️</span>
+                      <span>{likesCount} người thích</span>
+                    </span>
+                    <span>{commentsCount} bình luận</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 mt-1 border-t border-slate-100 dark:border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={handleToggleLike}
+                      className={`py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        liked
+                          ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${liked ? 'fill-rose-500' : ''}`} />
+                      <span>{liked ? 'Đã thích' : 'Thích'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyLink}
+                      className="py-1.5 rounded-xl font-semibold text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>Chia sẻ</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleSave}
+                      className={`py-1.5 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                        saved
+                          ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    >
+                      <Bookmark className={`w-4 h-4 ${saved ? 'fill-indigo-600' : ''}`} />
+                      <span>{saved ? 'Đã lưu' : 'Lưu'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. THANH CHỌN 2 CHẾ ĐỘ BÌNH LUẬN (FACEBOOK STYLE) */}
+                <div className="px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs flex-shrink-0">
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowSortDropdown((p) => !p)}
+                      className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/70 transition cursor-pointer"
+                    >
+                      {sortMode === 'newest' ? (
+                        <>
+                          <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>Tất cả bình luận (Mới nhất)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Phù hợp nhất</span>
+                        </>
+                      )}
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          showSortDropdown ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {showSortDropdown && (
+                      <div className="absolute left-0 mt-1.5 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-1.5 z-30 animate-in fade-in">
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchSort('newest')}
+                          className={`w-full text-left p-2.5 rounded-xl flex items-start gap-2.5 transition cursor-pointer ${
+                            sortMode === 'newest'
+                              ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <Clock className="w-4 h-4 mt-0.5 text-indigo-500 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold">Tất cả bình luận (Mới nhất)</p>
+                            <p className="text-[11px] text-slate-400 font-normal mt-0.5">
+                              Xem mọi bình luận theo thứ tự thời gian mới nhất (thấy ngay bình luận của bạn).
+                            </p>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSwitchSort('relevant')}
+                          className={`w-full text-left p-2.5 rounded-xl flex items-start gap-2.5 transition cursor-pointer mt-1 ${
+                            sortMode === 'relevant'
+                              ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          <Sparkles className="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold">Phù hợp nhất</p>
+                            <p className="text-[11px] text-slate-400 font-normal mt-0.5">
+                              Ưu tiên hiển thị bình luận có nhiều lượt thích và nhiều phản hồi nhất.
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => fetchComments(sortMode)}
+                    disabled={loadingComments}
+                    className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer disabled:opacity-50"
+                    title="Làm mới bình luận"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingComments ? 'animate-spin text-indigo-500' : ''}`} />
+                  </button>
+                </div>
+
+                {/* 4. Khung bình luận cuộn độc lập */}
+                <div className="flex-1 overflow-y-auto">
+                  <PostCommentSection
+                    postId={post.id}
+                    currentUser={currentUser}
+                    isPostOwner={currentUser?.id === author?.id}
+                    comments={comments}
+                    loadingComments={loadingComments}
+                    onCommentAdded={handleCommentAdded}
+                    onCommentDeleted={handleCommentDeleted}
+                    hideQuickSortBar={true}
+                  />
+                </div>
               </div>
             </div>
           </div>

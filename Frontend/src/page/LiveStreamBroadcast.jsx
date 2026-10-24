@@ -23,6 +23,7 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth, useSocket } from '../contexts';
 import { liveStreamApi } from '../api/liveStreamApi';
+import { playNotificationSound } from '../utils/notificationSound';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -56,6 +57,7 @@ const LiveStreamBroadcast = () => {
   const localVideoRef = useRef(null);
   const localStreamRef = useRef(null);
   const peersRef = useRef(new Map()); // viewerSocketId -> RTCPeerConnection
+  const pendingCandidatesRef = useRef(new Map()); // viewerSocketId -> RTCIceCandidate[]
   const timerRef = useRef(null);
   const commentsEndRef = useRef(null);
 
@@ -140,7 +142,20 @@ const LiveStreamBroadcast = () => {
     const handleViewerJoined = async ({ viewerSocketId, viewerUser }) => {
       console.log(`[Host] Viewer joined: ${viewerSocketId}`, viewerUser);
 
-      if (!localStreamRef.current) return;
+      if (!localStreamRef.current) {
+        console.warn('[Host] Cannot create offer: localStream is not ready');
+        return;
+      }
+
+      // Đóng connection cũ nếu có
+      const existingPc = peersRef.current.get(viewerSocketId);
+      if (existingPc) {
+        try {
+          existingPc.close();
+        } catch {}
+        peersRef.current.delete(viewerSocketId);
+      }
+      pendingCandidatesRef.current.delete(viewerSocketId);
 
       try {
         const pc = new RTCPeerConnection(ICE_SERVERS);
@@ -150,6 +165,11 @@ const LiveStreamBroadcast = () => {
         localStreamRef.current.getTracks().forEach((track) => {
           pc.addTrack(track, localStreamRef.current);
         });
+
+        // Giám sát trạng thái kết nối WebRTC với viewer
+        pc.onconnectionstatechange = () => {
+          console.log(`[Host] Connection with viewer ${viewerSocketId}: ${pc.connectionState}`);
+        };
 
         // ICE candidate handler
         pc.onicecandidate = (event) => {
@@ -181,6 +201,18 @@ const LiveStreamBroadcast = () => {
       if (pc) {
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+          // Thêm các ICE candidates đã được hàng đợi trước khi remoteDescription sẵn sàng
+          const queue = pendingCandidatesRef.current.get(fromViewerSocketId) || [];
+          while (queue.length > 0) {
+            const cand = queue.shift();
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(cand));
+            } catch (e) {
+              console.warn('[Host] Error adding queued candidate:', e);
+            }
+          }
+          pendingCandidatesRef.current.delete(fromViewerSocketId);
         } catch (err) {
           console.error('Set remote description error:', err);
         }
@@ -189,13 +221,18 @@ const LiveStreamBroadcast = () => {
 
     // Khi nhận ICE candidate từ viewer
     const handleIceCandidate = async ({ fromSocketId, candidate }) => {
+      if (!fromSocketId || !candidate) return;
       const pc = peersRef.current.get(fromSocketId);
-      if (pc && candidate) {
-        try {
-          await pc.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-          console.error('Add ice candidate error:', err);
-        }
+      if (!pc || !pc.remoteDescription || !pc.remoteDescription.type) {
+        const queue = pendingCandidatesRef.current.get(fromSocketId) || [];
+        queue.push(candidate);
+        pendingCandidatesRef.current.set(fromSocketId, queue);
+        return;
+      }
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (err) {
+        console.error('Add ice candidate error:', err);
       }
     };
 
@@ -218,6 +255,9 @@ const LiveStreamBroadcast = () => {
     // Nhận bình luận mới
     const handleNewComment = (comment) => {
       setComments((prev) => [...prev.slice(-40), comment]);
+      if (comment.user?.id !== currentUser?.id) {
+        playNotificationSound();
+      }
       setTimeout(() => {
         commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 50);

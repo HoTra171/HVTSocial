@@ -166,9 +166,10 @@ function App() {
       showSystemNotification("HVT Social", data.message || "Bạn có thông báo mới");
     };
 
-    const handleNewMessage = () => {
+    const handleNewMessage = (msg) => {
+      if (msg?.sender_id && Number(msg.sender_id) === Number(currentUser.id)) return;
       playNotificationSound();
-      showSystemNotification("Tin nhắn mới", "Bạn có một tin nhắn mới");
+      showSystemNotification("Tin nhắn mới", msg?.content || "Bạn có một tin nhắn mới");
     };
 
     const handleUnreadCount = (count) => {

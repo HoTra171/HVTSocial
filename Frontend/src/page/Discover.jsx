@@ -16,12 +16,12 @@ import {
   ArrowRight,
   TrendingUp,
 } from 'lucide-react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { userApi, postApi } from '../api';
 import { useAuth } from '../contexts';
 import PostCard from '../components/PostCard';
 import FriendButton from '../components/FriendButton';
-import InstagramPostModal from '../components/post/InstagramPostModal';
+import FacebookPostCommentModal from '../components/post/FacebookPostCommentModal';
 
 const EXPLORE_TABS = [
   { key: 'explore', label: 'Khám phá', icon: Compass },
@@ -31,6 +31,7 @@ const EXPLORE_TABS = [
 ];
 
 const Discover = () => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -371,7 +372,7 @@ const Discover = () => {
                   return (
                     <div
                       key={`grid-${post.id}`}
-                      onClick={() => setSelectedPost(post)}
+                      onClick={() => navigate(`/post/${post.id}`)}
                       className="group relative aspect-square bg-slate-100 overflow-hidden rounded-md sm:rounded-2xl cursor-pointer shadow-2xs select-none"
                     >
                       <img
@@ -536,7 +537,7 @@ const Discover = () => {
                   post.image_urls.map((imgUrl, imgIdx) => (
                     <div
                       key={`media-${post.id}-${imgIdx}`}
-                      onClick={() => setSelectedPost(post)}
+                      onClick={() => navigate(`/post/${post.id}`)}
                       className="group relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden bg-slate-100 cursor-pointer shadow-2xs"
                     >
                       <img
@@ -590,6 +591,11 @@ const Discover = () => {
                   onPostDeleted={(postId) =>
                     setPosts((prev) => prev.filter((p) => p.id !== postId))
                   }
+                  onPostUpdated={(updated) =>
+                    setPosts((prev) =>
+                      prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
+                    )
+                  }
                 />
               ))
             ) : (
@@ -602,12 +608,19 @@ const Discover = () => {
         )}
       </div>
 
-      {/* INSTAGRAM POST DETAIL MODAL */}
+      {/* FACEBOOK POST DETAIL & COMMENT MODAL */}
       {selectedPost && (
-        <InstagramPostModal
+        <FacebookPostCommentModal
           post={selectedPost}
+          isOpen={Boolean(selectedPost)}
           currentUser={currentUser}
           onClose={() => setSelectedPost(null)}
+          onPostUpdated={(updated) => {
+            setSelectedPost((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : prev));
+            setPosts((prev) =>
+              prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p))
+            );
+          }}
         />
       )}
     </div>

@@ -492,6 +492,7 @@ export const PostCommentSection = ({
           <div className="flex-1 relative flex items-center">
             <input
               ref={inputRef}
+              id={`comment-input-${postId}`}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -592,18 +593,6 @@ export const PostCommentSection = ({
             )}
           </div>
 
-          {/* Nút mở trang bình luận riêng như Facebook */}
-          {onOpenModal && (
-            <button
-              type="button"
-              onClick={onOpenModal}
-              className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:underline px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition cursor-pointer"
-              title="Mở trang bình luận riêng chuẩn Facebook"
-            >
-              <Maximize2 size={13} />
-              <span>Xem trang riêng</span>
-            </button>
-          )}
         </div>
       )}
 
